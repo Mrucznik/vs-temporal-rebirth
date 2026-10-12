@@ -32,6 +32,12 @@ internal class Rebirth
         Ghost? ghost = afterlife.Get(player.PlayerUID);
         if (ghost == null)
         {
+            // Died on their last life and left before becoming a ghost: they would be stuck on the death screen.
+            if (player.Entity is { Alive: false } && !LifeRules.UnlimitedLives(api.World) && LifeRules.GetLivesLeft(player) == 0)
+            {
+                api.World.RegisterCallback(_ => MakeGhost(player), 1500);
+            }
+
             return;
         }
 

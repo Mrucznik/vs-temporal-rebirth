@@ -5,6 +5,7 @@
   "authors": ["Mrucznik"],
   "description": "Hardcore lives you can earn with temporal gears. Players out of lives become spectators tethered to where they died, until they return the next day or are revived by a ritual at a rift.",
   "version": "0.3.0",
+  "website": "https://github.com/Mrucznik/vs-temporal-rebirth",
   "side": "universal",
   "requiredOnClient": true,
   "requiredOnServer": true,

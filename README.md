@@ -53,3 +53,7 @@ override with `VINTAGE_STORY=/path`).
 ```sh
 dotnet build -c Release -t:Package   # -> dist/temporalrebirth_<version>.zip
 ```
+
+## License
+
+MIT, see `LICENSE`.

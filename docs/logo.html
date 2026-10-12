@@ -1,0 +1,118 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: #15120f; overflow: hidden; }
+  body { font-family: "Noto Serif", "DejaVu Serif", serif; }
+  .frame {
+    position: relative; overflow: hidden;
+    background:
+      radial-gradient(circle at 50% 40%, #2c241c 0%, #1a1612 55%, #110e0b 100%);
+  }
+  .frame::after {
+    content: ""; position: absolute; inset: 8px;
+    border: 1px solid #3a3129; border-radius: 10px; pointer-events: none;
+  }
+  .title { position: absolute; left: 0; right: 0; text-align: center; letter-spacing: 6px; font-weight: 700; color: #d8cbb2;
+           text-shadow: 0 0 18px rgba(95, 212, 196, .3); }
+  .title span { color: #5fd4c4; }
+  .tag { position: absolute; left: 0; right: 0; text-align: center; color: #a99a84; font-style: italic; letter-spacing: 2px; }
+
+  /* 480x480 */
+  .square { width: 480px; height: 480px; }
+  .square svg { position: absolute; left: 0; top: 0; }
+  .square .title { top: 330px; font-size: 44px; line-height: 1.05; }
+  .square .tag { top: 432px; font-size: 17px; }
+
+  /* 480x320 */
+  .wide { width: 480px; height: 320px; }
+  .wide svg { position: absolute; left: 0; top: 0; }
+  .wide .title { left: 238px; right: 14px; text-align: left; top: 96px; font-size: 35px; line-height: 1.1; letter-spacing: 3px; }
+  .wide .tag { left: 240px; right: 14px; text-align: left; top: 190px; font-size: 15px; line-height: 1.4; letter-spacing: 1px; }
+
+  /* 256x256 in-game icon: emblem only */
+  .icon { width: 256px; height: 256px; }
+  .icon svg { position: absolute; left: 0; top: 0; }
+  .icon::after { inset: 4px; border-radius: 8px; }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <radialGradient id="tether" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#b9c7d6" stop-opacity=".22"/>
+      <stop offset="100%" stop-color="#b9c7d6" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="riftGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ffd9a8" stop-opacity=".95"/>
+      <stop offset="35%" stop-color="#c4622d" stop-opacity=".85"/>
+      <stop offset="100%" stop-color="#6e3518" stop-opacity="0"/>
+    </radialGradient>
+    <g id="gear">
+      <circle r="17" fill="none" stroke="#5fd4c4" stroke-width="6"/>
+      <circle r="6" fill="#5fd4c4"/>
+      <g fill="#5fd4c4">
+        <rect x="-4" y="-27" width="8" height="10" rx="1"/>
+        <rect x="-4" y="17" width="8" height="10" rx="1"/>
+        <rect x="-27" y="-4" width="10" height="8" rx="1"/>
+        <rect x="17" y="-4" width="10" height="8" rx="1"/>
+        <rect x="-4" y="-27" width="8" height="10" rx="1" transform="rotate(45)"/>
+        <rect x="-4" y="-27" width="8" height="10" rx="1" transform="rotate(135)"/>
+        <rect x="-4" y="-27" width="8" height="10" rx="1" transform="rotate(225)"/>
+        <rect x="-4" y="-27" width="8" height="10" rx="1" transform="rotate(315)"/>
+      </g>
+    </g>
+    <!-- emblem centred on (0,0), roughly 300x300 -->
+    <g id="emblem">
+      <circle r="135" fill="url(#tether)"/>
+      <circle r="118" fill="none" stroke="#b9c7d6" stroke-opacity=".5" stroke-width="2.5" stroke-dasharray="7 10"/>
+      <!-- tombstone -->
+      <g transform="translate(0,62)">
+        <path d="M-24,40 L-24,0 C-24,-17 -13,-25 0,-25 C13,-25 24,-17 24,0 L24,40 Z" fill="#3a3129" stroke="#6b5c4c" stroke-width="2.5"/>
+        <line x1="-11" y1="3" x2="11" y2="3" stroke="#8a7a64" stroke-width="2.5"/>
+        <line x1="-11" y1="12" x2="11" y2="12" stroke="#8a7a64" stroke-width="2.5"/>
+        <line x1="-36" y1="40" x2="36" y2="40" stroke="#6b5c4c" stroke-width="4"/>
+      </g>
+      <line x1="0" y1="10" x2="0" y2="36" stroke="#b9c7d6" stroke-opacity=".55" stroke-width="2.5" stroke-dasharray="3 5"/>
+      <!-- ghost -->
+      <g transform="translate(0,-28) scale(1.45)">
+        <path d="M-30,30 L-30,-8 C-30,-32 -15,-46 0,-46 C15,-46 30,-32 30,-8 L30,30 L20,22 L10,30 L0,22 L-10,30 L-20,22 Z"
+              fill="#cdd8e3" fill-opacity=".9" stroke="#eef3f8" stroke-width="1.6"/>
+        <circle cx="-10" cy="-14" r="5" fill="#15120f"/>
+        <circle cx="10" cy="-14" r="5" fill="#15120f"/>
+      </g>
+      <!-- gear (lives) and rift (ritual) on the tether ring -->
+      <use href="#gear" transform="translate(-112,-58) scale(1.05)"/>
+      <g transform="translate(112,-58)">
+        <ellipse rx="26" ry="34" fill="url(#riftGlow)"/>
+        <path d="M0,-28 L5,-12 L-3,-3 L6,7 L-2,18 L1,30" fill="none" stroke="#ffe6c4" stroke-width="2.6" stroke-linejoin="round"/>
+      </g>
+    </g>
+  </defs>
+</svg>
+
+<div id="square" class="frame square">
+  <svg width="480" height="480"><use href="#emblem" transform="translate(240,172) scale(1.02)"/></svg>
+  <div class="title">TEMPORAL<br><span>REBIRTH</span></div>
+  <div class="tag">hardcore lives · ghosts · revival</div>
+</div>
+
+<div id="wide" class="frame wide">
+  <svg width="240" height="320"><use href="#emblem" transform="translate(122,164) scale(0.74)"/></svg>
+  <div class="title">TEMPORAL<br><span>REBIRTH</span></div>
+  <div class="tag">Hardcore lives from temporal gears.<br>Ghosts. A ritual to bring them back.</div>
+</div>
+
+<div id="icon" class="frame icon">
+  <svg width="256" height="256"><use href="#emblem" transform="translate(128,134) scale(0.84)"/></svg>
+</div>
+
+<script>
+  // ?only=square|wide|icon renders a single variant for screenshotting.
+  const only = new URLSearchParams(location.search).get("only");
+  if (only) for (const el of document.querySelectorAll(".frame")) el.style.display = el.id === only ? "" : "none";
+</script>
+</body>
+</html>

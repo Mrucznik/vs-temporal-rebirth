@@ -11,5 +11,6 @@
   "gear-lives": "The gear binds you to this place. +{0} lives (lives left: {1}).",
   "broadcast-ghost": "{0} has lost their last life and now walks as a ghost.",
   "broadcast-ritual": "{0} offered a temporal gear at a rift and brought {1} back.",
-  "broadcast-returned": "{0} has returned from beyond."
+  "broadcast-returned": "{0} has returned from beyond.",
+  "ghost-tethered": "Something holds you here. You cannot stray far from where you fell."
 }

@@ -11,5 +11,6 @@
   "gear-lives": "Zębatka wiąże cię z tym miejscem. +{0} żyć (zostało: {1}).",
   "broadcast-ghost": "{0} stracił ostatnie życie i błąka się jako duch.",
   "broadcast-ritual": "{0} złożył zębatkę temporalną przy wyrwie i sprowadził z powrotem {1}.",
-  "broadcast-returned": "{0} wrócił zza zasłony."
+  "broadcast-returned": "{0} wrócił zza zasłony.",
+  "ghost-tethered": "Coś cię tu trzyma. Nie możesz odejść daleko od miejsca, w którym padłeś."
 }

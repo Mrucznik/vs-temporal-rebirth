@@ -7,6 +7,8 @@ and a way back for players who run out of them.
    ground to set your respawn point) also grants extra lives. One per gear by default.
 2. **Out of lives → ghost.** Instead of being stuck on the death screen, a player with no lives
    left becomes a spectator and can watch the world.
+   The ghost is tethered to where it died: it cannot drift more than `GhostTetherRadius`
+   blocks away and is pulled back onto that edge.
 3. **Come back the next day.** A ghost returns to survival at their respawn point once the server's
    local clock passes `NextDayResetHour` on the following day. Can be switched to a fixed number
    of hours, or disabled so only a ritual works.
@@ -28,6 +30,7 @@ Temporal Lives — both patch the same vanilla code; this mod replaces it.
 | `ReturnMode` | `NextDay` | `NextDay`, `Hours` or `Disabled` |
 | `ReturnAfterHours` | `24` | used by `Hours` |
 | `NextDayResetHour` | `6` | used by `NextDay`, server local time |
+| `GhostTetherRadius` | `24` | how far a ghost may drift from its death spot; `0` = no limit |
 | `RitualRiftRange` | `8` | how close to a rift the caster must stand, in blocks |
 | `RitualRevivesOffline` | `true` | whether the ritual may pick a ghost who is offline |
 

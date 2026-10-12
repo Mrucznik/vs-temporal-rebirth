@@ -18,6 +18,7 @@ public sealed class TemporalRebirthModSystem : ModSystem
     private Harmony? harmony;
     private ICoreServerAPI? sapi;
     private long returnTickId;
+    private long tetherTickId;
 
     public override void StartClientSide(ICoreClientAPI api)
     {
@@ -38,6 +39,7 @@ public sealed class TemporalRebirthModSystem : ModSystem
         api.Event.PlayerNowPlaying += Rebirth.OnPlayerNowPlaying;
         api.Event.PlayerDeath += Rebirth.OnPlayerDeath;
         returnTickId = api.Event.RegisterGameTickListener(_ => Rebirth.CheckReturns(), 30_000);
+        tetherTickId = api.Event.RegisterGameTickListener(_ => Rebirth.EnforceTethers(), 1_000);
 
         Commands.Register(api, Rebirth);
 
@@ -73,6 +75,7 @@ public sealed class TemporalRebirthModSystem : ModSystem
             sapi.Event.PlayerNowPlaying -= Rebirth.OnPlayerNowPlaying;
             sapi.Event.PlayerDeath -= Rebirth.OnPlayerDeath;
             sapi.Event.UnregisterGameTickListener(returnTickId);
+            sapi.Event.UnregisterGameTickListener(tetherTickId);
         }
 
         harmony?.UnpatchAll(harmony.Id);

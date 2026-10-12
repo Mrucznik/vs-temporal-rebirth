@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Vintagestory.API.MathTools;
 using Vintagestory.API.Server;
 
 namespace TemporalRebirth;
@@ -8,6 +9,9 @@ public class Ghost
 {
     public string Name { get; set; } = "";
     public DateTime DiedAtUtc { get; set; }
+
+    /// <summary>Where the player died; the ghost cannot stray far from it. Null for ghosts from before 0.2.0.</summary>
+    public double[]? DeathPos { get; set; }
 
     /// <summary>Set by a ritual performed while the ghost was offline; applied on their next login.</summary>
     public bool RevivedByRitual { get; set; }
@@ -60,9 +64,14 @@ internal class Afterlife
 
     public Ghost? Get(string uid) => ghosts.GetValueOrDefault(uid);
 
-    public void Add(string uid, string name)
+    public void Add(string uid, string name, Vec3d deathPos)
     {
-        ghosts[uid] = new Ghost { Name = name, DiedAtUtc = DateTime.UtcNow };
+        ghosts[uid] = new Ghost
+        {
+            Name = name,
+            DiedAtUtc = DateTime.UtcNow,
+            DeathPos = [deathPos.X, deathPos.Y, deathPos.Z],
+        };
         Save();
     }
 

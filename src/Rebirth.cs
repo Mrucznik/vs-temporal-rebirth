@@ -15,6 +15,7 @@ internal class Rebirth
     private readonly ICoreServerAPI api;
     private readonly RebirthConfig config;
     private readonly Afterlife afterlife;
+    private readonly Dictionary<string, long> lastTetherMessageMs = new();
 
     public Rebirth(ICoreServerAPI api, RebirthConfig config, Afterlife afterlife)
     {
@@ -82,15 +83,60 @@ internal class Rebirth
             return;
         }
 
+        Vec3d deathPos = entity.Pos.XYZ;
         entity.Revive();
         DownedCompat.ClearDeathFlags(entity);
         SetGameMode(player, EnumGameMode.Spectator);
-        afterlife.Add(player.PlayerUID, player.PlayerName);
+        afterlife.Add(player.PlayerUID, player.PlayerName, deathPos);
 
         player.SendLocalisedMessage(GlobalConstants.GeneralChatGroup, "temporalrebirth:became-ghost");
         Ghost ghost = afterlife.Get(player.PlayerUID)!;
         TellWhenReturn(player, ghost);
         Broadcast("temporalrebirth:broadcast-ghost", player.PlayerName);
+    }
+
+    /// <summary>
+    /// Called every second. A ghost that drifted beyond the tether radius is pulled back onto its edge,
+    /// on the line towards the death spot, so it keeps facing where it was heading.
+    /// </summary>
+    public void EnforceTethers()
+    {
+        double radius = config.GhostTetherRadius;
+        if (radius <= 0)
+        {
+            return;
+        }
+
+        foreach (IServerPlayer player in api.World.AllOnlinePlayers.Cast<IServerPlayer>())
+        {
+            Ghost? ghost = afterlife.Get(player.PlayerUID);
+            if (ghost?.DeathPos is not { Length: 3 } dp || player.Entity == null || player.ConnectionState != EnumClientState.Playing)
+            {
+                continue;
+            }
+
+            var anchor = new Vec3d(dp[0], dp[1], dp[2]);
+            Vec3d pos = player.Entity.Pos.XYZ;
+            double dist = pos.DistanceTo(anchor);
+            if (dist <= radius)
+            {
+                continue;
+            }
+
+            // Teleports far away (e.g. an admin /tp) snap straight back to the death spot.
+            Vec3d target = dist > radius * 4
+                ? anchor
+                : anchor.AddCopy((pos.X - anchor.X) / dist * (radius - 1), (pos.Y - anchor.Y) / dist * (radius - 1), (pos.Z - anchor.Z) / dist * (radius - 1));
+
+            player.Entity.TeleportToDouble(target.X, target.Y, target.Z);
+
+            long now = api.World.ElapsedMilliseconds;
+            if (!lastTetherMessageMs.TryGetValue(player.PlayerUID, out long last) || now - last > 15_000)
+            {
+                lastTetherMessageMs[player.PlayerUID] = now;
+                player.SendLocalisedMessage(GlobalConstants.GeneralChatGroup, "temporalrebirth:ghost-tethered");
+            }
+        }
     }
 
     /// <summary>Called periodically for online ghosts.</summary>

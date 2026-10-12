@@ -31,6 +31,9 @@ public class RebirthConfig
     /// <summary>Used when <see cref="ReturnMode"/> is NextDay. Hour of the server's local time (0-23).</summary>
     public int NextDayResetHour { get; set; } = 6;
 
+    /// <summary>How far (in blocks) a ghost may drift from where it died. 0 lets ghosts roam freely.</summary>
+    public double GhostTetherRadius { get; set; } = 24;
+
     /// <summary>
     /// Ritual: hold a temporal gear (the vanilla 3.5 s use) within this many blocks of an active rift.
     /// </summary>

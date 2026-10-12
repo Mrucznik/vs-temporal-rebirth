@@ -1,0 +1,187 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  :root {
+    --bg: #15120f;
+    --panel: #221d18;
+    --panel-edge: #3a3129;
+    --ink: #eadfcc;
+    --muted: #a99a84;
+    --teal: #5fd4c4;
+    --teal-dim: #2f7f76;
+    --rust: #c4622d;
+    --rust-dim: #6e3518;
+    --bone: #d8cbb2;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 1400px; height: 1000px; background: var(--bg); }
+  body {
+    font-family: "Noto Serif", "DejaVu Serif", serif;
+    color: var(--ink);
+    background:
+      radial-gradient(ellipse 900px 520px at 50% 52%, #2a221b 0%, transparent 70%),
+      var(--bg);
+    position: relative;
+    overflow: hidden;
+  }
+  header { text-align: center; padding-top: 38px; }
+  h1 {
+    font-size: 64px; letter-spacing: 10px; font-weight: 700;
+    color: var(--bone);
+    text-shadow: 0 0 24px rgba(95, 212, 196, .25);
+  }
+  h1 span { color: var(--teal); }
+  .sub { margin-top: 6px; font-size: 22px; letter-spacing: 3px; color: var(--muted); font-style: italic; }
+
+  svg.cycle { position: absolute; left: 0; top: 0; }
+  svg.icons { position: absolute; left: 0; top: 0; z-index: 2; }
+
+  .card {
+    position: absolute; width: 330px;
+    background: linear-gradient(180deg, #2a231d, var(--panel));
+    border: 1px solid var(--panel-edge);
+    border-radius: 14px;
+    padding: 18px 20px 18px;
+    box-shadow: 0 10px 30px rgba(0,0,0,.45);
+  }
+  .card h2 { font-size: 25px; letter-spacing: 3px; margin-bottom: 8px; display: flex; align-items: center; gap: 10px; }
+  .card p { font-size: 17px; line-height: 1.42; color: var(--ink); }
+  .card p + p { margin-top: 7px; }
+  .card .k { color: var(--teal); font-weight: 700; }
+  .card .r { color: var(--rust); font-weight: 700; }
+  .step {
+    display: inline-flex; width: 34px; height: 34px; border-radius: 50%;
+    align-items: center; justify-content: center; font-size: 18px; font-weight: 700;
+    background: var(--bg); border: 2px solid currentColor; flex: none;
+  }
+  .alive  { color: var(--teal); }
+  .death  { color: var(--rust); }
+  .ghost  { color: #b9c7d6; }
+  .return { color: var(--teal); }
+
+  footer {
+    position: absolute; left: 40px; right: 40px; bottom: 28px;
+    display: flex; gap: 18px;
+  }
+  .strip {
+    flex: 1; background: var(--panel); border: 1px solid var(--panel-edge); border-radius: 12px;
+    padding: 12px 18px; font-size: 16px; line-height: 1.5; color: var(--muted);
+  }
+  .strip b { color: var(--bone); letter-spacing: 1px; }
+  code { font-family: "DejaVu Sans Mono", monospace; font-size: 14.5px; color: var(--teal); }
+</style>
+</head>
+<body>
+<header>
+  <h1>TEMPORAL <span>REBIRTH</span></h1>
+  <div class="sub">Hardcore lives · ghosts · a way back</div>
+</header>
+
+<!-- cycle arrows, rift, gear and ghost art -->
+<svg class="cycle" width="1400" height="1000" viewBox="0 0 1400 1000">
+  <defs>
+    <marker id="ah" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#8a7a64"/>
+    </marker>
+    <marker id="ahTeal" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#5fd4c4"/>
+    </marker>
+    <radialGradient id="riftGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ffd9a8" stop-opacity=".95"/>
+      <stop offset="35%" stop-color="#c4622d" stop-opacity=".85"/>
+      <stop offset="100%" stop-color="#6e3518" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="tether" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#b9c7d6" stop-opacity=".18"/>
+      <stop offset="100%" stop-color="#b9c7d6" stop-opacity="0"/>
+    </radialGradient>
+    <g id="gear">
+      <circle r="17" fill="none" stroke="#5fd4c4" stroke-width="6"/>
+      <circle r="6" fill="#5fd4c4"/>
+      <g fill="#5fd4c4">
+        <rect x="-4" y="-27" width="8" height="10" rx="1"/>
+        <rect x="-4" y="17" width="8" height="10" rx="1"/>
+        <rect x="-27" y="-4" width="10" height="8" rx="1"/>
+        <rect x="17" y="-4" width="10" height="8" rx="1"/>
+        <rect x="-4" y="-27" width="8" height="10" rx="1" transform="rotate(45)"/>
+        <rect x="-4" y="-27" width="8" height="10" rx="1" transform="rotate(135)"/>
+        <rect x="-4" y="-27" width="8" height="10" rx="1" transform="rotate(225)"/>
+        <rect x="-4" y="-27" width="8" height="10" rx="1" transform="rotate(315)"/>
+      </g>
+    </g>
+  </defs>
+
+  <!-- centre emblem: the ghost on its tether -->
+  <circle cx="700" cy="545" r="150" fill="url(#tether)"/>
+  <circle cx="700" cy="545" r="118" fill="none" stroke="#b9c7d6" stroke-opacity=".45" stroke-width="2" stroke-dasharray="6 9"/>
+  <text x="700" y="410" text-anchor="middle" font-size="15" fill="#b9c7d6" fill-opacity=".8" letter-spacing="2">24 BLOCKS</text>
+  <!-- grave marker -->
+  <g transform="translate(700,600)">
+    <path d="M-17,30 L-17,0 C-17,-12 -9,-18 0,-18 C9,-18 17,-12 17,0 L17,30 Z" fill="#3a3129" stroke="#6b5c4c" stroke-width="2"/>
+    <line x1="-8" y1="2" x2="8" y2="2" stroke="#8a7a64" stroke-width="2"/>
+    <line x1="-8" y1="9" x2="8" y2="9" stroke="#8a7a64" stroke-width="2"/>
+    <line x1="-26" y1="30" x2="26" y2="30" stroke="#6b5c4c" stroke-width="3"/>
+  </g>
+  <!-- ghost -->
+  <g transform="translate(700,512)" opacity=".92">
+    <path d="M-30,30 L-30,-8 C-30,-32 -15,-46 0,-46 C15,-46 30,-32 30,-8 L30,30 L20,22 L10,30 L0,22 L-10,30 L-20,22 Z"
+          fill="#cdd8e3" fill-opacity=".85" stroke="#eef3f8" stroke-width="2"/>
+    <circle cx="-10" cy="-14" r="5" fill="#15120f"/>
+    <circle cx="10" cy="-14" r="5" fill="#15120f"/>
+  </g>
+  <line x1="700" y1="542" x2="700" y2="582" stroke="#b9c7d6" stroke-opacity=".5" stroke-width="2" stroke-dasharray="3 4"/>
+
+  <!-- cycle arrows: alive (top-left) -> death (top-right) -> ghost (bottom-right) -> return (bottom-left) -> alive -->
+  <path d="M420,250 C560,205 840,205 980,250" fill="none" stroke="#8a7a64" stroke-width="3" marker-end="url(#ah)"/>
+  <path d="M1170,445 C1215,520 1215,580 1170,650" fill="none" stroke="#8a7a64" stroke-width="3" marker-end="url(#ah)"/>
+  <path d="M980,800 C850,840 550,840 420,800" fill="none" stroke="#8a7a64" stroke-width="3" marker-end="url(#ah)"/>
+  <path d="M230,650 C185,580 185,520 230,445" fill="none" stroke="#5fd4c4" stroke-width="3" marker-end="url(#ahTeal)"/>
+  <text x="700" y="214" text-anchor="middle" font-size="15" fill="#a99a84" letter-spacing="2">LAST LIFE SPENT</text>
+  <text x="700" y="848" text-anchor="middle" font-size="15" fill="#a99a84" letter-spacing="2">NEXT DAY · OR A RITUAL</text>
+
+</svg>
+
+<svg class="icons" width="1400" height="1000" viewBox="0 0 1400 1000">
+  <use href="#gear" transform="translate(345,207)"/>
+  <g transform="translate(350,640)">
+    <ellipse rx="20" ry="26" fill="url(#riftGlow)"/>
+    <path d="M0,-21 L4,-9 L-2,-2 L4,5 L-1,13 L1,22" fill="none" stroke="#ffe6c4" stroke-width="2.5" stroke-linejoin="round"/>
+  </g>
+</svg>
+
+<div class="card" style="left:56px; top:170px;">
+  <h2 class="alive"><span class="step">1</span>ALIVE</h2>
+  <p>Hardcore world: you start with the world's <span class="k">player lives</span>.</p>
+  <p>Hold a <span class="k">temporal gear</span> on the ground, as when setting your spawn point: <span class="k">+1 life</span>.</p>
+</div>
+
+<div class="card" style="left:1014px; top:170px;">
+  <h2 class="death"><span class="step">2</span>DEATH</h2>
+  <p>Each death costs a life. On your last one, you do not respawn.</p>
+  <p>With <span class="r">Downed</span>: being downed is not death. Only bleeding out, giving up or execution counts.</p>
+</div>
+
+<div class="card" style="left:1014px; top:640px;">
+  <h2 class="ghost"><span class="step">3</span>GHOST</h2>
+  <p>You linger as a <b>spectator</b>, free to watch, unable to act.</p>
+  <p>Bound to where you fell: drift past the tether and you are pulled back.</p>
+</div>
+
+<div class="card" style="left:56px; top:610px;">
+  <h2 class="return"><span class="step">4</span>RETURN</h2>
+  <p><span class="k">The next day</span> (06:00 server time) you wake at your spawn point.</p>
+  <p>Or sooner: a living friend holds a temporal gear <span class="r">beside a rift</span>. The gear shatters and you return at their side. Ghosts must be online.</p>
+</div>
+
+<footer>
+  <div class="strip"><b>COMMANDS</b><br>
+    <code>/rebirth lives</code> · <code>/rebirth ghosts</code> · <code>/rebirth target &lt;ghost&gt;</code> (pick whom the ritual brings back) · <code>/rebirth revive &lt;player&gt;</code> (admin)
+  </div>
+  <div class="strip" style="flex:0.62"><b>CONFIGURABLE</b><br>
+    lives per gear · return time or off · tether radius · ritual range
+  </div>
+</footer>
+</body>
+</html>

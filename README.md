@@ -1,5 +1,7 @@
 # Temporal Rebirth
 
+![How Temporal Rebirth works](docs/infographic.png)
+
 Vintage Story 1.22.7 mod for hardcore worlds (`playerlives` set to a number). Lives you can earn,
 and a way back for players who run out of them.
 

@@ -1,0 +1,45 @@
+<p><strong>Death should matter. It shouldn't be the end.</strong></p>
+<p>Temporal Rebirth turns Vintage Story's hardcore lives into a cycle: earn lives with temporal gears, haunt the place where you fell when you run out, and come back the next day &mdash; or sooner, if a friend performs a ritual at a rift.</p>
+
+<h2>How it works</h2>
+<ul>
+<li><strong>Earn lives.</strong> Use a temporal gear the usual way (hold right click on the ground, as when setting your spawn point) and gain an extra life.</li>
+<li><strong>Last life.</strong> Each death costs a life. When you have none left, you don't respawn.</li>
+<li><strong>Become a ghost.</strong> You stay in the world as a spectator, bound to the place where you died. Wander too far and you are pulled back.</li>
+<li><strong>Return.</strong> The next morning you wake up at your spawn point. Or a living friend can bring you back sooner: they hold a temporal gear beside an active rift, the gear shatters, and you return at their side.</li>
+</ul>
+<p>If several ghosts are waiting, the friend chooses whom to bring back with <code>/rebirth target &lt;name&gt;</code>. Only ghosts who are online can be revived.</p>
+
+<h2>Compatibility</h2>
+<ul>
+<li><strong>Install on both client and server.</strong></li>
+<li><strong><a href="https://mods.vintagestory.at/downed">Downed</a></strong>: works together. Being downed is not death; only bleeding out, giving up or being executed costs a life.</li>
+<li><strong>Temporal Lives</strong>: do not use both. They change the same game code; Temporal Rebirth already includes earning lives from gears.</li>
+</ul>
+
+<h2>Server setup</h2>
+<p>The mod only does something on worlds with limited lives. Pick the number of lives when creating the world, or on an existing world run:</p>
+<p><code>/worldconfig playerlives 3</code></p>
+<p>then restart the server. Rifts must be enabled for the ritual (they are by default).</p>
+
+<h2>Config</h2>
+<p>File: <code>ModConfig/temporalrebirth.json</code> on the server.</p>
+<ul>
+<li><code>LivesPerGear</code> (default <code>1</code>) &mdash; lives gained per temporal gear. <code>-1</code> uses the world's <code>temporalGearRespawnUses</code>.</li>
+<li><code>ReturnMode</code> (default <code>NextDay</code>) &mdash; <code>NextDay</code>, <code>Hours</code> or <code>Disabled</code> (ritual only).</li>
+<li><code>NextDayResetHour</code> (default <code>6</code>) &mdash; hour of the server's local time when ghosts from the previous day return.</li>
+<li><code>ReturnAfterHours</code> (default <code>24</code>) &mdash; waiting time when <code>ReturnMode</code> is <code>Hours</code>.</li>
+<li><code>GhostTetherRadius</code> (default <code>24</code>) &mdash; how far a ghost may drift from where it died, in blocks. <code>0</code> = no limit.</li>
+<li><code>RitualRiftRange</code> (default <code>8</code>) &mdash; how close to a rift the friend must stand, in blocks.</li>
+</ul>
+
+<h2>Commands</h2>
+<ul>
+<li><code>/rebirth lives</code> &mdash; how many lives you have left</li>
+<li><code>/rebirth ghosts</code> &mdash; who is waiting and when they come back</li>
+<li><code>/rebirth target &lt;ghost&gt;</code> &mdash; choose whom your next ritual brings back</li>
+<li><code>/rebirth revive &lt;player&gt;</code> &mdash; admin: bring a ghost back where they stand</li>
+</ul>
+
+<h2>Status</h2>
+<p>Early version. Please report bugs and ideas on <a href="https://github.com/Mrucznik/vs-temporal-rebirth/issues">GitHub</a>. Source code is MIT licensed.</p>

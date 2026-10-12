@@ -38,7 +38,4 @@ public class RebirthConfig
     /// Ritual: hold a temporal gear (the vanilla 3.5 s use) within this many blocks of an active rift.
     /// </summary>
     public double RitualRiftRange { get; set; } = 8;
-
-    /// <summary>Whether a ritual may revive a player who is currently offline. They come back on their next login.</summary>
-    public bool RitualRevivesOffline { get; set; } = true;
 }

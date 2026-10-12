@@ -37,13 +37,29 @@ internal static class Commands
                 foreach (var (_, ghost) in rebirth.Afterlife.Ghosts.OrderBy(g => g.Value.DiedAtUtc))
                 {
                     DateTime? at = rebirth.ReturnAtUtc(ghost);
-                    string back = ghost.RevivedByRitual ? "revived, back on next login"
-                        : at == null ? "only by ritual"
+                    string back = at == null ? "only by ritual"
                         : $"back at {at.Value.ToLocalTime():yyyy-MM-dd HH:mm}";
                     sb.AppendLine($"{ghost.Name}: died {ghost.DiedAtUtc.ToLocalTime():yyyy-MM-dd HH:mm}, {back}");
                 }
 
                 return TextCommandResult.Success(sb.ToString().TrimEnd());
+            })
+            .EndSubCommand()
+            .BeginSubCommand("target")
+            .WithDescription("Choose which ghost your next ritual brings back")
+            .RequiresPlayer()
+            .WithArgs(parsers.OnlinePlayer("ghost"))
+            .HandleWith(args =>
+            {
+                var caster = (IServerPlayer)args.Caller.Player;
+                var ghost = (IServerPlayer)args[0];
+                if (!rebirth.Afterlife.IsGhost(ghost.PlayerUID))
+                {
+                    return TextCommandResult.Error($"{ghost.PlayerName} is not a ghost.");
+                }
+
+                rebirth.ChooseRitualTarget(caster, ghost);
+                return TextCommandResult.Success($"Your next ritual at a rift will bring back {ghost.PlayerName}.");
             })
             .EndSubCommand()
             .BeginSubCommand("revive")

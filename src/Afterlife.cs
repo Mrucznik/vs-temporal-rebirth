@@ -12,13 +12,6 @@ public class Ghost
 
     /// <summary>Where the player died; the ghost cannot stray far from it. Null for ghosts from before 0.2.0.</summary>
     public double[]? DeathPos { get; set; }
-
-    /// <summary>Set by a ritual performed while the ghost was offline; applied on their next login.</summary>
-    public bool RevivedByRitual { get; set; }
-
-    public double RitualX { get; set; }
-    public double RitualY { get; set; }
-    public double RitualZ { get; set; }
 }
 
 /// <summary>Registry of ghosts, stored in the savegame so it survives restarts and covers offline players.</summary>
@@ -81,24 +74,5 @@ internal class Afterlife
         {
             Save();
         }
-    }
-
-    /// <summary>Ghost who has waited longest and is not already promised a revival.</summary>
-    public KeyValuePair<string, Ghost>? NextRitualTarget(bool includeOffline, Func<string, bool> isOnline)
-    {
-        foreach (var pair in ghosts.OrderBy(p => p.Value.DiedAtUtc))
-        {
-            if (pair.Value.RevivedByRitual)
-            {
-                continue;
-            }
-
-            if (includeOffline || isOnline(pair.Key))
-            {
-                return pair;
-            }
-        }
-
-        return null;
     }
 }

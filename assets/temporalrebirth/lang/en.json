@@ -1,0 +1,15 @@
+{
+  "became-ghost": "Your last life is spent. You linger as a ghost, watching the world you left.",
+  "ghost-no-return": "You will not come back on your own. Only a ritual can bring you back: a living player must offer a temporal gear at a rift.",
+  "ghost-return-at": "You will return to life at {0}. A living player can bring you back sooner by offering a temporal gear at a rift.",
+  "returned": "You have returned from beyond.",
+  "revived-ritual": "{0} offered a temporal gear at the rift. You are alive again.",
+  "revived-ritual-offline": "While you were away, someone offered a temporal gear at a rift for you. You are alive again.",
+  "revived-admin": "An unseen hand pulls you back into the world.",
+  "ritual-nobody": "The rift does not answer. Nobody is waiting to be brought back.",
+  "ritual-done": "The gear shatters in the rift. {0} will walk again.",
+  "gear-lives": "The gear binds you to this place. +{0} lives (lives left: {1}).",
+  "broadcast-ghost": "{0} has lost their last life and now walks as a ghost.",
+  "broadcast-ritual": "{0} offered a temporal gear at a rift and brought {1} back.",
+  "broadcast-returned": "{0} has returned from beyond."
+}

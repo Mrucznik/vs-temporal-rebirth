@@ -1,0 +1,15 @@
+{
+  "became-ghost": "Twoje ostatnie życie przepadło. Błąkasz się jako duch i patrzysz na świat, który opuściłeś.",
+  "ghost-no-return": "Nie wrócisz sam. Sprowadzić cię może tylko rytuał: żywy gracz musi złożyć zębatkę temporalną przy wyrwie.",
+  "ghost-return-at": "Wrócisz do życia {0}. Żywy gracz może cię sprowadzić wcześniej, składając zębatkę temporalną przy wyrwie.",
+  "returned": "Wróciłeś zza zasłony.",
+  "revived-ritual": "{0} złożył zębatkę temporalną przy wyrwie. Znów żyjesz.",
+  "revived-ritual-offline": "Pod twoją nieobecność ktoś złożył za ciebie zębatkę temporalną przy wyrwie. Znów żyjesz.",
+  "revived-admin": "Niewidzialna dłoń wciąga cię z powrotem do świata.",
+  "ritual-nobody": "Wyrwa milczy. Nikt nie czeka na powrót.",
+  "ritual-done": "Zębatka rozpada się w wyrwie. {0} znów będzie chodzić po świecie.",
+  "gear-lives": "Zębatka wiąże cię z tym miejscem. +{0} żyć (zostało: {1}).",
+  "broadcast-ghost": "{0} stracił ostatnie życie i błąka się jako duch.",
+  "broadcast-ritual": "{0} złożył zębatkę temporalną przy wyrwie i sprowadził z powrotem {1}.",
+  "broadcast-returned": "{0} wrócił zza zasłony."
+}

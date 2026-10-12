@@ -1,0 +1,57 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <OutputPath>bin/$(Configuration)/Mods/temporalrebirth</OutputPath>
+    <!-- Default install location on the dev box; override with VINTAGE_STORY=... -->
+    <VINTAGE_STORY Condition="'$(VINTAGE_STORY)' == ''">$(HOME)/Games/VintageStory</VINTAGE_STORY>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="VintagestoryAPI">
+      <HintPath>$(VINTAGE_STORY)/VintagestoryAPI.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="VintagestoryLib">
+      <HintPath>$(VINTAGE_STORY)/VintagestoryLib.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="VSSurvivalMod">
+      <HintPath>$(VINTAGE_STORY)/Mods/VSSurvivalMod.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Newtonsoft.Json">
+      <HintPath>$(VINTAGE_STORY)/Lib/Newtonsoft.Json.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="0Harmony">
+      <HintPath>$(VINTAGE_STORY)/Lib/0Harmony.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="assets/**">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="modinfo.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <Target Name="ValidateVintageStoryPath" BeforeTargets="ResolveReferences">
+    <Error Condition="!Exists('$(VINTAGE_STORY)/VintagestoryAPI.dll')"
+           Text="VintagestoryAPI.dll not found in '$(VINTAGE_STORY)'. Set VINTAGE_STORY to the game install directory." />
+  </Target>
+
+  <!-- dotnet build -c Release -t:Package  ->  dist/temporalrebirth_<version>.zip -->
+  <Target Name="Package" DependsOnTargets="Build">
+    <PropertyGroup>
+      <ModVersion>$([System.Text.RegularExpressions.Regex]::Match($([System.IO.File]::ReadAllText('modinfo.json')), '"version"\s*:\s*"([^"]+)"').Groups[1].Value)</ModVersion>
+    </PropertyGroup>
+    <MakeDir Directories="dist" />
+    <ZipDirectory SourceDirectory="$(OutputPath)" DestinationFile="dist/temporalrebirth_$(ModVersion).zip" Overwrite="true" />
+  </Target>
+</Project>

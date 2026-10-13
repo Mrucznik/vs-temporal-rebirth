@@ -22,5 +22,6 @@
   "cmd-target-set": "Your next ritual at a rift will bring back {0}.",
   "cmd-not-out-of-lives": "{0} still has lives left.",
   "cmd-revived": "{0} is back among the living.",
-  "cmd-lives-set": "{0} now has {1} lives left."
+  "cmd-lives-set": "{0} now has {1} lives left.",
+  "ritual-cooldown": "{0} cannot be called back yet. Try again after {1}."
 }

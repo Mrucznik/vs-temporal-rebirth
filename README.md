@@ -37,6 +37,10 @@ Temporal Lives — both patch the same vanilla code; this mod replaces it.
 | `GhostNoClip` | `false` | `false`: ghosts fly but collide with blocks; `true`: they pass through walls |
 | `GhostTetherRadius` | `24` | how far a ghost may drift from its death spot; `0` = no limit |
 | `RitualRiftRange` | `8` | how close to a rift the caster must stand, in blocks |
+| `RitualReviveAt` | `Caster` | where a ritual brings the ghost back: `Caster` (next to the friend — can be used as a teleport), `DeathSpot` or `Spawn` |
+| `RitualCooldownHours` | `0` | hours before the same player can be revived by a ritual again; `0` = no limit |
+| `ReturnHealthPercent` | `100` | health after coming back (ritual or next day), % of max |
+| `ReturnSatietyPercent` | `100` | satiety after coming back, % of max |
 
 Lives left = world `playerlives` + extra lives − vanilla death counter. With unlimited lives
 (`playerlives = -1`) the mod does nothing.

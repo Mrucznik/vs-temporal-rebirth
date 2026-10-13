@@ -22,5 +22,6 @@
   "cmd-target-set": "Twój następny rytuał przy wyrwie sprowadzi z powrotem gracza {0}.",
   "cmd-not-out-of-lives": "{0} ma jeszcze życia.",
   "cmd-revived": "{0} wrócił do świata żywych.",
-  "cmd-lives-set": "{0} ma teraz {1} żyć."
+  "cmd-lives-set": "{0} ma teraz {1} żyć.",
+  "ritual-cooldown": "{0} nie może jeszcze zostać przywołany. Spróbuj po {1}."
 }

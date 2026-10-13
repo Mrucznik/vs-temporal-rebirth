@@ -15,6 +15,18 @@ public enum ReturnMode
     NextDay,
 }
 
+public enum RitualReviveAt
+{
+    /// <summary>Next to the player performing the ritual. Can be abused as a teleport to a friend.</summary>
+    Caster,
+
+    /// <summary>Where the ghost died. The ritual only shortens the wait.</summary>
+    DeathSpot,
+
+    /// <summary>At the ghost's spawn point, like the natural return.</summary>
+    Spawn,
+}
+
 /// <summary>Stored in ModConfig/temporalrebirth.json on the server.</summary>
 public class RebirthConfig
 {
@@ -41,4 +53,17 @@ public class RebirthConfig
     /// Ritual: hold a temporal gear (the vanilla 3.5 s use) within this many blocks of an active rift.
     /// </summary>
     public double RitualRiftRange { get; set; } = 8;
+
+    /// <summary>Caster, DeathSpot or Spawn: where a ghost revived by a ritual appears.</summary>
+    [JsonConverter(typeof(StringEnumConverter))]
+    public RitualReviveAt RitualReviveAt { get; set; } = RitualReviveAt.Caster;
+
+    /// <summary>Hours before the same player can be revived by a ritual again. 0 = no limit.</summary>
+    public double RitualCooldownHours { get; set; } = 0;
+
+    /// <summary>Health after coming back (ritual or natural return), in percent of max. 100 = full.</summary>
+    public float ReturnHealthPercent { get; set; } = 100;
+
+    /// <summary>Satiety after coming back (ritual or natural return), in percent of max. 100 = unchanged.</summary>
+    public float ReturnSatietyPercent { get; set; } = 100;
 }

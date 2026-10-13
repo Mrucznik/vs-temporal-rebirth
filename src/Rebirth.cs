@@ -20,6 +20,12 @@ internal class Rebirth
     /// <summary>Set while a resurrection teleport is in flight; finished on next login if the player left.</summary>
     private const string ReturningKey = "temporalrebirth.returning";
 
+    /// <summary>UTC ticks of the last ritual revival, for <see cref="RebirthConfig.RitualCooldownHours"/>.</summary>
+    private const string LastRitualKey = "temporalrebirth.lastritual";
+
+    /// <summary>Set while a weakened return is pending; applied once the player is alive at the destination.</summary>
+    private const string WeakenKey = "temporalrebirth.weaken";
+
     /// <summary>Caster uid -> ghost uid chosen with /rebirth target. Not persisted; a restart clears choices.</summary>
     private readonly Dictionary<string, string> ritualTargets = new();
 
@@ -283,11 +289,24 @@ internal class Rebirth
             return false;
         }
 
+        DateTime? readyAt = RitualReadyAtUtc(target);
+        if (readyAt != null && DateTime.UtcNow < readyAt)
+        {
+            caster.SendLocalisedMessage(
+                GlobalConstants.GeneralChatGroup,
+                "temporalrebirth:ritual-cooldown",
+                target.PlayerName,
+                readyAt.Value.ToLocalTime().ToString("yyyy-MM-dd HH:mm")
+            );
+            return false;
+        }
+
         ritualTargets.Remove(caster.PlayerUID);
         string ghostName = target.PlayerName;
+        target.SetModData(LastRitualKey, DateTime.UtcNow.Ticks);
 
         // The ritual has its own broadcast below.
-        Resurrect(target, caster.Entity.Pos.XYZ, false, "temporalrebirth:revived-ritual", caster.PlayerName);
+        Resurrect(target, RitualDestination(caster, target), false, "temporalrebirth:revived-ritual", caster.PlayerName);
 
         caster.SendLocalisedMessage(GlobalConstants.GeneralChatGroup, "temporalrebirth:ritual-done", ghostName);
         Broadcast("temporalrebirth:broadcast-ritual", caster.PlayerName, ghostName);
@@ -296,13 +315,46 @@ internal class Rebirth
         return true;
     }
 
+    private Vec3d RitualDestination(IServerPlayer caster, IServerPlayer ghost)
+    {
+        switch (config.RitualReviveAt)
+        {
+            case RitualReviveAt.DeathSpot:
+                if (afterlife.Get(ghost.PlayerUID)?.DeathPos is { Length: 3 } dp)
+                {
+                    return new Vec3d(dp[0], dp[1], dp[2]);
+                }
+
+                return ghost.GetSpawnPosition(false).XYZ;
+            case RitualReviveAt.Spawn:
+                return ghost.GetSpawnPosition(false).XYZ;
+            default:
+                return caster.Entity.Pos.XYZ;
+        }
+    }
+
+    private DateTime? RitualReadyAtUtc(IServerPlayer ghost)
+    {
+        if (config.RitualCooldownHours <= 0)
+        {
+            return null;
+        }
+
+        long ticks = ghost.GetModData(LastRitualKey, 0L);
+        return ticks == 0 ? null : new DateTime(ticks, DateTimeKind.Utc).AddHours(config.RitualCooldownHours);
+    }
+
     /// <summary>Admin command path; also works for online players who are not ghosts but have 0 lives.</summary>
     public void AdminRevive(IServerPlayer player)
     {
-        Resurrect(player, player.Entity.Pos.XYZ, true, "temporalrebirth:revived-admin");
+        // Admin revives are a fix-up tool: no weakness.
+        Resurrect(player, player.Entity.Pos.XYZ, true, "temporalrebirth:revived-admin", weaken: false);
     }
 
-    private void Resurrect(IServerPlayer player, Vec3d at, bool announce, string messageKey, params object[] args)
+    private void Resurrect(IServerPlayer player, Vec3d at, bool announce, string messageKey, params object[] args) =>
+        Resurrect(player, at, announce, messageKey, true, args);
+
+    private void Resurrect(IServerPlayer player, Vec3d at, bool announce, string messageKey, bool weaken, params object[] args)
     {
         LifeRules.GrantSecondChance(player);
         // Removed first so the tether tick leaves the player alone while the teleport is in flight.
@@ -312,6 +364,7 @@ internal class Rebirth
         // Same order as vanilla respawn: travel as a ghost, wait for the chunks at the destination,
         // and only then become mortal, so nobody falls out of the sky over unloaded terrain.
         player.SetModData(ReturningKey, true);
+        player.SetModData(WeakenKey, weaken);
         EntityPlayer entity = player.Entity;
         EntityPos target = entity.Pos.Copy();
         target.SetPos(at);
@@ -337,6 +390,45 @@ internal class Rebirth
         DownedCompat.ClearDeathFlags(entity);
         SetGameMode(player, EnumGameMode.Survival);
         player.SetModData(ReturningKey, false);
+
+        if (player.GetModData(WeakenKey, false))
+        {
+            Weaken(entity);
+            player.SetModData(WeakenKey, false);
+        }
+    }
+
+    /// <summary>
+    /// Applies <see cref="RebirthConfig.ReturnHealthPercent"/> and <see cref="RebirthConfig.ReturnSatietyPercent"/>
+    /// through the vanilla health and hunger attribute trees (EntityBehaviorHealth / EntityBehaviorHunger).
+    /// </summary>
+    private void Weaken(EntityPlayer entity)
+    {
+        ScaleTree(entity, "health", "currenthealth", "maxhealth", config.ReturnHealthPercent, minimum: 1f);
+        ScaleTree(entity, "hunger", "currentsaturation", "maxsaturation", config.ReturnSatietyPercent, minimum: 0f);
+    }
+
+    private static void ScaleTree(EntityPlayer entity, string tree, string currentKey, string maxKey, float percent, float minimum)
+    {
+        if (percent >= 100)
+        {
+            return;
+        }
+
+        var attrs = entity.WatchedAttributes.GetTreeAttribute(tree);
+        if (attrs == null)
+        {
+            return;
+        }
+
+        float max = attrs.GetFloat(maxKey, 0f);
+        if (max <= 0)
+        {
+            return;
+        }
+
+        attrs.SetFloat(currentKey, Math.Max(minimum, max * Math.Clamp(percent, 0f, 100f) / 100f));
+        entity.WatchedAttributes.MarkPathDirty(tree);
     }
 
     /// <summary>

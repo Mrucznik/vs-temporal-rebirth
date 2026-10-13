@@ -22,6 +22,8 @@ and a way back for players who run out of them.
    the caster picks one first with `/rebirth target <name>` — otherwise the ritual lists the
    ghosts and keeps the gear.
 
+The death screen shows your real lives left, including those earned from gears.
+
 Works with [Downed](https://mods.vintagestory.at/downed): a downed player is not dead; only the
 final death (bleed out, give up, execution) costs a life. Do **not** install together with
 Temporal Lives — both patch the same vanilla code; this mod replaces it.

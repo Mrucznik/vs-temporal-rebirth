@@ -2,6 +2,8 @@
 
 ![How Temporal Rebirth works](docs/infographic.png)
 
+**Download:** [Vintage Story Mod DB](https://mods.vintagestory.at/show/mod/73648) · [GitHub releases](https://github.com/Mrucznik/vs-temporal-rebirth/releases)
+
 Vintage Story 1.22.7 mod for hardcore worlds (`playerlives` set to a number). Lives you can earn,
 and a way back for players who run out of them.
 

@@ -17,6 +17,9 @@ internal class Rebirth
     private readonly Afterlife afterlife;
     private readonly Dictionary<string, long> lastTetherMessageMs = new();
 
+    /// <summary>Set while a resurrection teleport is in flight; finished on next login if the player left.</summary>
+    private const string ReturningKey = "temporalrebirth.returning";
+
     /// <summary>Caster uid -> ghost uid chosen with /rebirth target. Not persisted; a restart clears choices.</summary>
     private readonly Dictionary<string, string> ritualTargets = new();
 
@@ -33,6 +36,13 @@ internal class Rebirth
     {
         LifeRules.EnsureBaseline(player);
         LifeRules.Sync(player);
+
+        if (player.GetModData(ReturningKey, false))
+        {
+            // Left mid-teleport: no longer a ghost, but the switch back to survival never happened.
+            FinishReturn(player);
+            return;
+        }
 
         Ghost? ghost = afterlife.Get(player.PlayerUID);
         if (ghost == null)
@@ -295,8 +305,29 @@ internal class Rebirth
     private void Resurrect(IServerPlayer player, Vec3d at, bool announce, string messageKey, params object[] args)
     {
         LifeRules.GrantSecondChance(player);
+        // Removed first so the tether tick leaves the player alone while the teleport is in flight.
         afterlife.Remove(player.PlayerUID);
+        LifeRules.Sync(player);
 
+        // Same order as vanilla respawn: travel as a ghost, wait for the chunks at the destination,
+        // and only then become mortal, so nobody falls out of the sky over unloaded terrain.
+        player.SetModData(ReturningKey, true);
+        EntityPlayer entity = player.Entity;
+        EntityPos target = entity.Pos.Copy();
+        target.SetPos(at);
+        entity.TeleportTo(target, () =>
+        {
+            FinishReturn(player);
+            player.SendLocalisedMessage(GlobalConstants.GeneralChatGroup, messageKey, args);
+            if (announce)
+            {
+                Broadcast("temporalrebirth:broadcast-returned", player.PlayerName);
+            }
+        });
+    }
+
+    private void FinishReturn(IServerPlayer player)
+    {
         EntityPlayer entity = player.Entity;
         if (!entity.Alive)
         {
@@ -305,14 +336,7 @@ internal class Rebirth
 
         DownedCompat.ClearDeathFlags(entity);
         SetGameMode(player, EnumGameMode.Survival);
-        entity.TeleportToDouble(at.X, at.Y, at.Z);
-        LifeRules.Sync(player);
-
-        player.SendLocalisedMessage(GlobalConstants.GeneralChatGroup, messageKey, args);
-        if (announce)
-        {
-            Broadcast("temporalrebirth:broadcast-returned", player.PlayerName);
-        }
+        player.SetModData(ReturningKey, false);
     }
 
     /// <summary>

@@ -12,5 +12,15 @@
   "broadcast-ritual": "{0} złożył zębatkę temporalną przy wyrwie i sprowadził z powrotem {1}.",
   "broadcast-returned": "{0} wrócił zza zasłony.",
   "ghost-tethered": "Coś cię tu trzyma. Nie możesz odejść daleko od miejsca, w którym padłeś.",
-  "ritual-choose": "Na powrót czeka więcej duchów: {0}. Wybierz, kogo sprowadzić: /rebirth target <nick>, i złóż zębatkę jeszcze raz."
+  "ritual-choose": "Na powrót czeka więcej duchów: {0}. Wybierz, kogo sprowadzić: /rebirth target <nick>, i złóż zębatkę jeszcze raz.",
+  "cmd-lives": "Pozostałe życia: {0}",
+  "cmd-lives-unlimited": "Ten świat ma nieograniczoną liczbę żyć.",
+  "cmd-ghosts-none": "Nikt nie czeka na powrót.",
+  "cmd-ghosts-entry": "{0}: zginął {1}, wraca {2}",
+  "cmd-ghosts-ritual-only": "{0}: zginął {1}, wrócić może tylko przez rytuał",
+  "cmd-not-ghost": "{0} nie jest duchem.",
+  "cmd-target-set": "Twój następny rytuał przy wyrwie sprowadzi z powrotem gracza {0}.",
+  "cmd-not-out-of-lives": "{0} ma jeszcze życia.",
+  "cmd-revived": "{0} wrócił do świata żywych.",
+  "cmd-lives-set": "{0} ma teraz {1} żyć."
 }

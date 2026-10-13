@@ -12,5 +12,15 @@
   "broadcast-ritual": "{0} offered a temporal gear at a rift and brought {1} back.",
   "broadcast-returned": "{0} has returned from beyond.",
   "ghost-tethered": "Something holds you here. You cannot stray far from where you fell.",
-  "ritual-choose": "More than one ghost is waiting: {0}. Choose whom to bring back with /rebirth target <name>, then offer the gear again."
+  "ritual-choose": "More than one ghost is waiting: {0}. Choose whom to bring back with /rebirth target <name>, then offer the gear again.",
+  "cmd-lives": "Lives left: {0}",
+  "cmd-lives-unlimited": "This world has unlimited lives.",
+  "cmd-ghosts-none": "Nobody is waiting to come back.",
+  "cmd-ghosts-entry": "{0}: died {1}, returns {2}",
+  "cmd-ghosts-ritual-only": "{0}: died {1}, can only be brought back by a ritual",
+  "cmd-not-ghost": "{0} is not a ghost.",
+  "cmd-target-set": "Your next ritual at a rift will bring back {0}.",
+  "cmd-not-out-of-lives": "{0} still has lives left.",
+  "cmd-revived": "{0} is back among the living.",
+  "cmd-lives-set": "{0} now has {1} lives left."
 }

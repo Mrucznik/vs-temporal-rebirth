@@ -35,6 +35,7 @@ public sealed class TemporalRebirthModSystem : ModSystem
         Rebirth = new Rebirth(api, Config, afterlife);
 
         api.Event.SaveGameLoaded += afterlife.Load;
+        api.Event.SaveGameLoaded += () => LifeRules.CurrentEpoch = Epochs.Advance(api);
         api.Event.GameWorldSave += afterlife.Save;
         api.Event.PlayerNowPlaying += Rebirth.OnPlayerNowPlaying;
         api.Event.PlayerDeath += Rebirth.OnPlayerDeath;

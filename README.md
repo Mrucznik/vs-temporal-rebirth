@@ -46,6 +46,7 @@ Lives left = world `playerlives` + extra lives − vanilla death counter. With u
 - `/rebirth ghosts` — who is waiting and when they come back
 - `/rebirth target <ghost>` — choose whom your next ritual brings back
 - `/rebirth revive <player>` — admin (`controlserver`): bring a ghost back where they stand
+- `/rebirth setlives <player> <n>` — admin: set how many lives a player has left
 
 ## Build
 

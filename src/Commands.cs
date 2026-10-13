@@ -1,5 +1,6 @@
 using System.Text;
 using Vintagestory.API.Common;
+using Vintagestory.API.Config;
 using Vintagestory.API.Server;
 
 namespace TemporalRebirth;
@@ -21,25 +22,26 @@ internal static class Commands
             {
                 var player = (IServerPlayer)args.Caller.Player;
                 int left = LifeRules.GetLivesLeft(player);
-                return TextCommandResult.Success(left < 0 ? "Unlimited lives." : $"Lives left: {left}");
+                return Ok(args, left < 0 ? "cmd-lives-unlimited" : "cmd-lives", left);
             })
             .EndSubCommand()
             .BeginSubCommand("ghosts")
             .WithDescription("List players waiting to come back")
-            .HandleWith(_ =>
+            .HandleWith(args =>
             {
                 if (rebirth.Afterlife.Ghosts.Count == 0)
                 {
-                    return TextCommandResult.Success("Nobody is waiting.");
+                    return Ok(args, "cmd-ghosts-none");
                 }
 
                 var sb = new StringBuilder();
                 foreach (var (_, ghost) in rebirth.Afterlife.Ghosts.OrderBy(g => g.Value.DiedAtUtc))
                 {
+                    string died = ghost.DiedAtUtc.ToLocalTime().ToString("yyyy-MM-dd HH:mm");
                     DateTime? at = rebirth.ReturnAtUtc(ghost);
-                    string back = at == null ? "only by ritual"
-                        : $"back at {at.Value.ToLocalTime():yyyy-MM-dd HH:mm}";
-                    sb.AppendLine($"{ghost.Name}: died {ghost.DiedAtUtc.ToLocalTime():yyyy-MM-dd HH:mm}, {back}");
+                    sb.AppendLine(at == null
+                        ? T(args, "cmd-ghosts-ritual-only", ghost.Name, died)
+                        : T(args, "cmd-ghosts-entry", ghost.Name, died, at.Value.ToLocalTime().ToString("yyyy-MM-dd HH:mm")));
                 }
 
                 return TextCommandResult.Success(sb.ToString().TrimEnd());
@@ -55,15 +57,15 @@ internal static class Commands
                 var ghost = (IServerPlayer)args[0];
                 if (!rebirth.Afterlife.IsGhost(ghost.PlayerUID))
                 {
-                    return TextCommandResult.Error($"{ghost.PlayerName} is not a ghost.");
+                    return Error(args, "cmd-not-ghost", ghost.PlayerName);
                 }
 
                 rebirth.ChooseRitualTarget(caster, ghost);
-                return TextCommandResult.Success($"Your next ritual at a rift will bring back {ghost.PlayerName}.");
+                return Ok(args, "cmd-target-set", ghost.PlayerName);
             })
             .EndSubCommand()
             .BeginSubCommand("revive")
-            .WithDescription("Bring a ghost back to life where they are (admin)")
+            .WithDescription("Admin: bring a ghost back to life where they are")
             .RequiresPrivilege(Privilege.controlserver)
             .WithArgs(parsers.OnlinePlayer("player"))
             .HandleWith(args =>
@@ -71,12 +73,50 @@ internal static class Commands
                 var target = (IServerPlayer)args[0];
                 if (LifeRules.GetLivesLeft(target) != 0 && !rebirth.Afterlife.IsGhost(target.PlayerUID))
                 {
-                    return TextCommandResult.Error($"{target.PlayerName} is not out of lives.");
+                    return Error(args, "cmd-not-out-of-lives", target.PlayerName);
                 }
 
                 rebirth.AdminRevive(target);
-                return TextCommandResult.Success($"{target.PlayerName} is back.");
+                return Ok(args, "cmd-revived", target.PlayerName);
+            })
+            .EndSubCommand()
+            .BeginSubCommand("setlives")
+            .WithDescription("Admin: set how many lives a player has left")
+            .RequiresPrivilege(Privilege.controlserver)
+            .WithArgs(parsers.OnlinePlayer("player"), parsers.IntRange("lives", 0, 1000))
+            .HandleWith(args =>
+            {
+                var target = (IServerPlayer)args[0];
+                int lives = (int)args[1];
+                if (LifeRules.UnlimitedLives(api.World))
+                {
+                    return Error(args, "cmd-lives-unlimited");
+                }
+
+                // Zero lives while alive is allowed: the next death makes them a ghost.
+                if (lives > 0 && rebirth.Afterlife.IsGhost(target.PlayerUID))
+                {
+                    rebirth.AdminRevive(target);
+                }
+
+                LifeRules.SetLivesLeft(target, lives);
+                return Ok(args, "cmd-lives-set", target.PlayerName, lives);
             })
             .EndSubCommand();
     }
+
+    /// <summary>Translates for the calling player, or in the server language for the console.</summary>
+    private static string T(TextCommandCallingArgs args, string key, params object[] values)
+    {
+        string fullKey = "temporalrebirth:" + key;
+        return args.Caller.Player is IServerPlayer player
+            ? Lang.GetL(player.LanguageCode, fullKey, values)
+            : Lang.Get(fullKey, values);
+    }
+
+    private static TextCommandResult Ok(TextCommandCallingArgs args, string key, params object[] values) =>
+        TextCommandResult.Success(T(args, key, values));
+
+    private static TextCommandResult Error(TextCommandCallingArgs args, string key, params object[] values) =>
+        TextCommandResult.Error(T(args, key, values));
 }

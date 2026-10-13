@@ -31,6 +31,7 @@ internal class Rebirth
 
     public void OnPlayerNowPlaying(IServerPlayer player)
     {
+        LifeRules.EnsureBaseline(player);
         LifeRules.Sync(player);
 
         Ghost? ghost = afterlife.Get(player.PlayerUID);
@@ -99,15 +100,23 @@ internal class Rebirth
     public void EnforceTethers()
     {
         double radius = config.GhostTetherRadius;
-        if (radius <= 0)
-        {
-            return;
-        }
 
         foreach (IServerPlayer player in api.World.AllOnlinePlayers.Cast<IServerPlayer>())
         {
             Ghost? ghost = afterlife.Get(player.PlayerUID);
-            if (ghost?.DeathPos is not { Length: 3 } dp || player.Entity == null || player.ConnectionState != EnumClientState.Playing)
+            if (ghost == null || player.Entity == null || player.ConnectionState != EnumClientState.Playing)
+            {
+                continue;
+            }
+
+            KeepSolid(player);
+
+            if (ghost.DeathPos is not { Length: 3 } dp)
+            {
+                continue;
+            }
+
+            if (radius <= 0)
             {
                 continue;
             }
@@ -281,7 +290,24 @@ internal class Rebirth
         }
     }
 
-    /// <summary>Goes through the vanilla command so every server system sees the change like an admin switch.</summary>
+    /// <summary>
+    /// Ghosts fly but do not pass through blocks. Spectator mode turns no-clip on and the client can
+    /// toggle it back, so this runs on every tether tick as well.
+    /// </summary>
+    private static void KeepSolid(IServerPlayer player)
+    {
+        if (player.WorldData.CurrentGameMode == EnumGameMode.Spectator && player.WorldData.NoClip)
+        {
+            player.WorldData.NoClip = false;
+            player.BroadcastPlayerData(false);
+        }
+    }
+
+    /// <summary>
+    /// Goes through the vanilla command so every server system sees the change like an admin switch.
+    /// The caller is the player themself: vanilla then skips its "Console Admin has set your gamemode"
+    /// chat line, which is not translated on the server and would clash with our localized messages.
+    /// </summary>
     private void SetGameMode(IServerPlayer player, EnumGameMode mode)
     {
         string modeName = mode == EnumGameMode.Spectator ? "spectator" : "survival";
@@ -293,6 +319,7 @@ internal class Rebirth
                 CallerRole = "admin",
                 CallerPrivileges = ["*"],
                 FromChatGroupId = GlobalConstants.ConsoleGroup,
+                Player = player,
             },
         };
 
@@ -304,6 +331,12 @@ internal class Rebirth
                 if (result.Status != EnumCommandStatus.Success)
                 {
                     api.Logger.Error("[temporalrebirth] Could not set {0} to {1}: {2}", player.PlayerName, modeName, result.StatusMessage);
+                    return;
+                }
+
+                if (mode == EnumGameMode.Spectator)
+                {
+                    KeepSolid(player);
                 }
             }
         );

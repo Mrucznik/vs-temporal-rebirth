@@ -2,6 +2,7 @@ using HarmonyLib;
 using TemporalRebirth.Patches;
 using Vintagestory.API.Client;
 using Vintagestory.API.Common;
+using Vintagestory.API.Config;
 using Vintagestory.API.Server;
 
 namespace TemporalRebirth;
@@ -23,7 +24,8 @@ public sealed class TemporalRebirthModSystem : ModSystem
     public override void StartClientSide(ICoreClientAPI api)
     {
         harmony = new Harmony(HarmonyId + ".client");
-        harmony.CreateClassProcessor(typeof(DeathDialogPatch)).Patch();
+        // Cosmetic only: without it the death screen shows vanilla's life count.
+        TryPatch(api, typeof(DeathDialogPatch));
     }
 
     public override void StartServerSide(ICoreServerAPI api)
@@ -45,8 +47,33 @@ public sealed class TemporalRebirthModSystem : ModSystem
         Commands.Register(api, Rebirth);
 
         harmony = new Harmony(HarmonyId + ".server");
-        harmony.CreateClassProcessor(typeof(RespawnPatch)).Patch();
-        harmony.CreateClassProcessor(typeof(TemporalGearPatch)).Patch();
+        // Without the respawn patch, extra lives would be shown but vanilla would still refuse the respawn.
+        if (!TryPatch(api, typeof(RespawnPatch)))
+        {
+            LifeRules.Disabled = true;
+            api.Logger.Error("[temporalrebirth] Lives, ghosts and rituals are DISABLED until the mod is updated for this game version.");
+        }
+
+        TryPatch(api, typeof(TemporalGearPatch));
+        DownedCompat.WarnIfUntested(api);
+    }
+
+    /// <summary>
+    /// Patches one class, logging instead of crashing when a game update renamed the target.
+    /// Each patch is independent so one broken target does not take the others down.
+    /// </summary>
+    private bool TryPatch(ICoreAPI api, Type patchClass)
+    {
+        try
+        {
+            harmony!.CreateClassProcessor(patchClass).Patch();
+            return true;
+        }
+        catch (Exception e)
+        {
+            api.Logger.Error("[temporalrebirth] Could not apply {0} (game version {1}): {2}", patchClass.Name, GameVersion.ShortGameVersion, e.Message);
+            return false;
+        }
     }
 
     private static RebirthConfig LoadConfig(ICoreServerAPI api)

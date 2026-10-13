@@ -17,7 +17,8 @@ internal static class Epochs
         var save = api.WorldManager.SaveGame;
         int epoch = ReadInt(save.GetData(EpochKey), 0);
         bool wasLimited = ReadInt(save.GetData(LimitedKey), 0) == 1;
-        bool isLimited = !LifeRules.UnlimitedLives(api.World);
+        // The real world setting, not UnlimitedLives(): a temporarily disabled mod must not start a new epoch.
+        bool isLimited = LifeRules.WorldLives(api.World) >= 0;
 
         if (isLimited && !wasLimited)
         {

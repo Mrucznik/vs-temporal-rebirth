@@ -27,7 +27,13 @@ internal static class LifeRules
     internal static int WorldLives(IWorldAccessor world) =>
         world.Config?.GetString("playerlives", "-1").ToInt(-1) ?? -1;
 
-    internal static bool UnlimitedLives(IWorldAccessor world) => WorldLives(world) < 0;
+    /// <summary>
+    /// Set when a critical Harmony patch could not be applied (usually after a game update). The mod then
+    /// behaves as if lives were unlimited, rather than half-working.
+    /// </summary>
+    internal static bool Disabled { get; set; }
+
+    internal static bool UnlimitedLives(IWorldAccessor world) => Disabled || WorldLives(world) < 0;
 
     internal static int GetExtraLives(IServerPlayer player) => player.GetModData(ExtraLivesKey, 0);
 

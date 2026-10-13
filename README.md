@@ -34,6 +34,7 @@ Temporal Lives — both patch the same vanilla code; this mod replaces it.
 | `ReturnMode` | `NextDay` | `NextDay`, `Hours` or `Disabled` |
 | `ReturnAfterHours` | `24` | used by `Hours` |
 | `NextDayResetHour` | `6` | used by `NextDay`, server local time |
+| `GhostNoClip` | `false` | `false`: ghosts fly but collide with blocks; `true`: they pass through walls |
 | `GhostTetherRadius` | `24` | how far a ghost may drift from its death spot; `0` = no limit |
 | `RitualRiftRange` | `8` | how close to a rift the caster must stand, in blocks |
 

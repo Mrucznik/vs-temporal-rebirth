@@ -34,5 +34,9 @@ Vanilla increments `WorldData.Deaths` before raising `PlayerDeath` and opens the
 - Never copy code from Temporal Lives (git.gay/lunardiver/temporallives): it has no license.
   Same idea, own implementation.
 - Downed compatibility is soft (no assembly reference): it reads `downed` and clears
-  `downeddied` / `downedexecuted` watched attributes. Re-check after Downed updates.
+  `downeddied` / `downedexecuted` watched attributes. After a Downed update, decompile it,
+  check those names in `EntityBehaviorDowned` / `DownedModSystem`, then add the version to
+  `DownedCompat.TestedVersions` (the server log warns about untested versions).
+- Every Harmony patch is applied separately (`TryPatch`). If `RespawnPatch` fails after a game
+  update, `LifeRules.Disabled` turns the whole mechanic off instead of leaving it half-working.
 - Commits in English.

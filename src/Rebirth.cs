@@ -81,10 +81,24 @@ internal class Rebirth
             return;
         }
 
+        // A ghost left sitting on a mount or in a boat could keep steering it.
+        entity.TryUnmount();
+
         Vec3d deathPos = entity.Pos.XYZ;
+        if (!config.GhostNoClip)
+        {
+            // Died inside a block (suffocation, sand): a solid ghost would be stuck there.
+            deathPos = SafeSpot.FindAbove(api.World.BlockAccessor, deathPos) ?? deathPos;
+        }
+
         entity.Revive();
         DownedCompat.ClearDeathFlags(entity);
         SetGameMode(player, EnumGameMode.Spectator);
+        if (!entity.Pos.XYZ.Equals(deathPos))
+        {
+            entity.TeleportToDouble(deathPos.X, deathPos.Y, deathPos.Z);
+        }
+
         afterlife.Add(player.PlayerUID, player.PlayerName, deathPos);
 
         player.SendLocalisedMessage(GlobalConstants.GeneralChatGroup, "temporalrebirth:became-ghost");
@@ -109,7 +123,7 @@ internal class Rebirth
                 continue;
             }
 
-            KeepSolid(player);
+            KeepNoClipSetting(player);
 
             if (ghost.DeathPos is not { Length: 3 } dp)
             {
@@ -133,6 +147,14 @@ internal class Rebirth
             Vec3d target = dist > radius * 4
                 ? anchor
                 : anchor.AddCopy((pos.X - anchor.X) / dist * (radius - 1), (pos.Y - anchor.Y) / dist * (radius - 1), (pos.Z - anchor.Z) / dist * (radius - 1));
+
+            // The pull-back line can cross a hill; a solid ghost must not land inside it.
+            if (!config.GhostNoClip && !SafeSpot.IsFree(api.World.BlockAccessor, target))
+            {
+                target = SafeSpot.FindAbove(api.World.BlockAccessor, target)
+                    ?? SafeSpot.FindAbove(api.World.BlockAccessor, anchor)
+                    ?? anchor;
+            }
 
             player.Entity.TeleportToDouble(target.X, target.Y, target.Z);
 
@@ -160,8 +182,11 @@ internal class Rebirth
 
     private void CheckReturn(IServerPlayer player, Ghost ghost)
     {
+        // The world went back to unlimited lives (or the mod disabled itself): nobody should stay a ghost.
+        bool released = LifeRules.UnlimitedLives(api.World);
+
         DateTime? returnAt = ReturnAtUtc(ghost);
-        if (returnAt == null || DateTime.UtcNow < returnAt)
+        if (!released && (returnAt == null || DateTime.UtcNow < returnAt))
         {
             return;
         }
@@ -291,14 +316,14 @@ internal class Rebirth
     }
 
     /// <summary>
-    /// Ghosts fly but do not pass through blocks. Spectator mode turns no-clip on and the client can
-    /// toggle it back, so this runs on every tether tick as well.
+    /// Applies <see cref="RebirthConfig.GhostNoClip"/>. Spectator mode turns no-clip on and the client
+    /// can toggle it, so this also runs on every tether tick.
     /// </summary>
-    private static void KeepSolid(IServerPlayer player)
+    private void KeepNoClipSetting(IServerPlayer player)
     {
-        if (player.WorldData.CurrentGameMode == EnumGameMode.Spectator && player.WorldData.NoClip)
+        if (player.WorldData.CurrentGameMode == EnumGameMode.Spectator && player.WorldData.NoClip != config.GhostNoClip)
         {
-            player.WorldData.NoClip = false;
+            player.WorldData.NoClip = config.GhostNoClip;
             player.BroadcastPlayerData(false);
         }
     }
@@ -336,7 +361,7 @@ internal class Rebirth
 
                 if (mode == EnumGameMode.Spectator)
                 {
-                    KeepSolid(player);
+                    KeepNoClipSetting(player);
                 }
             }
         );

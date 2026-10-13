@@ -16,6 +16,26 @@ internal static class DownedCompat
 {
     private static readonly string[] DownedFlags = ["downeddied", "downedexecuted"];
 
+    /// <summary>Downed versions whose attribute names were checked against this file.</summary>
+    private static readonly string[] TestedVersions = ["2.7.6"];
+
+    /// <summary>
+    /// The attribute names above are Downed internals. Nothing breaks if they change, but the
+    /// "no ritual while downed" guard and the flag cleanup silently stop working, so say so in the log.
+    /// </summary>
+    internal static void WarnIfUntested(ICoreAPI api)
+    {
+        string? version = api.ModLoader.GetMod("downed")?.Info?.Version;
+        if (version != null && !TestedVersions.Contains(version))
+        {
+            api.Logger.Warning(
+                "[temporalrebirth] Downed {0} is installed; compatibility was checked against {1}. If downed players can perform rituals, report it.",
+                version,
+                string.Join(", ", TestedVersions)
+            );
+        }
+    }
+
     internal static void ClearDeathFlags(EntityPlayer entity)
     {
         foreach (string flag in DownedFlags)

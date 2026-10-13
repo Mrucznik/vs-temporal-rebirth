@@ -39,8 +39,8 @@ Temporal Lives — both patch the same vanilla code; this mod replaces it.
 | `RitualRiftRange` | `8` | how close to a rift the caster must stand, in blocks |
 | `RitualReviveAt` | `Caster` | where a ritual brings the ghost back: `Caster` (next to the friend — can be used as a teleport), `DeathSpot` or `Spawn` |
 | `RitualCooldownHours` | `0` | hours before the same player can be revived by a ritual again; `0` = no limit |
-| `ReturnHealthPercent` | `100` | health after coming back (ritual or next day), % of max |
-| `ReturnSatietyPercent` | `100` | satiety after coming back, % of max |
+| `ReturnHealthPercent` | `100` | caps health after coming back (ritual or next day), % of max; `100` = vanilla (full) |
+| `ReturnSatietyPercent` | `100` | caps satiety after coming back, % of max; `100` = vanilla (50% satiety, halved nutrition) |
 
 Lives left = world `playerlives` + extra lives − vanilla death counter. With unlimited lives
 (`playerlives = -1`) the mod does nothing.

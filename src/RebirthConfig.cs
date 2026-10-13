@@ -61,9 +61,15 @@ public class RebirthConfig
     /// <summary>Hours before the same player can be revived by a ritual again. 0 = no limit.</summary>
     public double RitualCooldownHours { get; set; } = 0;
 
-    /// <summary>Health after coming back (ritual or natural return), in percent of max. 100 = full.</summary>
+    /// <summary>
+    /// Caps health after coming back (ritual or natural return), in percent of max. Only lowers.
+    /// 100 = vanilla (full health).
+    /// </summary>
     public float ReturnHealthPercent { get; set; } = 100;
 
-    /// <summary>Satiety after coming back (ritual or natural return), in percent of max. 100 = unchanged.</summary>
+    /// <summary>
+    /// Caps satiety after coming back, in percent of max. Only lowers. 100 = vanilla, which already
+    /// leaves satiety at 50% and halves nutrition levels on revive.
+    /// </summary>
     public float ReturnSatietyPercent { get; set; } = 100;
 }

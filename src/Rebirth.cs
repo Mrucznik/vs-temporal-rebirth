@@ -427,8 +427,13 @@ internal class Rebirth
             return;
         }
 
-        attrs.SetFloat(currentKey, Math.Max(minimum, max * Math.Clamp(percent, 0f, 100f) / 100f));
-        entity.WatchedAttributes.MarkPathDirty(tree);
+        // Only ever lowers: vanilla revive already leaves satiety at 50%, and a cap of e.g. 70% must not raise it.
+        float cap = Math.Max(minimum, max * Math.Clamp(percent, 0f, 100f) / 100f);
+        if (attrs.GetFloat(currentKey, 0f) > cap)
+        {
+            attrs.SetFloat(currentKey, cap);
+            entity.WatchedAttributes.MarkPathDirty(tree);
+        }
     }
 
     /// <summary>

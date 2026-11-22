@@ -2,6 +2,12 @@
 (function (root) {
   const schema = root.TR_SCHEMA;
   const fields = schema.fields;
+  // Words used in the file's comments; i18n.js replaces them. Polish matches what the mod writes.
+  const texts = {
+    preset: "Gotowy preset: ", presetHow: "Wpisz nazwę i zrestartuj serwer. Mod wypełni resztę i wyczyści to pole.",
+    vars: "Można użyć: ", empty: "Puste = tekst moda.", privilege: "Uprawnienie: ",
+    lower: (s) => s.toLowerCase(), noBraces: "tekst bez { }", oneWord: (n) => "jedno słowo, do " + n + " znaków", text: (n) => "tekst do " + n + " znaków",
+  };
   const byKey = Object.fromEntries(fields.map((f) => [f.key, f]));
   /** Sections a preset never touches: lives and administration. */
   const isKept = (f) => Boolean(schema.sections.find((s) => s.id === f.section).keep);
@@ -59,11 +65,11 @@
         // A mistyped {placeholder} would reach players as is.
         if (f.vars && typeof value === "string") {
           const unknown = [...value.matchAll(/\{([^{}]*)\}/g)].filter((m) => !f.vars.includes(m[1]));
-          if (unknown.length) return { ok: false, allowed: f.vars.map((v) => "{" + v + "}").join(", ") || "tekst bez { }" };
+          if (unknown.length) return { ok: false, allowed: f.vars.map((v) => "{" + v + "}").join(", ") || texts.noBraces };
         }
         return typeof value === "string" && value.length <= f.maxLength && (!f.pattern || new RegExp(f.pattern).test(value))
           ? { ok: true, value }
-          : { ok: false, allowed: (f.single ? "jedno słowo, do " + f.maxLength + " znaków" : "tekst do " + f.maxLength + " znaków") };
+          : { ok: false, allowed: (f.single ? texts.oneWord(f.maxLength) : texts.text(f.maxLength)) };
       default: {
         const ok =
           typeof value === "number" &&
@@ -268,17 +274,17 @@
     const lines = ["{"];
     const comment = (indent, f) => {
       if (!withComments) return;
-      const parts = [f.label + ".", f.special && f.special.value + " = " + f.special.label.toLowerCase() + ".", f.help, f.file];
-      if (f.type === "enum") parts.push(f.options.map((o) => o.value + " = " + o.label.toLowerCase()).join(", ") + ".");
-      if (f.builtin) parts.push((f.vars.length ? "Można użyć: " + f.vars.map((v) => "{" + v + "}").join(", ") + ". " : "") + "Puste = tekst moda.");
-      if (f.privilege) parts.push("Uprawnienie: " + f.privilege + ".");
+      const parts = [f.label + ".", f.special && f.special.value + " = " + texts.lower(f.special.label) + ".", f.help, f.file];
+      if (f.type === "enum") parts.push(f.options.map((o) => o.value + " = " + texts.lower(o.label)).join(", ") + ".");
+      if (f.builtin) parts.push((f.vars.length ? texts.vars + f.vars.map((v) => "{" + v + "}").join(", ") + ". " : "") + texts.empty);
+      if (f.privilege) parts.push(texts.privilege + f.privilege + ".");
       lines.push(indent + "// " + parts.filter(Boolean).join(" "));
     };
     lines.push('  "ConfigVersion": ' + schema.version + ",");
     if (withComments) {
       const names = schema.presets.map((p) => p.id).join(", ");
-      lines.push("  // Gotowy preset: " + names + ".");
-      lines.push("  // Wpisz nazwę i zrestartuj serwer. Mod wypełni resztę i wyczyści to pole.");
+      lines.push("  // " + texts.preset + names + ".");
+      lines.push("  // " + texts.presetHow);
     }
     lines.push('  "ApplyPreset": "",');
     const blocks = [...new Set(fields.map((f) => f.key.split(".")[0]))];
@@ -363,6 +369,7 @@
   const rightsCommands = (who, name, keys) => keys.map((k) => "/" + who + " " + name + " privilege grant " + byKey[k].privilege);
 
   root.TR = {
+    texts,
     rightsCommands,
     claimCommands,
     schema, fields, byKey, presetById, defaults, applyPreset, presetValue, parseDuration, formatDuration, validate, validateCustom,

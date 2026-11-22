@@ -41,6 +41,7 @@
     <Compile Remove="test/**" />
     <!-- Keys, ranges, presets and texts shared with the web configurator. -->
     <EmbeddedResource Include="docs/configurator/schema.js" LogicalName="schema.js" />
+    <EmbeddedResource Include="docs/configurator/i18n/comments.json" LogicalName="comments.json" />
   </ItemGroup>
 
   <ItemGroup>

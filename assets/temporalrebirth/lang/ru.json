@@ -52,5 +52,21 @@
   "cmd-point-set": "Место «{0}» отмечено: {1}.",
   "cmd-point-cleared": "Место «{0}» удалено.",
   "cmd-point-none": "не отмечено",
-  "cmd-point-missing": "Для этих настроек нужно отмеченное место. Встаньте там и введите: /rebirth point set {0}"
+  "cmd-point-missing": "Для этих настроек нужно отмеченное место. Встаньте там и введите: /rebirth point set {0}",
+  "cmd-zone-missing": "Группе {0} не открыт ни один участок, поэтому там никого не удержит.",
+  "cmd-zone-start-outside": "Отмеченное место «start» находится вне зоны.",
+  "cmd-downed-missing": "Для этого нужен мод Downed; без него жизни отнимают смерти.",
+  "timer-days": "{0} д {1}",
+  "cmd-import-changes": "Изменено: {0}",
+  "cmd-import-backup": "Прежний файл сохранён в {0}.",
+  "cmd-import-same": "Ничего не изменилось: на сервере уже эти настройки.",
+  "value-builtin": "текст мода",
+  "value-custom": "свой",
+  "special-lives.pergear": "как в мире",
+  "special-lives.max": "без предела",
+  "special-place.radius": "без ограничения",
+  "special-return.lives": "столько, сколько в начале",
+  "special-return.healthpercent": "как в игре",
+  "special-return.satietypercent": "как в игре",
+  "special-ritual.cooldownhours": "без перерыва"
 }

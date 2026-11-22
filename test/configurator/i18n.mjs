@@ -50,4 +50,13 @@ for (const code of ["en", "de", "ru"]) {
   }
   for (const [k, v] of Object.entries(lang("pl"))) assert.equal(placeholders((texts[k] || "").replace(/\{(\d)\}/g, "{a$1}")), placeholders(v.replace(/\{(\d)\}/g, "{a$1}")), code + " " + k);
 }
+// The mod writes its config file with these comments; "--write" regenerates them.
+const comments = {};
+for (const code of ["en", "pl", "de", "ru"]) {
+  TR.localize(code);
+  comments[code] = json(TR.fileComments());
+}
+const made = JSON.stringify(comments, null, 1) + "\n";
+if (process.argv.includes("--write")) fs.writeFileSync(D + "i18n/comments.json", made);
+assert.equal(fs.readFileSync(D + "i18n/comments.json", "utf8"), made, "i18n/comments.json is out of date, run: node test/configurator/i18n.mjs --write");
 console.log("I18N OK");

@@ -19,9 +19,6 @@ internal sealed class ConfigField
         Pattern = (string?)json["pattern"];
         Vars = json["vars"]?.Values<string>().Select(v => v!).ToArray();
         Options = json["options"]?.Select(o => ((string)o["value"]!, (string)o["label"]!)).ToArray() ?? [];
-        Label = (string)json["label"]!;
-        Help = (string?)json["help"];
-        FileNote = (string?)json["file"];
         Special = json["special"] is JObject s ? ((string)s["value"]!, (string)s["label"]!) : null;
         Privilege = (string?)json["privilege"];
         IsMessage = json["builtin"] != null;
@@ -42,9 +39,6 @@ internal sealed class ConfigField
     public string[]? Vars { get; }
 
     public (string Value, string Label)[] Options { get; }
-    public string Label { get; }
-    public string? Help { get; }
-    public string? FileNote { get; }
     public (string Value, string Label)? Special { get; }
     public string? Privilege { get; }
     public bool IsMessage { get; }

@@ -4,7 +4,9 @@ As of 2026-11-23, branch `presets` (not pushed). Released: 0.6.1.
 
 ## Done
 
-- **Web configurator** (`docs/configurator`), Polish only. Not published.
+- **Web configurator** (`docs/configurator`) in en, pl, de, ru, picked with flags. Not published. Polish texts are in `schema.js`,
+  the other languages in `i18n/`. After changing a text run `node test/configurator/i18n.mjs --write`: it names what is missing
+  and regenerates `i18n/comments.json`, the comments the mod writes into its config file (in the server's language).
 - **0.7.0 mechanics** (`0.7.0-dev.1`): config with migration, presets, commands, privileges, forms (Ghost, Spectator, Zombie,
   Player, Ban), places, time, return, rituals, lives limit, custom messages (en, pl).
 - **0.8.0** (`0.8.0-dev.1`): zones, `Lives.Count` Downs and DownsFinalDeath, timer, wisp.
@@ -44,12 +46,12 @@ As of 2026-11-23, branch `presets` (not pushed). Released: 0.6.1.
 3. 0.9.0: echo and leash (decided above). Open question on the leash: in zones (boxes, not a sphere), draw walls at once or
    only stop players at first. Until the echo is there, `Ghost.Visible` WispAndEcho shows the wisp only and the log says so; remove
    `WarnAboutUnfinished` when nothing is unfinished.
-4. Localization (ru, de; schema.js is Polish only); publish the configurator; new ModDB text and README.
+4. German and Russian read by someone who speaks them (terms follow the game's own translations); publish the configurator; new ModDB text and README.
 
 ## Not verified
 
 - Anything drawn on a client: timer, wisp, zombie look, death screen (with a respawn button at 0 lives for Downs),
-  client prediction in zones, configurator file comments in other languages.
+  client prediction in zones.
 - Zombie item limits with real input (bots do not use items; attacks and clicks on creatures are tested as events). Loading of privileges after a restart (saving is verified).
 - Client chat length for long `/rebirth import` codes (the server takes 3000 characters).
 - The in-game recorder (`.cam rec`, AVI) on Linux.

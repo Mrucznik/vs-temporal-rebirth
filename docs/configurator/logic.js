@@ -276,23 +276,27 @@
     return { preset: preset || nearestPreset(state), state, problems, old };
   }
 
+  const commentOf = (f) => {
+    const parts = [f.label + ".", f.special && f.special.value + " = " + texts.lower(f.special.label) + ".", f.help, f.file];
+    if (f.type === "enum") parts.push(f.options.map((o) => o.value + " = " + texts.lower(o.label)).join(", ") + ".");
+    if (f.builtin) parts.push((f.vars.length ? texts.vars + f.vars.map((v) => "{" + v + "}").join(", ") + ". " : "") + texts.empty);
+    if (f.privilege) parts.push(texts.privilege + f.privilege + ".");
+    return parts.filter(Boolean).join(" ");
+  };
+
+  const presetComments = () => [texts.preset + schema.presets.map((p) => p.id).join(", ") + ".", texts.presetHow];
+
+  /** Every comment of the file, for the mod (i18n/comments.json). */
+  const fileComments = () => ({ preset: presetComments(), fields: Object.fromEntries(fields.map((f) => [f.key, commentOf(f)])) });
+
   /** The config file as the mod writes it. */
   function toFile(state, withComments) {
     const lines = ["{"];
     const comment = (indent, f) => {
-      if (!withComments) return;
-      const parts = [f.label + ".", f.special && f.special.value + " = " + texts.lower(f.special.label) + ".", f.help, f.file];
-      if (f.type === "enum") parts.push(f.options.map((o) => o.value + " = " + texts.lower(o.label)).join(", ") + ".");
-      if (f.builtin) parts.push((f.vars.length ? texts.vars + f.vars.map((v) => "{" + v + "}").join(", ") + ". " : "") + texts.empty);
-      if (f.privilege) parts.push(texts.privilege + f.privilege + ".");
-      lines.push(indent + "// " + parts.filter(Boolean).join(" "));
+      if (withComments) lines.push(indent + "// " + commentOf(f));
     };
     lines.push('  "ConfigVersion": ' + schema.version + ",");
-    if (withComments) {
-      const names = schema.presets.map((p) => p.id).join(", ");
-      lines.push("  // " + texts.preset + names + ".");
-      lines.push("  // " + texts.presetHow);
-    }
+    if (withComments) lines.push(...presetComments().map((c) => "  // " + c));
     lines.push('  "ApplyPreset": "",');
     const blocks = [...new Set(fields.map((f) => f.key.split(".")[0]))];
     blocks.forEach((name, bi) => {
@@ -377,6 +381,7 @@
 
   root.TR = {
     texts,
+    fileComments,
     rightsCommands,
     claimCommands,
     schema, fields, byKey, presetById, defaults, applyPreset, presetValue, parseDuration, formatDuration, validate, validateCustom,

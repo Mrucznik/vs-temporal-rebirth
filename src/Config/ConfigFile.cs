@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Text;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using Vintagestory.API.Config;
 
 namespace TemporalRebirth;
 
@@ -221,34 +222,21 @@ internal sealed class ConfigFile(string path, Action<string> warn)
         return made;
     }
 
-    /// <summary>The file with a comment on every setting. Must match toFile in docs/configurator/logic.js.</summary>
+    /// <summary>
+    /// The file with a comment on every setting, in the server's language. Must match toFile in docs/configurator/logic.js.
+    /// </summary>
     internal static string Format(IReadOnlyDictionary<string, JToken> values)
     {
+        ConfigComments comments = ConfigComments.In(Lang.CurrentLocale);
         var text = new StringBuilder("{\n");
-        void Comment(string indent, ConfigField f)
-        {
-            var parts = new List<string?> { f.Label + ".", f.Special is { } s ? s.Value + " = " + s.Label.ToLowerInvariant() + "." : null, f.Help, f.FileNote };
-            if (f.Type == "enum")
-            {
-                parts.Add(string.Join(", ", f.Options.Select(o => o.Value + " = " + o.Label.ToLowerInvariant())) + ".");
-            }
-
-            if (f.IsMessage)
-            {
-                parts.Add((f.Vars!.Length > 0 ? "Można użyć: " + string.Join(", ", f.Vars.Select(v => "{" + v + "}")) + ". " : "") + "Puste = tekst moda.");
-            }
-
-            if (f.Privilege != null)
-            {
-                parts.Add("Uprawnienie: " + f.Privilege + ".");
-            }
-
-            text.Append(indent).Append("// ").Append(string.Join(" ", parts.Where(p => !string.IsNullOrEmpty(p)))).Append('\n');
-        }
+        void Comment(string indent, ConfigField f) => text.Append(indent).Append("// ").Append(comments.Fields[f.Key]).Append('\n');
 
         text.Append("  \"ConfigVersion\": ").Append(ConfigSchema.Version).Append(",\n");
-        text.Append("  // Gotowy preset: ").Append(string.Join(", ", ConfigSchema.Presets.Select(p => p.Id))).Append(".\n");
-        text.Append("  // Wpisz nazwę i zrestartuj serwer. Mod wypełni resztę i wyczyści to pole.\n");
+        foreach (string line in comments.Preset)
+        {
+            text.Append("  // ").Append(line).Append('\n');
+        }
+
         text.Append("  \"ApplyPreset\": \"\",\n");
 
         string[] blocks = ConfigSchema.Fields.Select(f => f.Key.Split('.')[0]).Distinct().ToArray();

@@ -94,7 +94,7 @@
         "Lives.Max": { label: "Limit of lives from gears", help: "Whoever has this many lives gets no more from a gear.", special: ["No limit", "Limit"] },
         "OutOfLives": { label: "What a player becomes after losing the last life", options: { Ghost: ["Ghost", "Flies and watches but touches nothing. Cannot pass through walls."], Spectator: ["Spectator", "Like a ghost, but passes through walls (the game's spectator mode)."], Zombie: ["Zombie", "Walks the world, with restrictions."], Player: ["Normal player", "Plays on normally. Only the place and the time limit them."], Ban: ["Ban", "Cannot join the server."] } },
         "Ghost.Visible": { label: "How others see it", options: { Nobody: ["Not at all"], Wisp: ["Wisp", "A floating ball of light. You cannot tell who it is."], WispAndEcho: ["Wisp and echo", "A wisp, and for a player holding a temporal gear: a rippling silhouette with a name."] } },
-        "Zombie.CanUseItems": { label: "Can use items", help: "Without this it uses nothing in hand, picks nothing up and opens no chests." },
+        "Zombie.CanUseItems": { label: "Can use items", help: "Without this it uses nothing in hand, picks nothing up and opens no chests. It can only hit with bare hands." },
         "Zombie.Glow": { label: "Looks like a zombie", help: "Tinted body and a glow, visible to everyone." },
         "Place.At": { label: "Where the player stays", options: { Body: [body], Spawn: [spawn, "Where the player usually respawns."], Fixed: [fixed, one], Zone: ["Zone", "An area made of land claims. The player cannot leave it; others may enter."] } },
         "Place.Radius": { label: "How far they can go (blocks)", file: "Not used by Zone.", special: ["No limit", "Limit"] },

@@ -52,5 +52,21 @@
   "cmd-point-set": "Ort „{0}“ markiert: {1}.",
   "cmd-point-cleared": "Ort „{0}“ entfernt.",
   "cmd-point-none": "nicht markiert",
-  "cmd-point-missing": "Diese Einstellungen brauchen einen markierten Ort. Stell dich dorthin und gib ein: /rebirth point set {0}"
+  "cmd-point-missing": "Diese Einstellungen brauchen einen markierten Ort. Stell dich dorthin und gib ein: /rebirth point set {0}",
+  "cmd-zone-missing": "Für die Gruppe {0} ist kein Grundstück freigegeben, dort wird also niemand festgehalten.",
+  "cmd-zone-start-outside": "Der markierte Ort „start“ liegt außerhalb der Zone.",
+  "cmd-downed-missing": "Das braucht die Mod Downed; ohne sie kosten Tode Leben.",
+  "timer-days": "{0} T {1}",
+  "cmd-import-changes": "Geändert: {0}",
+  "cmd-import-backup": "Die vorherige Datei liegt in {0}.",
+  "cmd-import-same": "Nichts geändert: Der Server hat diese Einstellungen schon.",
+  "value-builtin": "Text der Mod",
+  "value-custom": "eigener",
+  "special-lives.pergear": "laut Welt",
+  "special-lives.max": "ohne Limit",
+  "special-place.radius": "unbegrenzt",
+  "special-return.lives": "so viele wie zu Beginn",
+  "special-return.healthpercent": "wie im Spiel",
+  "special-return.satietypercent": "wie im Spiel",
+  "special-ritual.cooldownhours": "keine"
 }

@@ -46,8 +46,8 @@ def refused(w, bot):
 # ---------- config file ----------
 
 def node(code):
-    files = "".join(f"vm.runInContext(fs.readFileSync({json.dumps(str(REPO / 'docs/configurator' / f))},'utf8'),c);" for f in ("schema.js", "logic.js"))
-    script = "const fs=require('fs'),vm=require('vm');const w={};const c=vm.createContext({window:w,TextEncoder,TextDecoder,btoa,atob,Uint8Array});" + files + "const T=w.TR;" + code
+    files = "".join(f"vm.runInContext(fs.readFileSync({json.dumps(str(REPO / 'docs/configurator' / f))},'utf8'),c);" for f in ("schema.js", "logic.js", "i18n/en.js", "i18n.js"))
+    script = "const fs=require('fs'),vm=require('vm');const w={};const c=vm.createContext({window:w,TextEncoder,TextDecoder,btoa,atob,Uint8Array});" + files + "const T=w.TR;T.localize('en');" + code
     return subprocess.run(["node", "-e", script], capture_output=True, text=True, check=True).stdout
 
 

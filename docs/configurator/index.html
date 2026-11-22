@@ -1,0 +1,806 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Konfigurator Temporal Rebirth</title>
+<style>
+  /* Layout: presets across the top, settings on the left, a sticky "what players experience" story on the right,
+     installation steps below. One dark look on purpose: it continues the mod's infographic and logo. */
+  :root {
+    color-scheme: dark;
+    --warn-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 22'%3E%3Cpath fill-rule='evenodd' d='M12 0 24 22H0ZM10.9 8v7h2.2V8ZM10.9 16.8v2.2h2.2v-2.2Z'/%3E%3C/svg%3E");
+    --ground: #15120f; --panel: #1d1814; --raised: #28211b; --line: #43382e;
+    --text: #eadfcc; --muted: #b3a48d; --teal: #5fd4c4; --rust: #e0824c; --pale: #b9c7d6; --bad: #f08a7a;
+    --display: "Noto Serif", "Source Serif 4", Georgia, "DejaVu Serif", serif;
+    --body: "Noto Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --mono: "JetBrains Mono", "Noto Sans Mono", ui-monospace, Menlo, Consolas, monospace;
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  body { margin: 0; background: var(--ground); color: var(--text); font: 16px/1.5 var(--body); }
+  .wrap { max-width: 1200px; margin-inline: auto; grid-template-columns: minmax(0, 1fr); padding-block: 20px 64px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 36px; }
+  h1, h2, h3 { font-family: var(--display); margin: 0; text-wrap: balance; }
+  h2 { font-size: 22px; }
+  p { margin: 0; }
+  button, input, textarea { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+  :focus-visible { outline: 2px solid var(--teal); outline-offset: 2px; }
+  code, pre, .key { font-family: var(--mono); }
+
+  header { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: center; justify-content: space-between; }
+  h1 { font-size: 26px; letter-spacing: .12em; color: #d8cbb2; text-transform: uppercase; }
+  h1 span { color: var(--teal); }
+  .lead { max-width: 65ch; color: var(--muted); margin-top: 6px; }
+
+  .seg { display: flex; flex-wrap: wrap; gap: 6px; }
+  .seg button { background: var(--panel); border: 1px solid var(--line); border-radius: 4px; padding: 7px 13px; min-height: 40px; }
+  .seg button:hover { border-color: var(--muted); }
+  .seg button[aria-disabled="true"] { opacity: .45; cursor: not-allowed; border-color: var(--line); }
+  a { color: var(--teal); }
+  .server { display: grid; gap: 4px; justify-items: start; }
+  .server .hint { padding-left: 54px; max-width: none; }
+  .seg button[aria-pressed="true"] { background: #17332f; border-color: var(--teal); color: #d9fff8; }
+
+  .presets { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 14px; }
+  .preset { text-align: left; display: grid; grid-template-columns: 52px minmax(0, 1fr); gap: 4px 14px; align-content: start; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 16px; }
+  .preset svg { width: 52px; height: 52px; grid-row: 1 / span 3; }
+  .preset b { font: 700 19px/1.2 var(--display); }
+  .preset .tag { color: var(--muted); font-size: 14px; }
+  .preset .text { font-size: 15px; margin-top: 4px; }
+  .preset:hover { border-color: var(--muted); }
+  .preset[aria-pressed="true"] { border-color: var(--teal); background: #17221f; box-shadow: inset 0 0 0 1px var(--teal); }
+  .preset .changes { grid-column: 2; color: var(--rust); font-size: 14px; }
+
+  .main { display: grid; grid-template-columns: minmax(0, 1fr) 400px; gap: 28px; align-items: start; }
+  .settings { display: grid; gap: 10px; min-width: 0; }
+  details.section { border: 1px solid var(--line); border-radius: 6px; background: var(--panel); }
+  details.section > summary { list-style: none; cursor: pointer; padding: 14px 16px; display: grid; grid-template-columns: 20px minmax(0, 1fr); gap: 2px 8px; }
+  summary::-webkit-details-marker { display: none; }
+  details.section > summary::before { content: "▸"; color: var(--teal); grid-row: 1; }
+  details.section[open] > summary::before { content: "▾"; }
+  summary h3 { font-size: 18px; }
+  summary .now { grid-column: 2; color: var(--muted); font-size: 15px; }
+  .fields { padding: 4px 16px 18px 44px; display: grid; gap: 22px; }
+  .field { display: grid; gap: 7px; min-width: 0; }
+  .field.bool { grid-template-columns: auto minmax(0, 1fr); column-gap: 12px; align-items: center; }
+  .field.bool .top { grid-column: 2; grid-row: 1; }
+  .field.bool .help { grid-column: 1 / -1; }
+  summary h3 .key { margin-left: 10px; font-weight: 400; }
+  .switch .label { font-weight: 600; }
+  .field .top { display: flex; flex-wrap: wrap; gap: 2px 12px; align-items: baseline; }
+  .field .label { font-weight: 600; }
+  .field .key, summary .key { font-size: 12.5px; color: var(--muted); }
+  .help.sec { margin: 0; color: var(--muted); font-size: 14.5px; max-width: 62ch; }
+  .field .help { color: var(--muted); font-size: 14.5px; max-width: 62ch; }
+  .field .error { color: var(--bad); font-size: 14.5px; }
+  .reset { background: none; border: 0; padding: 0; color: var(--rust); font-size: 14px; text-decoration: underline; }
+  input[type="number"], input[type="time"], input[type="text"], textarea { background: var(--ground); border: 1px solid var(--line); border-radius: 4px; padding: 8px 10px; min-height: 40px; }
+  input[type="number"] { width: 110px; font-variant-numeric: tabular-nums; }
+  textarea { width: 100%; min-height: 72px; resize: vertical; }
+  input[aria-invalid="true"] { border-color: var(--bad); }
+  .tabs { margin: 12px 0 14px; }
+  .fields h4 { margin: 8px 0 -8px; font: 700 16px/1.3 var(--display); color: var(--teal); }
+  .dur { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .switch { display: inline-flex; align-items: center; gap: 10px; cursor: pointer; min-height: 32px; }
+  .switch input { appearance: none; width: 44px; height: 24px; margin: 0; border-radius: 12px; background: var(--raised); border: 1px solid var(--muted); position: relative; cursor: pointer; flex: none; }
+  .switch input::after { content: ""; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; border-radius: 50%; background: var(--muted); }
+  .switch input:checked { background: #17332f; border-color: var(--teal); }
+  .switch input:checked::after { left: 23px; background: var(--teal); }
+
+  .story { position: sticky; top: 16px; border: 1px solid var(--line); border-radius: 6px; background: radial-gradient(ellipse at 50% 20%, #2a221b, transparent 75%), var(--panel); padding: 20px; display: grid; gap: 16px; }
+  .path { display: grid; grid-template-columns: minmax(0, 1fr) 24px minmax(0, 1fr) 24px minmax(0, 1fr); align-items: start; text-align: center; }
+  .path svg { width: 72px; height: 72px; max-width: 100%; }
+  .path .arrow { padding-top: 22px; color: var(--muted); }
+  .path b { display: block; font: 700 15px/1.25 var(--display); margin-top: 6px; }
+  .path small { color: var(--muted); font-size: 13.5px; line-height: 1.35; display: block; }
+  .c-rust { color: var(--rust); } .c-pale { color: var(--pale); } .c-teal { color: var(--teal); }
+  .story dl { margin: 0; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px 14px; }
+  .story dt { color: var(--muted); }
+  .story dd { margin: 0; }
+  .notes { margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; font-size: 14.5px; }
+  .notes li, .help.warning { padding-left: 25px; position: relative; }
+  .notes li { color: var(--muted); }
+  .notes li.warn, .notes li.bad { color: var(--text); }
+  /* Orange triangle with an exclamation mark; red when players cannot come back without help. */
+  .notes li::before, .help.warning::before { content: ""; position: absolute; left: 0; top: 3px; width: 17px; height: 16px; background: var(--rust); -webkit-mask: var(--warn-icon) center / contain no-repeat; mask: var(--warn-icon) center / contain no-repeat; }
+  .notes li.bad::before { background: var(--bad); }
+
+  .btn { background: var(--raised); border: 1px solid var(--line); border-radius: 4px; padding: 9px 15px; min-height: 42px; }
+  .btn:hover { border-color: var(--muted); }
+  .btn.primary { background: var(--teal); border-color: var(--teal); color: #08211d; font-weight: 700; }
+  .btn.primary:hover { background: #82e3d6; }
+  .row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .steps { margin: 14px 0 0; padding: 0; list-style: none; counter-reset: s; display: grid; gap: 18px; }
+  .steps > li { counter-increment: s; display: grid; grid-template-columns: 32px minmax(0, 1fr); gap: 4px 12px; }
+  .steps > li::before { content: counter(s); font: 700 20px/1.3 var(--display); color: var(--teal); }
+  .steps > li > div { display: grid; gap: 9px; min-width: 0; }
+  .cmd { display: flex; min-width: 0; max-width: 720px; border: 1px solid var(--line); border-radius: 4px; background: #0f0d0b; }
+  .cmd code { flex: 1; min-width: 0; overflow-x: auto; white-space: nowrap; padding: 9px 12px; font-size: 14px; }
+  .cmd button { background: var(--raised); border: 0; border-left: 1px solid var(--line); padding: 0 14px; font-size: 14px; }
+  #rights { border-top: 1px solid var(--line); padding-top: 18px; min-width: 0; }
+  .cmds { display: grid; grid-template-columns: minmax(0, 1fr); gap: 9px; min-width: 0; }
+  #rights .field { grid-template-columns: minmax(0, 1fr); }
+  .line { display: grid; grid-template-columns: minmax(0, 420px) minmax(0, 1fr); gap: 4px 16px; align-items: center; }
+  .hint { color: var(--muted); font-size: 14.5px; max-width: 70ch; }
+  .or { border-left: 1px solid var(--line); padding-left: 16px; display: grid; gap: 9px; min-width: 0; }
+  pre { margin: 10px 0 0; overflow: auto; max-height: 520px; background: #0f0d0b; border: 1px solid var(--line); border-radius: 4px; padding: 14px; font-size: 13.5px; line-height: 1.55; }
+  pre .com { color: #93866f; } pre .chg { color: var(--rust); }
+  .plain > summary { cursor: pointer; color: var(--teal); padding-block: 6px; }
+  #importBox { border: 1px solid var(--line); border-radius: 6px; padding: 16px; background: var(--panel); display: grid; gap: 12px; }
+  #importReport ul { margin: 6px 0 0; padding-left: 20px; }
+  #toast { position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--teal); color: #08211d; padding: 9px 18px; border-radius: 4px; font-weight: 600; max-width: calc(100vw - 32px); }
+
+  @media (max-width: 940px) {
+    .main { grid-template-columns: minmax(0, 1fr); }
+    .story { position: static; order: -1; }
+    .presets { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @media (max-width: 620px) {
+    .presets { grid-template-columns: minmax(0, 1fr); }
+    .fields { padding-left: 16px; }
+    .line, .field.bool { grid-template-columns: minmax(0, 1fr); }
+    .field.bool .top { grid-column: 1; grid-row: 2; }
+    h1 { font-size: 20px; }
+  }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <radialGradient id="rift"><stop offset="0" stop-color="#ffd9a8"/><stop offset=".4" stop-color="#c4622d"/><stop offset="1" stop-color="#6e3518" stop-opacity="0"/></radialGradient>
+    <symbol id="i-disc" viewBox="-65 -65 130 130"><circle r="62" fill="#221d18" stroke="#43382e" stroke-width="2"/></symbol>
+    <symbol id="i-grave" viewBox="-65 -65 130 130"><use href="#i-disc" x="-65" y="-65" width="130" height="130"/><g transform="translate(0,6)"><path d="M-26,34 L-26,-4 C-26,-22 -14,-31 0,-31 C14,-31 26,-22 26,-4 L26,34 Z" fill="#3a3129" stroke="#e0824c" stroke-width="3"/><path d="M-12,-2H12M-12,8H12" stroke="#e0824c" stroke-width="3" fill="none"/><path d="M-38,34H38" stroke="#6b5c4c" stroke-width="4" fill="none"/></g></symbol>
+    <symbol id="i-Ghost" viewBox="-65 -65 130 130"><use href="#i-disc" x="-65" y="-65" width="130" height="130"/><circle r="48" fill="none" stroke="#b9c7d6" stroke-opacity=".45" stroke-width="2" stroke-dasharray="5 7"/><g transform="translate(0,8)"><path d="M-30,30 L-30,-8 C-30,-32 -15,-46 0,-46 C15,-46 30,-32 30,-8 L30,30 L20,22 L10,30 L0,22 L-10,30 L-20,22 Z" fill="#cdd8e3"/><circle cx="-10" cy="-14" r="5" fill="#15120f"/><circle cx="10" cy="-14" r="5" fill="#15120f"/></g></symbol>
+    <symbol id="i-Zombie" viewBox="-65 -65 130 130"><use href="#i-disc" x="-65" y="-65" width="130" height="130"/><path d="M-28,-34H28V14H18V34H-18V14H-28Z" fill="#8fae7c"/><path d="M-28,-34H28V-24H8L2,-18L-6,-24H-28Z" fill="#3a3129"/><rect x="-19" y="-12" width="13" height="11" fill="#15120f"/><rect x="7" y="-9" width="11" height="8" fill="#15120f"/><path d="M-14,20H14M-8,15V25M0,15V25M8,15V25" stroke="#15120f" stroke-width="3" fill="none"/><path d="M12,-34L20,-20" stroke="#e0824c" stroke-width="3" fill="none"/></symbol>
+    <symbol id="i-Player" viewBox="-65 -65 130 130"><use href="#i-disc" x="-65" y="-65" width="130" height="130"/><rect x="-14" y="-42" width="28" height="28" fill="#d9b38c"/><path d="M-14,-42H14V-32H-14Z" fill="#6b4a30"/><rect x="-18" y="-12" width="36" height="32" fill="#4f7f78"/><path d="M-30,-12H-20V18H-30ZM20,-12H30V18H20Z" fill="#d9b38c"/><path d="M-16,22H-2V44H-16ZM2,22H16V44H2Z" fill="#5a4a3c"/></symbol>
+    <symbol id="i-Spectator" viewBox="-65 -65 130 130"><use href="#i-disc" x="-65" y="-65" width="130" height="130"/><path d="M-44,0Q0,-46 44,0Q0,46 -44,0Z" fill="none" stroke="#b9c7d6" stroke-width="5"/><circle r="15" fill="#b9c7d6"/><circle r="6" fill="#15120f"/></symbol>
+    <symbol id="i-Exile" viewBox="-65 -65 130 130"><use href="#i-disc" x="-65" y="-65" width="130" height="130"/><circle cx="20" cy="-24" r="11" fill="#d8cbb2"/><path d="M-50,30L-18,-22L2,10L14,-6L46,30Z" fill="#5a4a3c" stroke="#b3a48d" stroke-width="3"/><path d="M-18,-22L-28,-6L-18,-2L-9,-7Z" fill="#eadfcc"/><path d="M-52,30H52" stroke="#6b5c4c" stroke-width="4" fill="none"/></symbol>
+    <symbol id="i-Ban" viewBox="-65 -65 130 130"><use href="#i-disc" x="-65" y="-65" width="130" height="130"/><path d="M-18,-4V-16C-18,-42 18,-42 18,-16V-4" fill="none" stroke="#b3a48d" stroke-width="7"/><rect x="-30" y="-6" width="60" height="44" rx="4" fill="#5a3a26" stroke="#e0824c" stroke-width="3"/><circle cy="12" r="6" fill="#15120f"/><rect x="-3" y="13" width="6" height="14" fill="#15120f"/></symbol>
+    <symbol id="i-back" viewBox="-65 -65 130 130"><use href="#i-disc" x="-65" y="-65" width="130" height="130"/><g fill="#5fd4c4"><circle r="20" fill="none" stroke="#5fd4c4" stroke-width="8"/><circle r="7"/><g id="t"><rect x="-5" y="-35" width="10" height="13" rx="1"/><rect x="-5" y="22" width="10" height="13" rx="1"/><rect x="-35" y="-5" width="13" height="10" rx="1"/><rect x="22" y="-5" width="13" height="10" rx="1"/></g><use href="#t" transform="rotate(45)"/></g></symbol>
+    <symbol id="i-never" viewBox="-65 -65 130 130"><use href="#i-disc" x="-65" y="-65" width="130" height="130"/><path d="M-22,-22L22,22M22,-22L-22,22" stroke="#f08a7a" stroke-width="8" fill="none"/></symbol>
+    <symbol id="i-rift" viewBox="-65 -65 130 130"><use href="#i-disc" x="-65" y="-65" width="130" height="130"/><ellipse rx="34" ry="46" fill="url(#rift)"/><path d="M0,-38L6,-16L-6,-4L6,10L0,38" stroke="#ffe9cf" stroke-width="4" fill="none"/></symbol>
+  </defs>
+</svg>
+
+<div class="wrap">
+  <div>
+    <header>
+      <h1>Temporal <span>Rebirth</span></h1>
+    </header>
+    <p class="lead" data-t="lead"></p>
+  </div>
+
+  <section class="server">
+    <label class="switch" for="hasDowned"><input type="checkbox" id="hasDowned" role="switch"><span class="label" data-t="downedLabel"></span></label>
+    <p class="hint"><span data-t="downedHelp"></span> <a href="https://mods.vintagestory.at/downed" target="_blank" rel="noopener" data-t="downedLink"></a></p>
+  </section>
+
+  <section>
+    <div class="row" style="justify-content: space-between">
+      <h2 data-t="pick"></h2>
+      <button class="btn" id="importToggle" aria-expanded="false" aria-controls="importBox" data-t="importOpen"></button>
+    </div>
+    <div id="importBox" hidden style="margin-top:14px">
+      <label for="importText" data-t="importLabel"></label>
+      <textarea id="importText" spellcheck="false" style="min-height:120px;font-family:var(--mono);font-size:14px"></textarea>
+      <div class="row">
+        <button class="btn primary" id="importGo" data-t="importGo"></button>
+        <label class="btn" for="importFile" data-t="importFile"></label>
+        <input type="file" id="importFile" accept=".json,.txt,application/json" style="position:absolute;width:1px;height:1px;opacity:0">
+      </div>
+      <div id="importReport" role="status"></div>
+    </div>
+    <div class="presets" id="presets"></div>
+  </section>
+
+  <section>
+    <h2 data-t="tune"></h2>
+    <div class="seg tabs" id="tabs" role="group"></div>
+    <div class="main">
+      <div class="settings" id="settings"></div>
+      <aside class="story" aria-live="polite">
+        <h2 data-t="story"></h2>
+        <div class="path" id="path"></div>
+        <dl id="sentences"></dl>
+        <ul class="notes" id="notes"></ul>
+      </aside>
+    </div>
+  </section>
+
+  <section>
+    <h2 data-t="install"></h2>
+    <ol class="steps" id="steps"></ol>
+  </section>
+
+  <details class="plain" id="fileBox">
+    <summary data-t="showFile"></summary>
+    <label class="switch"><input type="checkbox" id="comments" checked><span data-t="withComments"></span></label>
+    <pre id="file" tabindex="0"></pre>
+  </details>
+</div>
+<div id="toast" role="status" hidden></div>
+
+<script src="schema.js"></script>
+<script src="logic.js"></script>
+<script>
+const { schema, fields, byKey } = TR;
+
+const T = {
+  lead: "Konfigurator moda Temporal Rebirth do Vintage Story. Ustawisz tu, co zabiera życia, kim staje się gracz po stracie ostatniego, gdzie i jak długo wtedy przebywa, jak wraca i czy inni mogą go wskrzesić. Na końcu pobierzesz gotowy plik na serwer.",
+  downedLabel: "Na serwerze jest mod Downed", downedHelp: "Odblokowuje ustawienia, w których życia zabiera powalenie.", downedLink: "Strona moda Downed", downedNeeded: "Potrzebny mod Downed. Włącz go u góry strony.",
+  tabSettings: "Ustawienia", tabMessages: (n) => n ? "Komunikaty (własne: " + n + ")" : "Komunikaty", vars: "Można użyć: ", builtin: "tekst moda",
+  pick: "Wybierz styl", tune: "Dopasuj szczegóły", story: "Co czeka gracza", install: "Wgraj na serwer",
+  importOpen: "Wczytaj moje ustawienia", importLabel: "Wklej plik temporalrebirth.json (także z moda 0.6.x), komendę importu albo link.",
+  importGo: "Wczytaj", importFile: "Wybierz plik", showFile: "Pokaż plik", withComments: "Z objaśnieniami",
+  changes: (n) => n === 1 ? "1 zmiana" : n + " " + few(n, "zmiany", "zmian"), reset: (v) => "Przywróć: " + v, on: "włączone", off: "wyłączone",
+  hours: "Godziny", days: "Dni", next: "Do następnego dnia", forever: "Bez limitu",
+  allowed: "Dozwolone: ",
+  died: "Koniec żyć", back: "Powrót", never: "Bez powrotu",
+  copy: "Kopiuj", copied: "Skopiowano", copyFail: "Zaznacz tekst i skopiuj ręcznie", downloaded: "Pobrano plik", loaded: "Wczytano ustawienia",
+  download: "Pobierz temporalrebirth.json", copyLink: "Kopiuj link do ustawień",
+  s1: "Włącz limit żyć w świecie i zrestartuj serwer. Bez limitu mod nic nie robi.", startLives: "Życia na start", startLivesHelp: "To ustawienie świata, nie trafia do pliku. Komenda jest niżej, w „Wgraj na serwer”.", startLivesError: "Dozwolone: 1 … 1000",
+  s2: "Wgraj plik do folderu <code>ModConfig</code> i zrestartuj serwer.", s2or: "Albo wklej w grze jako admin, bez restartu:",
+  s2admin: "Komenda nie zmienia sekcji Administracja, robi to tylko plik.", s2blocked: "Komenda nie zadziała, jeśli zmiana ustawień jest już na serwerze wyłączona.",
+  s3: "Zaznacz miejsca. Stań tam, gdzie mają być, i wpisz:", pstart: "Gdzie gracz przebywa.", pstartZone: "Gdzie gracz się pojawia. Musi leżeć w strefie.", preturn: "Gdzie gracz wraca.", pritual: "Gdzie działa rytuał.",
+  sClaims: "Wyznacz strefę land claimami:",
+  claimNotes: ["Tylko za pierwszym razem.", "", "Stojąc w jednym rogu strefy.", "Stojąc w przeciwległym rogu.", "Cała wysokość, inaczej granica jest też pod ziemią.", "", "Dodaje claim do strefy.", ""],
+  claimMore: "Kolejny claim: to samo bez pierwszej komendy. Rozmiar ogranicza twoja rola na serwerze.",
+  rTitle: "Uprawnienia dla moderatorów",
+  rIntro: "Admini i gracze z controlserver mogą robić wszystko, co włączone wyżej. Innym nadasz wybrane uprawnienia komendą w grze, po instalacji moda.",
+  rWho: "Komu", rRole: "Rola", rPlayer: "Gracz", rRoles: "Np. sumod (moderator survivalu), crmod (moderator creative) albo własna.",
+  rNameRole: "Wpisz nazwę roli, bez spacji.", rNamePlayer: "Wpisz nick gracza.",
+  rRevoke: "Cofniesz to tą samą komendą z revoke zamiast grant.", rOff: "Wszystkie akcje są wyłączone, nie ma czego nadać.",
+  s4: "Sprawdź wynik.",
+  repOld: "Przeliczono ustawienia z moda 0.6.x.", repOk: "Odczytano wszystko.", repProblems: "Odczytano, z wyjątkiem:",
+  unknown: (k) => k + ": nieznane ustawienie, pominięte", badvalue: (k, a) => k + ": zła wartość, została domyślna. Dozwolone: " + a, newer: "Plik pochodzi z nowszej wersji, części ustawień może brakować.",
+  empty: "Najpierw coś wklej.", json: (d) => "To nie jest poprawny JSON. " + d, code: "Nie da się odczytać tego kodu ani linku. Sprawdź, czy skopiowano całość.",
+  w: {
+    onlyRitual: "Czas jest bez limitu, więc gracz wróci dopiero, gdy ktoś odprawi rytuał albo przywróci go admin.",
+    never: "Czas jest bez limitu i żaden rytuał nie pomoże, więc gracza przywróci tylko admin.",
+    onlyRitualNoAdmin: "Czas jest bez limitu, a admini nie mogą przywracać graczy. Zostaje rytuał albo konsola serwera.",
+    neverNoAdmin: "Czas jest bez limitu, rytuał nie pomoże, a admini nie mogą przywracać graczy. Zostaje konsola serwera.",
+    banNearPlayer: "Zbanowanego nie ma na serwerze, więc rytuał przy graczu nie zadziała. Wybierz inne miejsce rytuału.",
+    pointsOff: "Te ustawienia wymagają zaznaczenia miejsca w grze, a masz to wyłączone w Administracji. Zaznacz je, zanim wgrasz plik.",
+    setLivesRevives: "Admini nie mogą przywracać graczy przez /rebirth revive, ale mogą przez /rebirth setlives.",
+    livesOverMax: "Gracz wraca z większą liczbą żyć niż limit, więc zębatki nic mu nie dadzą.",
+    noPenalty: "Zwykły gracz bez limitu odległości prawie nie odczuje straty żyć. Ustaw odległość, wyznaczone miejsce albo strefę.",
+    zoneClaims: "Strefa zadziała dopiero, gdy udostępnisz grupie claimy. Bez nich nikogo nie zatrzyma.",
+    walkAway: "Bez limitu odległości gracz może odejść z wyznaczonego miejsca.",
+    noTime: "W twojej wiadomości o banie nie ma {time}, więc gracz nie dowie się, kiedy wróci.",
+  },
+};
+
+function few(n, a, b) {
+  const t = n % 10, h = n % 100;
+  return Number.isInteger(n) && t >= 2 && t <= 4 && (h < 12 || h > 14) ? a : b;
+}
+
+const store = {
+  get(k) { try { return localStorage.getItem("tr." + k); } catch { return null; } },
+  set(k, v) { try { localStorage.setItem("tr." + k, v); } catch { /* private window */ } },
+};
+
+let preset = "Classic";
+let state = TR.applyPreset("Classic");
+// World setting, shown next to the other lives options but not part of the config.
+let worldLives = Number(store.get("worldLives")) || 3;
+let tab = "settings";
+// Which mods the server has; only unlocks options, not part of the config.
+let hasDowned = store.get("downed") === "1";
+// Helper for handing out game privileges; not part of the config.
+const rights = { who: "role", role: "sumod", player: "" };
+const $ = (id) => document.getElementById(id);
+const el = (tag, props = {}, ...kids) => {
+  const n = document.createElement(tag);
+  for (const [k, v] of Object.entries(props)) {
+    if (k === "class") n.className = v;
+    else if (k.startsWith("on")) n.addEventListener(k.slice(2), v);
+    else if (k in n && k !== "list") n[k] = v;
+    else n.setAttribute(k, v);
+  }
+  n.append(...kids.filter((x) => x != null));
+  return n;
+};
+const icon = (id) => {
+  const s = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  s.setAttribute("viewBox", "0 0 130 130");
+  s.setAttribute("aria-hidden", "true");
+  const u = document.createElementNS("http://www.w3.org/2000/svg", "use");
+  u.setAttribute("href", "#i-" + id);
+  u.setAttribute("width", "130");
+  u.setAttribute("height", "130");
+  s.append(u);
+  return s;
+};
+
+/* ---------- wording ---------- */
+const optionLabel = (key, value) => byKey[key].options.find((o) => o.value === value).label;
+const blocksGen = (n) => n + " " + (n === 1 ? "bloku" : "bloków");
+const livesText = () => {
+  const n = state["Return.Lives"];
+  return n === -1 ? "z pełną pulą żyć" : n === 1 ? "z 1 życiem" : "z " + n + " życiami";
+};
+const ritualWorks = () => TR.ritualWorks(state);
+const capital = (s) => s[0].toUpperCase() + s.slice(1);
+
+function durationText(value = state["Time.Duration"]) {
+  const d = TR.parseDuration(value);
+  if (d.kind === "forever") return "bez limitu czasu";
+  if (d.kind === "next") return "do następnego dnia, " + d.time;
+  if (d.kind === "h") return d.n + " " + (d.n === 1 ? "godzina" : Number.isInteger(d.n) ? few(d.n, "godziny", "godzin") : "godziny");
+  return d.n + " " + (d.n === 1 ? "dzień" : Number.isInteger(d.n) ? "dni" : "dnia");
+}
+
+function placeText() {
+  if (state["Place.At"] === "Zone") return "Strefa grupy „" + state["Place.Group"] + "”";
+  const r = state["Place.Radius"];
+  return optionLabel("Place.At", state["Place.At"]) + (r === 0 ? ", bez limitu odległości" : ", do " + blocksGen(r));
+}
+
+/** [label, text] rows of the story panel. */
+function storyRows() {
+  const form = state.OutOfLives, ban = form === "Ban", walks = form === "Zombie" || form === "Player";
+  const forever = state["Time.Duration"] === "forever";
+  const rows = [];
+
+  if (state["Lives.Count"] !== "Deaths") {
+    rows.push(["Życie traci", "Przy powaleniu. " + (state["Lives.Count"] === "Downs" ? "Niepodniesiony odradza się." : "Śmierć zabiera wszystkie życia.")]);
+  }
+  let who = ban ? "Nie wejdzie na serwer" : optionLabel("OutOfLives", form);
+  if (form === "Ghost") who += { Nobody: ", niewidoczny", Wisp: ", widoczny jako ognik", WispAndEcho: ", widoczny jako ognik, a z zębatką jako sylwetka" }[state["Ghost.Visible"]];
+  if (form === "Zombie") who += state["Zombie.CanUseItems"] ? ", może używać przedmiotów" : ", nie używa przedmiotów";
+  rows.push(["Stan", who]);
+  if (!ban) {
+    const access = walks && state["Place.At"] === "Zone" ? { Traverse: ", niczego nie użyje", Use: ", używa bloków, ale nie buduje", All: ", może budować i niszczyć" }[state["Place.Access"]] : "";
+    rows.push(["Gdzie", placeText() + access]);
+  }
+  rows.push(["Na ile", capital(durationText())]);
+  if (!ban && !forever && state["Time.ShowTimer"]) rows[rows.length - 1][1] += ", licznik na ekranie";
+  if (walks) rows.push(["Gdy zginie", "Wraca w to samo miejsce, a czas leci dalej. Zębatki nic mu nie dają."]);
+
+  if (!forever) {
+    let s = { Spawn: "W punkcie odrodzenia", Body: "W miejscu śmierci", Fixed: "W wyznaczonym miejscu" }[state["Return.At"]] + ", " + livesText() + ".";
+    if (walks && state["Return.DieAtEnd"]) s = "Najpierw ginie. " + s;
+    rows.push(["Powrót", s + (ban ? " Przy następnym wejściu." : " Jeśli jest offline, przy następnym wejściu.")]);
+  } else {
+    rows.push(["Powrót", ritualWorks() ? "Tylko przez rytuał, " + livesText() + "." : "Brak."]);
+  }
+  const health = state["Return.HealthPercent"], satiety = state["Return.SatietyPercent"];
+  if (health !== -1) rows[rows.length - 1][1] += " Zdrowie " + health + "%.";
+  if (satiety !== -1) rows[rows.length - 1][1] += " Sytość " + satiety + "%.";
+
+  if (!ritualWorks()) {
+    rows.push(["Rytuał", state["Ritual.Where"] === "Disabled" ? "Wyłączony" : "Nie zdejmuje bana"]);
+  } else {
+    const r = state["Ritual.Range"], c = state["Ritual.CooldownHours"];
+    const where = { Rift: "Do " + blocksGen(r) + " od wyrwy", NearPlayer: "Do " + blocksGen(r) + " od wskrzeszanego", FixedPlace: "Do " + blocksGen(r) + " od wyznaczonego miejsca", Anywhere: "Wszędzie" }[state["Ritual.Where"]];
+    const at = { Caster: "obok wskrzeszającego", InPlace: ban ? "tam, gdzie był ostatnio" : "tam, gdzie jest", Body: "w miejscu śmierci", Spawn: "w punkcie odrodzenia" }[state["Ritual.ReviveAt"]];
+    rows.push(["Rytuał", where + ". Gracz pojawia się " + at + (ban ? " przy następnym wejściu" : "") + "." + (c > 0 ? " Ponownie po " + c + " godz." : "")]);
+  }
+  return rows;
+}
+
+/** One-line state of a section, shown while it is folded. */
+function sectionNow(id) {
+  switch (id) {
+    case "form": return optionLabel("OutOfLives", state.OutOfLives);
+    case "place": return placeText();
+    case "time": return capital(durationText());
+    case "return": return state["Time.Duration"] === "forever" ? capital(livesText()) : optionLabel("Return.At", state["Return.At"]) + ", " + livesText();
+    case "ritual": return optionLabel("Ritual.Where", state["Ritual.Where"]);
+    case "messages": {
+      const n = fields.filter((f) => f.builtin && state[f.key]).length;
+      return n ? "Własne: " + n : "Wszystkie z moda";
+    }
+    case "lives": {
+      const g = state["Lives.PerGear"], max = state["Lives.Max"];
+      return worldLives + " na start, zębatka: " + (g === -1 ? "według świata" : "+" + g) + ", " + (max === -1 ? "bez limitu" : "limit " + max);
+    }
+    default: {
+      const off = fields.filter((f) => f.section === "admin" && !state[f.key]);
+      return off.length ? "Wyłączone: " + off.map((f) => f.label.toLowerCase()).join(", ") : "Wszystko dozwolone";
+    }
+  }
+}
+
+function valueText(key, v) {
+  const f = byKey[key];
+  if (f.type === "bool") return v ? T.on : T.off;
+  if (f.type === "enum") return optionLabel(key, v);
+  if (f.special && v === f.special.value) return f.special.label;
+  if (f.builtin && !v) return T.builtin;
+  if (f.type === "duration") return durationText(v);
+  const s = String(v);
+  return s.length > 28 ? s.slice(0, 27) + "…" : s;
+}
+
+/* ---------- controls ---------- */
+const syncers = {};
+const domId = (key) => "f-" + key.replace(".", "-");
+
+const locked = (option) => option.requires === "downed" && !hasDowned;
+
+function setDowned(on) {
+  hasDowned = on;
+  store.set("downed", on ? "1" : "0");
+  if (!on) for (const f of TR.needsMod(state, "downed")) state[f.key] = f.default;
+}
+
+/** Loaded settings that use Downed imply the server has it. */
+function adoptDowned() {
+  if (TR.needsMod(state, "downed").length) setDowned(true);
+}
+
+function setValue(key, value) {
+  state[key] = value;
+  refresh();
+}
+
+function control(f) {
+  const id = domId(f.key);
+  if (f.type === "bool") {
+    const input = el("input", { type: "checkbox", id, role: "switch", onchange: () => setValue(f.key, input.checked) });
+    syncers[f.key] = () => { input.checked = state[f.key]; };
+    return [el("label", { class: "switch" }, input, el("span", { class: "label", textContent: f.label }))];
+  }
+  if (f.type === "enum") {
+    const group = el("div", { class: "seg", id, role: "group", "aria-label": f.label });
+    const help = el("p", { class: "help" });
+    for (const o of f.options) {
+      group.append(el("button", { type: "button", id: id + "-" + o.value, "data-v": o.value, textContent: o.label, onclick: () => locked(o) ? toast(T.downedNeeded) : setValue(f.key, o.value) }));
+    }
+    syncers[f.key] = () => {
+      for (const b of group.children) {
+        b.setAttribute("aria-pressed", String(b.dataset.v === state[f.key]));
+        // Not the disabled attribute: a disabled button shows no tooltip and cannot be focused.
+        const off = locked(f.options.find((o) => o.value === b.dataset.v));
+        b.setAttribute("aria-disabled", String(off));
+        b.title = off ? T.downedNeeded : "";
+      }
+      const chosen = f.options.find((o) => o.value === state[f.key]);
+      const skip = Object.entries(chosen.helpUnless || {}).some(([key, values]) => values.includes(state[key]));
+      help.textContent = skip ? "" : chosen.help || "";
+      help.classList.toggle("warning", Boolean(chosen.warn));
+      help.hidden = !help.textContent;
+    };
+    return [group, help];
+  }
+  if (f.type === "duration") return durationControl(f, id);
+  const error = el("p", { class: "error", hidden: true });
+  const isText = f.type === "text";
+  const input = isText
+    ? f.single ? el("input", { id, type: "text", maxLength: f.maxLength, spellcheck: false }) : el("textarea", { id, maxLength: f.maxLength })
+    : el("input", { id, type: "number", min: f.min, max: f.max, step: f.type === "int" ? 1 : "any" });
+  const example = isText && !f.single ? el("p", { class: "help" }) : null;
+  if (f.builtin) input.placeholder = f.builtin;
+  const check = () => {
+    const raw = isText ? input.value.replace(/\r?\n/g, " ") : input.value.trim() === "" ? NaN : Number(input.value);
+    const r = TR.validateCustom(f.key, raw);
+    input.setAttribute("aria-invalid", String(!r.ok));
+    error.hidden = r.ok;
+    error.textContent = r.ok ? "" : T.allowed + r.allowed;
+    if (r.ok) setValue(f.key, r.value);
+  };
+  input.addEventListener("input", check);
+  // Leaving a field with a rejected value restores the last accepted one.
+  const isSpecial = () => Boolean(f.special) && state[f.key] === f.special.value;
+  input.addEventListener("blur", () => { if (!isSpecial()) { input.value = state[f.key]; check(); } });
+  let seg = null, specialHelp = null, last = f.special?.start;
+  if (f.special) {
+    const s = f.special;
+    const button = (v, label, onclick) => el("button", { type: "button", id: id + "-" + v, textContent: label, onclick });
+    seg = el("div", { class: "seg", role: "group", "aria-label": f.label },
+      button("special", s.label, () => setValue(f.key, s.value)),
+      button("custom", s.custom, () => { if (isSpecial()) setValue(f.key, last); input.focus(); }));
+    specialHelp = s.help ? el("p", { class: "help", textContent: s.help }) : null;
+  }
+  syncers[f.key] = () => {
+    if (f.special) {
+      const on = isSpecial();
+      if (!on) last = state[f.key];
+      seg.children[0].setAttribute("aria-pressed", String(on));
+      seg.children[1].setAttribute("aria-pressed", String(!on));
+      input.hidden = on;
+      if (on) error.hidden = true;
+      if (specialHelp) specialHelp.hidden = !on;
+    }
+    if (document.activeElement !== input) {
+      input.value = state[f.key];
+      input.setAttribute("aria-invalid", "false");
+      error.hidden = true;
+    }
+    if (example) example.textContent = f.vars.length ? T.vars + f.vars.map((v) => "{" + v + "}").join(", ") : "";
+    if (example) example.hidden = !f.vars.length;
+  };
+  return seg ? [el("div", { class: "dur" }, seg, input), error, specialHelp] : [input, error, example];
+}
+
+function durationControl(f, id) {
+  const last = { h: 24, d: 7, time: "06:00" };
+  const group = el("div", { class: "seg", id, role: "group", "aria-label": f.label });
+  const num = el("input", { type: "number", id: id + "-n", min: 1, max: 10000, step: "any", "aria-label": f.label });
+  const time = el("input", { type: "time", id: id + "-time", "aria-label": f.label });
+  const error = el("p", { class: "error", hidden: true });
+  const kinds = [["h", T.hours], ["d", T.days], ["next", T.next], ["forever", T.forever]];
+  for (const [k, label] of kinds) {
+    group.append(el("button", { type: "button", id: id + "-" + k, "data-v": k, textContent: label, onclick: () => {
+      const d = k === "next" ? { kind: k, time: last.time } : { kind: k, n: last[k] };
+      setValue(f.key, TR.formatDuration(d));
+    } }));
+  }
+  num.addEventListener("input", () => {
+    const d = TR.parseDuration(state[f.key]);
+    if (d.kind !== "h" && d.kind !== "d") return;
+    const r = TR.validate(f.key, num.value + d.kind);
+    error.hidden = r.ok;
+    error.textContent = r.ok ? "" : T.allowed + "> 0 … 10000";
+    num.setAttribute("aria-invalid", String(!r.ok));
+    if (r.ok) setValue(f.key, r.value);
+  });
+  num.addEventListener("blur", () => { error.hidden = true; num.setAttribute("aria-invalid", "false"); num.value = TR.parseDuration(state[f.key]).n ?? ""; });
+  time.addEventListener("input", () => {
+    if (TR.parseDuration(state[f.key]).kind === "next" && time.value) setValue(f.key, "next day " + time.value.slice(0, 5));
+  });
+  syncers[f.key] = () => {
+    const d = TR.parseDuration(state[f.key]);
+    for (const b of group.children) b.setAttribute("aria-pressed", String(b.dataset.v === d.kind));
+    num.hidden = d.kind !== "h" && d.kind !== "d";
+    time.hidden = d.kind !== "next";
+    if (d.n) last[d.kind] = d.n;
+    if (d.time) last.time = d.time;
+    if (!num.hidden && document.activeElement !== num) num.value = d.n;
+    if (!time.hidden && document.activeElement !== time) time.value = d.time;
+  };
+  return [el("div", { class: "dur" }, group, num, time), error];
+}
+
+/* ---------- building and refreshing ---------- */
+function build() {
+  for (const n of document.querySelectorAll("[data-t]")) n.textContent = T[n.dataset.t];
+
+  $("presets").replaceChildren(...schema.presets.map((p) =>
+    el("button", { type: "button", class: "preset", id: "preset-" + p.id, onclick: () => choosePreset(p.id) },
+      icon(p.icon),
+      el("b", { textContent: p.id }),
+      el("span", { class: "tag", textContent: p.tag }),
+      el("span", { class: "text", textContent: p.text }),
+      el("span", { class: "changes", hidden: true }))));
+
+  const open = Object.fromEntries([...document.querySelectorAll("details.section")].map((d) => [d.id, d.open]));
+  $("settings").replaceChildren(...schema.sections.map((s) => {
+    const list = fields.filter((f) => f.section === s.id);
+    // Choices first, then the options of the chosen mode, in schema order.
+    return el("details", { class: "section", id: "sec-" + s.id, open: open["sec-" + s.id] ?? Boolean(s.open) },
+      el("summary", {}, el("h3", {}, s.label, ...list.filter((f) => f.main).map((f) => el("span", { class: "key", textContent: f.key }))), el("span", { class: "now" })),
+      el("div", { class: "fields" }, s.help ? el("p", { class: "help sec", textContent: s.help }) : "", s.id === "lives" ? startLives() : "", ...list.flatMap((f, i) => [f.group && f.group !== list[i - 1]?.group ? el("h4", { textContent: f.group }) : "",
+        el("div", { class: f.type === "bool" ? "field bool" : "field", "data-key": f.key },
+          el("div", { class: "top" },
+            // The section title already names its main field, and a switch carries its own label.
+            f.main || f.type === "bool" ? "" : f.type === "enum"
+              ? el("span", { class: "label", textContent: f.label })
+              : el("label", { class: "label", htmlFor: domId(f.key), textContent: f.label }),
+            f.main ? "" : el("span", { class: "key", textContent: f.key }),
+            el("button", { type: "button", class: "reset", hidden: true, onclick: () => setValue(f.key, TR.presetValue(preset, f.key)) })),
+          ...control(f),
+          f.help ? el("p", { class: "help own", textContent: f.help }) : "")]),
+        s.id === "admin" ? el("div", { id: "rights" }) : ""));
+  }));
+  refresh();
+}
+
+function startLives() {
+  const error = el("p", { class: "error", hidden: true, textContent: T.startLivesError });
+  const input = el("input", { type: "number", id: "worldLives", min: 1, max: 1000, value: worldLives, oninput: () => {
+    const n = Number(input.value), ok = Number.isInteger(n) && n >= 1 && n <= 1000;
+    error.hidden = ok;
+    input.setAttribute("aria-invalid", String(!ok));
+    if (!ok) return;
+    worldLives = n;
+    store.set("worldLives", n);
+    refresh();
+  }, onblur: () => { input.value = worldLives; error.hidden = true; input.setAttribute("aria-invalid", "false"); } });
+  return el("div", { class: "field" }, el("div", { class: "top" }, el("label", { class: "label", htmlFor: "worldLives", textContent: T.startLives })), input, error, el("p", { class: "help", textContent: T.startLivesHelp }));
+}
+
+function choosePreset(id) {
+  preset = id;
+  state = TR.applyPreset(id, state);
+  refresh();
+}
+
+const cmd = (text) => el("div", { class: "cmd" }, el("code", { textContent: text, tabIndex: 0 }), el("button", { type: "button", textContent: T.copy, onclick: (e) => copy(text, e.target.previousSibling) }));
+
+const line = (text, note) => el("div", { class: "line" }, cmd(text), el("p", { class: "hint", textContent: note }));
+
+function buildSteps() {
+  const code = TR.encode(preset, state);
+  const command = "/rebirth import " + code;
+  const focused = document.activeElement?.id;
+  const s2 = el("p");
+  s2.innerHTML = T.s2;
+  const points = TR.neededPoints(state);
+  const claims = state.OutOfLives !== "Ban" && state["Place.At"] === "Zone";
+  const steps = [
+    el("li", {}, el("div", {}, el("p", { textContent: T.s1 }), cmd("/worldconfig playerlives " + worldLives))),
+    el("li", {}, el("div", {}, s2,
+      el("div", { class: "row" },
+        el("button", { type: "button", class: "btn primary", id: "download", textContent: T.download, onclick: download }),
+        el("button", { type: "button", class: "btn", id: "copyLink", textContent: T.copyLink, onclick: () => copy(location.href.split("#")[0] + "#c=" + code) })),
+      el("div", { class: "or" }, el("p", { textContent: T.s2or }), cmd(command),
+        TR.changedKeys(preset, state).some((k) => TR.isFileOnly(byKey[k])) ? el("p", { class: "hint", textContent: T.s2admin + (state["Admin.AllowEdit"] ? "" : " " + T.s2blocked) }) : ""))),
+  ];
+  if (claims) {
+    const notes = T.claimNotes;
+    steps.push(el("li", {}, el("div", {}, el("p", { textContent: T.sClaims }),
+      ...TR.claimCommands(state["Place.Group"]).map((c, i) => line(c, notes[i])),
+      el("p", { class: "hint", textContent: T.claimMore }))));
+  }
+  if (points.length) {
+    steps.push(el("li", {}, el("div", {}, el("p", { textContent: T.s3 }), ...points.map((p) => line("/rebirth point set " + p, p === "start" && claims ? T.pstartZone : T["p" + p])))));
+  }
+  steps.push(el("li", {}, el("div", {}, el("p", { textContent: T.s4 }), cmd("/rebirth config show"))));
+  $("steps").replaceChildren(...steps);
+  if (["download", "copyLink"].includes(focused)) $(focused).focus();
+}
+
+function buildRights() {
+  // Actions switched off above cannot be handed out.
+  const list = fields.filter((f) => f.privilege && state[f.key]);
+  const title = el("span", { class: "label", textContent: T.rTitle });
+  if (!list.length) return el("div", { class: "field" }, title, el("p", { class: "help", textContent: T.rOff }));
+
+  const out = el("div", { class: "cmds" });
+  const name = el("input", { type: "text", id: "rightsName", maxLength: 40, spellcheck: false, value: rights[rights.who], oninput: () => { rights[rights.who] = name.value.trim(); show(); } });
+  name.setAttribute("aria-label", rights.who === "role" ? T.rRole : T.rPlayer);
+  const show = () => {
+    const ok = /^\S+$/.test(rights[rights.who]);
+    name.setAttribute("aria-invalid", String(!ok));
+    const commands = ok ? TR.rightsCommands(rights.who, rights[rights.who], list.map((f) => f.key)) : [];
+    out.replaceChildren(...(ok
+      ? [...commands.map((c, i) => el("div", {}, el("p", { class: "hint", textContent: list[i].label }), cmd(c))), el("p", { class: "hint", textContent: T.rRevoke })]
+      : [el("p", { class: "error", textContent: rights.who === "role" ? T.rNameRole : T.rNamePlayer })]));
+  };
+  const who = el("div", { class: "seg", role: "group", "aria-label": T.rWho }, ...["role", "player"].map((w) => el("button", { type: "button", id: "rights-" + w, textContent: w === "role" ? T.rRole : T.rPlayer, "aria-pressed": String(rights.who === w), onclick: () => { rights.who = w; $("rights").replaceChildren(buildRights()); $("rights-" + w).focus(); } })));
+  show();
+  return el("div", { class: "field" }, title, el("p", { class: "help", textContent: T.rIntro }),
+    el("div", { class: "row" }, who, name), rights.who === "role" ? el("p", { class: "hint", textContent: T.rRoles }) : "", out);
+}
+
+function refresh() {
+  const changed = TR.changedKeys(preset, state);
+  $("hasDowned").checked = hasDowned;
+  for (const p of schema.presets) {
+    const b = $("preset-" + p.id), on = p.id === preset, c = b.querySelector(".changes");
+    // Hidden options of other modes and server-wide choices do not count as changes to the style.
+    const n = changed.filter((k) => !TR.isKept(byKey[k]) && TR.isVisible(byKey[k], state)).length;
+    b.setAttribute("aria-pressed", String(on));
+    c.hidden = !on || !n;
+    c.textContent = n ? T.changes(n) : "";
+  }
+  for (const f of fields) {
+    const n = document.querySelector('.field[data-key="' + f.key + '"]');
+    n.hidden = !TR.isVisible(f, state);
+    syncers[f.key]();
+    if (f.helpExcept) n.querySelector(".help.own").hidden = f.helpExcept.includes(state[f.key]);
+    const r = n.querySelector(".reset");
+    r.hidden = !changed.includes(f.key);
+    r.parentNode.hidden = r.hidden && Boolean(f.main);
+    r.textContent = r.hidden ? "" : T.reset(valueText(f.key, TR.presetValue(preset, f.key)));
+  }
+  const custom = fields.filter((f) => f.builtin && state[f.key]).length;
+  $("tabs").replaceChildren(...[["settings", T.tabSettings], ["messages", T.tabMessages(custom)]].map(([id, label]) =>
+    el("button", { type: "button", id: "tab-" + id, textContent: label, "aria-pressed": String(tab === id), onclick: () => { tab = id; refresh(); $("tab-" + id).focus(); } })));
+  for (const s of schema.sections) {
+    $("sec-" + s.id).hidden = (s.tab || "settings") !== tab || !fields.some((f) => f.section === s.id && TR.isVisible(f, state));
+    if (!$("sec-" + s.id).hidden) document.querySelector("#sec-" + s.id + " .now").textContent = sectionNow(s.id);
+  }
+
+  const never = state["Time.Duration"] === "forever" && !ritualWorks();
+  const viaRitual = state["Time.Duration"] === "forever" && ritualWorks();
+  const node = (ic, cls, title, sub) => el("div", {}, icon(ic), el("b", { class: cls, textContent: title }), el("small", { textContent: sub }));
+  $("path").replaceChildren(
+    node("grave", "c-rust", T.died, ""),
+    el("div", { class: "arrow", textContent: "→" }),
+    node(state.OutOfLives, "c-pale", optionLabel("OutOfLives", state.OutOfLives), durationText()),
+    el("div", { class: "arrow", textContent: "→" }),
+    never ? node("never", "c-rust", T.never, "")
+      : node(viaRitual ? "rift" : "back", "c-teal", T.back, viaRitual ? optionLabel("Ritual.Where", state["Ritual.Where"]) : livesText()));
+  $("sentences").replaceChildren(...storyRows().flatMap(([k, v]) => [el("dt", { textContent: k }), el("dd", { textContent: v })]));
+  $("notes").replaceChildren(...TR.warnings(state).map((w) => el("li", { class: w.level, textContent: T.w[w.code] })));
+  $("notes").hidden = !$("notes").children.length;
+  $("rights").replaceChildren(buildRights());
+  buildSteps();
+  renderFile(changed);
+  store.set("draft2", TR.encode(preset, state));
+}
+
+function renderFile() {
+  const base = TR.toFile(TR.applyPreset("Classic"), $("comments").checked).split("\n");
+  const lines = TR.toFile(state, $("comments").checked).split("\n");
+  $("file").replaceChildren(...lines.map((line, i) =>
+    el("span", { class: /^\s*\/\//.test(line) ? "com" : line !== base[i] ? "chg" : "", textContent: line + "\n" })));
+}
+
+async function copy(text, node) {
+  try {
+    await navigator.clipboard.writeText(text);
+    toast(T.copied);
+  } catch {
+    if (node) getSelection().selectAllChildren(node);
+    toast(T.copyFail);
+  }
+}
+
+function download() {
+  const a = el("a", { href: URL.createObjectURL(new Blob([TR.toFile(state, $("comments").checked)], { type: "application/json" })), download: "temporalrebirth.json" });
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  toast(T.downloaded);
+}
+
+let toastTimer;
+function toast(text) {
+  $("toast").textContent = text;
+  $("toast").hidden = false;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { $("toast").hidden = true; }, 2200);
+}
+
+function load(text) {
+  const box = $("importReport");
+  let r;
+  try {
+    r = TR.importText(text);
+  } catch (e) {
+    if (!e.code) throw e;
+    const m = T[e.code];
+    box.replaceChildren(el("p", { class: "error", textContent: typeof m === "function" ? m(e.detail) : m }));
+    return false;
+  }
+  preset = r.preset;
+  state = r.state;
+  adoptDowned();
+  refresh();
+  const kids = [];
+  if (r.old) kids.push(el("p", { textContent: T.repOld }));
+  kids.push(el("p", { textContent: r.problems.length ? T.repProblems : T.repOk }));
+  if (r.problems.length) kids.push(el("ul", {}, ...r.problems.map((p) => el("li", { textContent: p.code === "newer" ? T.newer : T[p.code](p.key, p.allowed) }))));
+  box.replaceChildren(...kids);
+  toast(T.loaded);
+  return true;
+}
+
+$("hasDowned").addEventListener("change", (e) => { setDowned(e.target.checked); refresh(); });
+$("importToggle").addEventListener("click", () => {
+  const box = $("importBox");
+  box.hidden = !box.hidden;
+  $("importToggle").setAttribute("aria-expanded", String(!box.hidden));
+  if (!box.hidden) $("importText").focus();
+});
+$("importGo").addEventListener("click", () => load($("importText").value));
+$("importFile").addEventListener("change", async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  $("importText").value = await file.text();
+  load($("importText").value);
+  e.target.value = "";
+});
+$("comments").addEventListener("change", () => renderFile());
+addEventListener("hashchange", () => { if (location.hash.startsWith("#c=")) load(location.hash); });
+
+function restore() {
+  const source = location.hash.startsWith("#c=") ? location.hash : store.get("draft2");
+  if (!source) return;
+  try {
+    const r = TR.importText(source);
+    preset = r.preset;
+    state = r.state;
+    adoptDowned();
+  } catch { /* unreadable draft or link: start from the default */ }
+}
+restore();
+build();
+</script>
+</body>
+</html>

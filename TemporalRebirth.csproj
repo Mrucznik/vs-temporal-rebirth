@@ -33,6 +33,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Test tools are separate projects. -->
+    <Compile Remove="test/**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Content Include="assets/**">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>

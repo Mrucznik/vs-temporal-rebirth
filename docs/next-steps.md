@@ -12,8 +12,9 @@ As of 2026-11-23, branch `presets` (not pushed). Released: 0.6.1.
 - **0.8.0** (`0.8.0-dev.1`): zones, `Lives.Count` Downs and DownsFinalDeath, timer, wisp.
 - **0.9.0** (`0.9.0-dev.1`): protection after rising, leash on the client, echo.
 - **Review of 0.7.0**: 11 faults, each with a test (`test/scenarios/review07.py`) and fixed.
-- **Tests**: 116 scenarios on a real server plus configurator tests. Last full run 115/116; the one that failed (a ghost pulled
-  back onto a hill outside its sphere) is fixed and passes since. A full run takes about 12 min.
+- **Structure and performance**: `Rebirth.cs` split up, Harmony patches reach the server side through
+  `TemporalRebirthModSystem.Server`, how a player comes back is one saved object, less work per frame and tick (not measured).
+- **Tests**: 116 scenarios on a real server plus configurator tests. Last full run 116/116 in about 10 min.
 
 ## Decided by the user
 
@@ -42,10 +43,9 @@ As of 2026-11-23, branch `presets` (not pushed). Released: 0.6.1.
 
 ## Next
 
-1. Branch `refactor` (worktree `../vs-temporal-rebirth-refactor`): Rebirth split up, performance, faster tests. Merge when its
-   full run is green (agreed).
-2. The user looks at what 0.8.0 and 0.9.0 draw (they are logged in): GIFs of the timer, wisp, echo and leash.
-3. German and Russian read by someone who speaks them (terms follow the game's own translations); publish the configurator; new ModDB text and README.
+1. The user looks at what 0.8.0 and 0.9.0 draw (they are logged in): GIFs of the timer, wisp, echo and leash. Frame rate with the
+   leash in view.
+2. German and Russian read by someone who speaks them (terms follow the game's own translations); publish the configurator; new ModDB text and README.
 
 ## Not verified
 

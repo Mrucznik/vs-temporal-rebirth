@@ -14,7 +14,7 @@ Read `docs/next-steps.md` first: what is done, decided, not verified, and next.
   `/var/lib/flatpak/app/at.vintagestory.VintageStory/x86_64/stable/active/files/extra/vintagestory`.
 - `dotnet build -c Release -t:Package` -> `dist/temporalrebirth_<version>.zip`.
 - `test/run.py -k TEXT` runs scenarios on a real local server with headless bots; see `test/README.md`.
-  After a fix run only the affected scenarios; the full run (about 12 min, 4 servers) is for the end of a stage.
+  After a fix run only the affected scenarios; the full run (about 10 min, 4 servers) is for the end of a stage.
 - Decompile vanilla to check patch targets: `ilspycmd -p -o <out> VintagestoryLib.dll` (also `VintagestoryAPI.dll`,
   `Mods/VSSurvivalMod.dll`, `Mods/VSEssentials.dll`).
 
@@ -34,10 +34,13 @@ Read `docs/next-steps.md` first: what is done, decided, not verified, and next.
 | shaders | stage `AfterBlit` over the primary frame buffer, like the game's `RiftRenderer` | `Client/SceneShader.cs` |
 | downs take lives | Downed's watched attribute `downed` | `Downs.cs` |
 | clicks on creatures | `IServerEventAPI.OnPlayerInteractEntity` (not part of `HandInteract`) | `ZombieRules.cs` |
-| game mode switch | `/player <name> gamemode <mode>` run as console | `Rebirth.SetGameMode` |
+| game mode switch | `/player <name> gamemode <mode>` run as console | `PlayerControl.cs` |
 
 Vanilla increments `WorldData.Deaths` a tick after `Die()` (until then `EntityPlayer.DeadNotify` is set), then raises
 `PlayerDeath`, and opens the death screen 2.5 s later; the mod turns the player into something at 1.5 s.
+
+Server side: `Rebirth` is the lifecycle, `Returns` the way back, `Bans`, `Leash` and `Places` (where players go) are asked by it,
+`PlayerControl` moves and changes players. Patches are static and reach all of it through `TemporalRebirthModSystem.Server`.
 
 What clients know comes through watched attributes (`ClientState.cs`), cleared when a player comes back. After a quick
 relog the game keeps the entity but drops listeners on its attributes; register them again on `PlayerNowPlaying`.

@@ -16,6 +16,9 @@
 | `scenarios/review07.py` | faults found by reading 0.7.0 |
 | `scenarios/downed.py` | together with Downed |
 
+Worlds are flat unless a group says `"flat": False` (races in unfinished land need real terrain). Move bots with `Bot.go`, which
+waits until they arrive; fixed waits fail at random under load.
+
 `@known_bug(text, failure)` expects the test to fail with `failure`. When the bug is fixed the run reports `FIXED`: remove the mark.
 
 - `node test/configurator/ui.mjs file://$PWD/docs/configurator/index.html <out dir>` — drives the page in headless Chrome, screenshots included.

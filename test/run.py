@@ -9,7 +9,7 @@ sys.path.insert(0, str(Path(__file__).parent / "scenarios"))
 import harness
 
 # A server takes about 20 s to start, so parts much smaller than this cost more than they save.
-PART_SECONDS = 60
+PART_SECONDS = 120
 PRINT = threading.Lock()
 
 
@@ -85,8 +85,8 @@ def main():
             pieces = parts(path.stem, group, args.k)
             for i, tests in enumerate(pieces):
                 work.append((group["name"] + (f"-{i + 1}" if len(pieces) > 1 else ""), group, tests))
-    for lives in {group.get("world", {}).get("lives", 2) for _, group, _ in work}:
-        harness.template(lives)
+    for lives, flat in {(world.get("lives", 2), world.get("flat", True)) for world in (group.get("world", {}) for _, group, _ in work)}:
+        harness.template(lives, flat)
     # Longest first, so nothing long is left running alone at the end.
     work.sort(key=lambda w: -sum(getattr(t, "seconds", 10) for t in w[2]))
     with ThreadPoolExecutor(args.j) as pool:

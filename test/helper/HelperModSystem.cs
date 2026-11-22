@@ -156,9 +156,10 @@ public sealed class HelperModSystem : ModSystem
         return new { ok = true };
     }
 
-    private static object MoveNear(IServerPlayer p, IServerPlayer other)
+    private object MoveNear(IServerPlayer p, IServerPlayer other)
     {
-        p.Entity.TeleportToDouble(other.Entity.Pos.X + 1, other.Entity.Pos.Y, other.Entity.Pos.Z);
+        string name = p.PlayerName;
+        p.Entity.TeleportToDouble(other.Entity.Pos.X + 1, other.Entity.Pos.Y, other.Entity.Pos.Z, () => api.Logger.Notification("ARRIVED {0}", name));
         return new { ok = true };
     }
 

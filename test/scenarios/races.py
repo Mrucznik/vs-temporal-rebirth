@@ -215,8 +215,7 @@ def server_stops_during_return(w):
 def target_leaves_during_the_ritual(w):
     bot, ola = w.join("Tld", "TldB")
     ghost(w, bot)
-    w.trt("move TldB 0 0 900")
-    time.sleep(4)
+    ola.go(0, 0, 900)
     w.trt("clearrifts")
     w.trt("rift TldB 4")
     ola.gear()
@@ -244,8 +243,7 @@ def target_left_before_the_ritual(w):
 def two_casters_one_ghost(w):
     bot, a, b = w.join("Tco", "TcoA", "TcoB")
     ghost(w, bot)
-    w.trt("near TcoB TcoA")
-    time.sleep(1)
+    b.go_near(a)
     w.trt("clearrifts")
     w.trt("rift TcoA 4")
     used = [a.gear(), b.gear()]
@@ -323,7 +321,7 @@ def crash_after_becoming_a_ghost_and_saving(w):
     bot.quit()
 
 
-GROUPS = [{"name": "relogs", "tests": [relog_at_every_moment_after_death]}, {"name": "races", "tests": [
+GROUPS = [{"name": "relogs", "tests": [relog_at_every_moment_after_death]}, {"name": "races", "world": {"flat": False}, "tests": [
     early_respawn_key_after_last_death, lives_granted_before_becoming_a_ghost,
     revived_by_admin_before_becoming_a_ghost, ritual_before_the_target_is_a_ghost, server_stops_right_after_last_death,
     relog_during_return, return_twice_at_once, admin_revive_during_return, killed_during_return, server_stops_during_return,

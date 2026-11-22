@@ -140,8 +140,7 @@ def zombie_without_items_fights_bare_handed(w):
     last_life(w, ala)
     ala.kill()
     walks(w, ala)
-    w.trt("near ZwfB Zwf")
-    time.sleep(1)
+    ola.go_near(ala)
     got = {f"{item} {button}": w.trt(f"interact Zwf ZwfB {item} {button}")["allowed"] for item in ("none", "game:blade-falx-copper") for button in (0, 2)}
     check(got == {"none 0": True, "none 2": False, "game:blade-falx-copper 0": False, "game:blade-falx-copper 2": False}, str(got))
     check(w.trt("interact ZwfB Zwf game:blade-falx-copper 2")["allowed"], "others are not limited")
@@ -180,8 +179,7 @@ def ghosts_of_0_6_keep_what_they_had(w):
 def ritual_to_the_spawn_point_works_after_a_restart(w):
     settings(w, "Timeout", **{"Ritual.ReviveAt": "Spawn"})
     ala, ola = w.join("Rts", "RtsB")
-    w.trt("move Rts 300 0 0")
-    time.sleep(4)
+    ala.go(300, 0, 0)
     last_life(w, ala)
     ala.kill()
     time.sleep(3)

@@ -9,6 +9,7 @@ DOTNET = os.environ.get("DOTNET") or str(Path.home() / ".dotnet/dotnet")
 WORK = Path(os.environ.get("TRT_WORK") or Path.home() / ".cache/temporalrebirth-test")
 ENV = {**os.environ, "VINTAGE_STORY": str(GAME), "DOTNET_ROOT": str(Path(DOTNET).parent), "DOTNET_CLI_TELEMETRY_OPTOUT": "1"}
 SERVER_CONFIG = "{ VerifyPlayerAuth: false, AdvertiseServer: false, Upnp: false }"
+FLAT_CONFIG = SERVER_CONFIG[:-2] + ", WorldConfig: { WorldType: 'superflat' } }"
 
 
 class Failed(Exception):
@@ -87,15 +88,16 @@ class Process:
 class World:
     """One server run: its config, its bots and helper commands."""
 
-    def __init__(self, name, config=None, lives=2, mods=(), raw_config=None, files=None):
+    def __init__(self, name, config=None, lives=2, mods=(), raw_config=None, files=None, flat=True):
         self.name, self.lives, self.mods = name, lives, mods
         self.dir = WORK / "runs" / name
         shutil.rmtree(self.dir, ignore_errors=True)
         self.dir.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copytree(template(lives), self.dir)
+        source = template(lives, flat)
+        shutil.copytree(source, self.dir)
         # The generated config holds absolute paths (world, mods); a copy must not touch the template.
         server_config = self.dir / "serverconfig.json"
-        server_config.write_text(server_config.read_text(encoding="utf8").replace(str(template(lives)), str(self.dir)), encoding="utf8")
+        server_config.write_text(server_config.read_text(encoding="utf8").replace(str(source), str(self.dir)), encoding="utf8")
         (self.dir / "Mods").mkdir(exist_ok=True)
         for mod in (newest(REPO / "dist", "temporalrebirth"), *(newest(WORK / "mods", m) for m in mods)):
             shutil.copy(mod, self.dir / "Mods")
@@ -246,6 +248,14 @@ class Bot:
         """Teleports and waits until the land there is loaded, which can take seconds under load."""
         since = self.world.server.mark()
         self.world.trt(f"move {self.name} {dx} {dy} {dz}")
+        self._arrive(since)
+
+    def go_near(self, other):
+        since = self.world.server.mark()
+        self.world.trt(f"near {self.name} {other.name}")
+        self._arrive(since)
+
+    def _arrive(self, since):
         if not self.world.server.wait("ARRIVED " + self.name + "$", since, 40):
             raise Failed(self.name + ": the land there did not load")
 
@@ -274,8 +284,8 @@ def check(condition, text):
         raise Failed(text)
 
 
-def start_server(directory, port):
-    server = Process([DOTNET, str(GAME / "VintagestoryServer.dll"), "--dataPath", str(directory), "--ip", "127.0.0.1", "--port", str(port), "--withconfig=" + SERVER_CONFIG], directory / "server.log", cwd=directory)
+def start_server(directory, port, config=SERVER_CONFIG):
+    server = Process([DOTNET, str(GAME / "VintagestoryServer.dll"), "--dataPath", str(directory), "--ip", "127.0.0.1", "--port", str(port), "--withconfig=" + config], directory / "server.log", cwd=directory)
     if not server.wait("Dedicated Server now running", 0, 180):
         server.proc.kill()
         raise Failed("server did not start, see " + str(directory / "server.log"))
@@ -291,14 +301,14 @@ def stop_server(server):
         server.proc.kill()
 
 
-def template(lives):
-    """A generated, peaceful world that every run starts from."""
-    path = WORK / f"template-{lives}"
+def template(lives, flat=True):
+    """A generated, peaceful world that every run starts from. Flat land takes no time to generate."""
+    path = WORK / f"template-{lives}{'-flat' if flat else ''}"
     if (path / "ready").exists():
         return path
     shutil.rmtree(path, ignore_errors=True)
     path.mkdir(parents=True)
-    server = start_server(path, free_port())
+    server = start_server(path, free_port(), FLAT_CONFIG if flat else SERVER_CONFIG)
     for setting in (f"playerlives {lives}", "creatureHostility off", "temporalStorms off"):
         since = server.mark()
         server.send("/worldconfig " + setting)

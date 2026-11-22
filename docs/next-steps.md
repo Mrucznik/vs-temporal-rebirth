@@ -1,14 +1,16 @@
 # State and next steps
 
-As of 2026-11-22, branch `presets` (not pushed). Released: 0.6.1.
+As of 2026-11-23, branch `presets` (not pushed). Released: 0.6.1.
 
 ## Done
 
 - **Web configurator** (`docs/configurator`), Polish only. Not published.
 - **0.7.0 mechanics** (`0.7.0-dev.1`): config with migration, presets, commands, privileges, forms (Ghost, Spectator, Zombie,
   Player, Ban), places, time, return, rituals, lives limit, custom messages (en, pl).
-- **Tests**: 76 scenarios on a real server plus configurator tests. Last full run before 0.7.0 scenarios: 47/47; 0.7.0
-  scenarios pass. Known bugs of 0.6.x are fixed.
+- **0.8.0** (`0.8.0-dev.1`): zones, `Lives.Count` Downs and DownsFinalDeath, timer, wisp.
+- **Review of 0.7.0**: 11 faults, each with a test (`test/scenarios/review07.py`) and fixed.
+- **Tests**: 112 scenarios on a real server plus configurator tests. Last full run 111/112; the one that failed (a fixed wait in
+  the test) passes since, only tests changed after that run. A full run takes about 12 min.
 
 ## Decided by the user
 
@@ -27,26 +29,30 @@ As of 2026-11-22, branch `presets` (not pushed). Released: 0.6.1.
 - Zones: land claims shared with the group `Place.Group`. The mod grants `Place.Access` itself; claims only give the shape.
   Others may enter. No claims = nobody is held, and the log says so.
 - Languages at the end: en, pl, ru, de. Custom messages replace the text for everyone.
+- Zombies without items: no weapons, no interacting with creatures; attacking bare-handed is allowed.
+- `/rebirth import` sets everything (what is not in the code is at its default), lists what changed and names the `.bak`.
 
-## Next: 0.8.0
+- Leash (0.9.0, with the echo): a sphere around the place, for everyone whose movement is limited. Nearly invisible from afar,
+  its wall shows only up close; looks akin to a rift (own shader, not a copy); glows where it is hit. The client stops the
+  player at the edge; the server only checks now and then for being far outside.
 
-1. Zones (`Place.At` Zone): `LandClaim.PositionInside`, `PermittedPlayerGroupIds`, access via `OnTestBlockAccessClaim`;
-   pull back to the last step inside.
-2. `Lives.Count` Downs / DownsFinalDeath: listen to the watched attribute `downed` on the server (checked in Downed 2.9.4).
-   Do not subscribe to Downed's `ShouldPlayerDie`, it changes its flow.
-3. Timer (`HudElement`, client).
-4. Wisp (client): spectators are hidden by `EntityShapeRenderer.isSpectator` only.
-5. Scenarios for each, including relogs and restarts.
+## Next
 
-Then: GIFs for the user to look at; 0.9.0 echo; localization; publish the configurator; new ModDB text. Remove
-`WarnAboutUnfinished` when nothing is unfinished.
+1. Zombies and normal players out of lives cannot be hurt for 5 s after they rise (agreed). In addition to the safe ground and
+   the move to the spawn point after a second quick death.
+2. The user looks at what 0.8.0 draws: GIFs of the timer and the wisp.
+3. 0.9.0: echo and leash (decided above). Open question on the leash: in zones (boxes, not a sphere), draw walls at once or
+   only stop players at first. Until the echo is there, `Ghost.Visible` WispAndEcho shows the wisp only and the log says so; remove
+   `WarnAboutUnfinished` when nothing is unfinished.
+4. Localization (ru, de; schema.js is Polish only); publish the configurator; new ModDB text and README.
 
 ## Not verified
 
-- Anything drawn on a client: zombie look, death screen, configurator file comments in other languages.
-- Zombie item limits (bots do not use items). Loading of privileges after a restart (saving is verified).
+- Anything drawn on a client: timer, wisp, zombie look, death screen (with a respawn button at 0 lives for Downs),
+  client prediction in zones, configurator file comments in other languages.
+- Zombie item limits with real input (bots do not use items; attacks and clicks on creatures are tested as events). Loading of privileges after a restart (saving is verified).
 - Client chat length for long `/rebirth import` codes (the server takes 3000 characters).
-- Whether clients get positions of ghosts; the in-game recorder (`.cam rec`, AVI) on Linux.
+- The in-game recorder (`.cam rec`, AVI) on Linux.
 
 ## Level 3 tests and GIFs
 

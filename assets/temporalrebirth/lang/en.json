@@ -52,5 +52,21 @@
   "cmd-point-set": "Place '{0}' marked at {1}.",
   "cmd-point-cleared": "Place '{0}' cleared.",
   "cmd-point-none": "not marked",
-  "cmd-point-missing": "These settings need a marked place. Stand there and run: /rebirth point set {0}"
+  "cmd-point-missing": "These settings need a marked place. Stand there and run: /rebirth point set {0}",
+  "cmd-zone-missing": "No land claim is shared with the group {0}, so nobody is held there.",
+  "cmd-zone-start-outside": "The marked place 'start' is outside the zone.",
+  "cmd-downed-missing": "This needs the Downed mod; without it deaths take lives.",
+  "timer-days": "{0}d {1}",
+  "cmd-import-changes": "Changed: {0}",
+  "cmd-import-backup": "The previous file is kept as {0}.",
+  "cmd-import-same": "Nothing changed: the server already has these settings.",
+  "value-builtin": "the mod's text",
+  "value-custom": "custom",
+  "special-lives.pergear": "as the world says",
+  "special-lives.max": "no limit",
+  "special-place.radius": "no limit",
+  "special-return.lives": "as many as at the start",
+  "special-return.healthpercent": "as in the game",
+  "special-return.satietypercent": "as in the game",
+  "special-ritual.cooldownhours": "none"
 }

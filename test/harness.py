@@ -242,6 +242,13 @@ class Bot:
                 raise Failed(f"{self.name}: wanted {want}, have { {k: now[k] for k in want} }")
             time.sleep(0.4)
 
+    def go(self, dx, dy, dz):
+        """Teleports and waits until the land there is loaded, which can take seconds under load."""
+        since = self.world.server.mark()
+        self.world.trt(f"move {self.name} {dx} {dy} {dz}")
+        if not self.world.server.wait("ARRIVED " + self.name + "$", since, 40):
+            raise Failed(self.name + ": the land there did not load")
+
     def lose_all_lives(self):
         """Dies until no life is left, respawning in between."""
         while True:

@@ -52,9 +52,11 @@ def ghost_is_tethered(w):
     w.trt("move Git 60 10 0")
     time.sleep(3)
     check(distance(ala.state(), home) < 26, "pulled back within 24 blocks")
-    w.trt("move Git 400 20 0")
-    time.sleep(4)
-    check(distance(ala.state(), home) < 26, "pulled back from far away")
+    ala.go(400, 20, 0)
+    end = time.monotonic() + 3
+    while distance(ala.state(), home) > 26:
+        check(time.monotonic() < end, "pulled back from far away")
+        time.sleep(0.2)
     ala.quit()
 
 

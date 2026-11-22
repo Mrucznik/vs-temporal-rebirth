@@ -43,6 +43,12 @@ internal sealed class LostPlayer
     /// <summary>On the way to <see cref="Start"/>, not yet let loose there.</summary>
     public bool Travelling { get; set; }
 
+    /// <summary>When a walking player was last let loose; dying again right after means the place is deadly.</summary>
+    public DateTime? LandedAtUtc { get; set; }
+
+    /// <summary>Moved to their spawn point, because where they died is no place to be.</summary>
+    public bool AtSpawn { get; set; }
+
     public ReturnReason Reason { get; set; }
 
     /// <summary>Who helped, for the message.</summary>
@@ -50,6 +56,9 @@ internal sealed class LostPlayer
 
     /// <summary>Where to; null means wherever the player is.</summary>
     public double[]? Destination { get; set; }
+
+    /// <summary>To their spawn point instead, which is only known while they are online.</summary>
+    public bool ToSpawn { get; set; }
 
     /// <summary>Lives to come back with, when an admin chose a number.</summary>
     public int? Lives { get; set; }
@@ -91,6 +100,17 @@ internal class Afterlife(ICoreServerAPI api)
         {
             players[uid].Name = api.PlayerData.GetPlayerDataByUid(uid)?.LastKnownPlayername ?? uid;
         }
+    }
+
+    /// <summary>Entries of 0.6.x have no settings of their own; from now on they keep <paramref name="settings"/>.</summary>
+    public void PinOldEntries(string settings)
+    {
+        foreach (LostPlayer lost in players.Values)
+        {
+            lost.Settings ??= settings;
+        }
+
+        Save();
     }
 
     public void Save()

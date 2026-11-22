@@ -117,7 +117,7 @@
   }
 
   const OLD_KEYS = [
-    "ReturnMode", "ReturnAfterHours", "NextDayResetHour", "GhostNoClip", "GhostTetherRadius",
+    "LivesPerGear", "ReturnMode", "ReturnAfterHours", "NextDayResetHour", "GhostNoClip", "GhostTetherRadius",
     "RitualRiftRange", "RitualReviveAt", "RitualCooldownHours", "ReturnHealthPercent", "ReturnSatietyPercent",
   ];
 
@@ -125,24 +125,31 @@
   function migrateOld(old) {
     const out = {};
     const copy = (from, to) => { if (from in old) out[to] = old[from]; };
+    // 0.6.x took any number, e.g. a negative distance for no limit.
+    const copyWithin = (from, to) => {
+      copy(from, to);
+      if (typeof old[from] === "number") out[to] = Math.min(byKey[to].max, Math.max(byKey[to].min, old[from]));
+    };
     copy("LivesPerGear", "Lives.PerGear");
     // A ghost that passes through walls is what the new config calls a spectator.
     if (old.GhostNoClip === true) out.OutOfLives = "Spectator";
-    copy("GhostTetherRadius", "Place.Radius");
+    copyWithin("GhostTetherRadius", "Place.Radius");
     // Neither existed in 0.6.x; an update must not change what players see.
     out["Ghost.Visible"] = "Nobody";
     out["Time.ShowTimer"] = false;
-    copy("RitualRiftRange", "Ritual.Range");
-    copy("RitualCooldownHours", "Ritual.CooldownHours");
+    // 0 was the only way to turn rituals off in 0.6.x.
+    if (old.RitualRiftRange <= 0) out["Ritual.Where"] = "Disabled";
+    else copyWithin("RitualRiftRange", "Ritual.Range");
+    copyWithin("RitualCooldownHours", "Ritual.CooldownHours");
     // Old percentages only lowered what the game gives (full health, 50% satiety); new ones set it exactly.
     if (old.ReturnHealthPercent < 100) out["Return.HealthPercent"] = Math.max(1, old.ReturnHealthPercent);
-    if (old.ReturnSatietyPercent < 50) out["Return.SatietyPercent"] = old.ReturnSatietyPercent;
+    if (old.ReturnSatietyPercent < 50) out["Return.SatietyPercent"] = Math.max(0, old.ReturnSatietyPercent);
     if ("RitualReviveAt" in old) out["Ritual.ReviveAt"] = old.RitualReviveAt === "DeathSpot" ? "Body" : old.RitualReviveAt;
     const hour = Math.min(23, Math.max(0, Number(old.NextDayResetHour ?? 6)));
     const mode = old.ReturnMode ?? "NextDay";
     out["Time.Duration"] =
       mode === "Disabled" ? "forever"
-      : mode === "Hours" ? (old.ReturnAfterHours ?? 24) + "h"
+      : mode === "Hours" ? Math.min(10000, Math.max(0.01, old.ReturnAfterHours ?? 24)) + "h"
       : "next day " + String(hour).padStart(2, "0") + ":00";
     // 0.6.x stored decimals ("24.0"); the new fields are whole numbers.
     for (const key of Object.keys(out)) {
@@ -212,7 +219,7 @@
       old = OLD_KEYS.some((k) => k in obj) && !("OutOfLives" in obj);
       if (old) {
         for (const k of Object.keys(obj)) {
-          if (!OLD_KEYS.includes(k) && k !== "LivesPerGear") problems.push({ code: "unknown", key: k });
+          if (!OLD_KEYS.includes(k)) problems.push({ code: "unknown", key: k });
         }
         values = migrateOld(obj);
       } else {

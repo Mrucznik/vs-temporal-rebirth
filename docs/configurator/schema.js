@@ -48,7 +48,7 @@ window.TR_SCHEMA = {
       ] },
     { "key": "Zombie.CanUseItems", "section": "form", "type": "bool", "default": false, "when": { "OutOfLives": ["Zombie"] },
       "label": "Może używać przedmiotów",
-      "help": "Bez tego nie użyje niczego z ręki, nic nie podniesie i nie otworzy skrzyni." },
+      "help": "Bez tego nie użyje niczego z ręki, nic nie podniesie i nie otworzy skrzyni. Bić może tylko gołą ręką." },
     { "key": "Zombie.Glow", "section": "form", "type": "bool", "default": true, "when": { "OutOfLives": ["Zombie"] },
       "label": "Wygląda jak zombie",
       "help": "Zabarwione ciało i poświata, widoczne dla wszystkich." },

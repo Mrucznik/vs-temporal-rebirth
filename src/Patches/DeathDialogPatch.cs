@@ -48,6 +48,12 @@ internal static class DeathDialogPatch
         }
 
         lives = attrs.GetInt(LifeRules.LivesLeftAttr);
+        if (lives == 0 && attrs.GetBool(LifeRules.MayRespawnAttr))
+        {
+            // Without lives but not for good; the dialog only offers a respawn when the count is not zero.
+            lives = -1;
+        }
+
         return true;
     }
 }

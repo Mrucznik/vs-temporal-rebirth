@@ -52,5 +52,21 @@
   "cmd-point-set": "Zaznaczono miejsce „{0}”: {1}.",
   "cmd-point-cleared": "Usunięto miejsce „{0}”.",
   "cmd-point-none": "nie zaznaczono",
-  "cmd-point-missing": "Te ustawienia wymagają zaznaczonego miejsca. Stań tam i wpisz: /rebirth point set {0}"
+  "cmd-point-missing": "Te ustawienia wymagają zaznaczonego miejsca. Stań tam i wpisz: /rebirth point set {0}",
+  "cmd-zone-missing": "Grupie {0} nie udostępniono żadnego claima, więc strefa nikogo nie zatrzyma.",
+  "cmd-zone-start-outside": "Zaznaczone miejsce „start” leży poza strefą.",
+  "cmd-downed-missing": "To wymaga moda Downed, bez niego życia zabierają śmierci.",
+  "timer-days": "{0}d {1}",
+  "cmd-import-changes": "Zmieniono: {0}",
+  "cmd-import-backup": "Poprzedni plik jest w {0}.",
+  "cmd-import-same": "Nic się nie zmieniło: serwer ma już te ustawienia.",
+  "value-builtin": "tekst moda",
+  "value-custom": "własny",
+  "special-lives.pergear": "według świata",
+  "special-lives.max": "bez limitu",
+  "special-place.radius": "bez limitu",
+  "special-return.lives": "tyle, ile na start",
+  "special-return.healthpercent": "jak w grze",
+  "special-return.satietypercent": "jak w grze",
+  "special-ritual.cooldownhours": "bez przerwy"
 }

@@ -5,6 +5,8 @@ namespace TemporalRebirth;
 
 internal enum Form { Ghost, Spectator, Zombie, Player, Ban }
 
+internal enum GhostVisible { Nobody, Wisp, WispAndEcho }
+
 internal enum Place { Body, Spawn, Fixed, Zone }
 
 internal enum RitualPlace { Disabled, Rift, NearPlayer, FixedPlace, Anywhere }
@@ -23,16 +25,20 @@ internal class RebirthConfig(IReadOnlyDictionary<string, JToken> values)
 
     public int LivesPerGear => Int("Lives.PerGear");
     public int LivesMax => Int("Lives.Max");
-    public string LivesCount => Text("Lives.Count");
+    public LivesCount LivesCount => Choice<LivesCount>("Lives.Count");
 
     public Form Form => Choice<Form>("OutOfLives");
+    public GhostVisible GhostVisible => Choice<GhostVisible>("Ghost.Visible");
     public bool ZombieCanUseItems => Flag("Zombie.CanUseItems");
     public bool ZombieGlow => Flag("Zombie.Glow");
 
     public Place PlaceAt => Choice<Place>("Place.At");
     public int Radius => Int("Place.Radius");
+    public string PlaceGroup => Text("Place.Group");
+    public ZoneAccess PlaceAccess => Choice<ZoneAccess>("Place.Access");
 
     public Duration Duration => Duration.TryParse(Text("Time.Duration"), out Duration d) ? d : throw new InvalidOperationException("validated on load");
+    public bool ShowTimer => Flag("Time.ShowTimer");
 
     public Place ReturnAt => Choice<Place>("Return.At");
     public int ReturnLives => Int("Return.Lives");
@@ -56,7 +62,7 @@ internal class RebirthConfig(IReadOnlyDictionary<string, JToken> values)
     /// What one player's time out of lives is bound to: later changes of the settings only affect later deaths.
     /// </summary>
     public string Snapshot() =>
-        JsonConvert.SerializeObject(Values.Where(v => v.Key is "OutOfLives" || v.Key.Split('.')[0] is "Zombie" or "Place" or "Time" or "Return").ToDictionary(v => v.Key, v => v.Value));
+        JsonConvert.SerializeObject(Values.Where(v => v.Key is "OutOfLives" || v.Key.Split('.')[0] is "Ghost" or "Zombie" or "Place" or "Time" or "Return").ToDictionary(v => v.Key, v => v.Value));
 
     /// <summary>These settings with a snapshot on top.</summary>
     public RebirthConfig With(string? snapshot)

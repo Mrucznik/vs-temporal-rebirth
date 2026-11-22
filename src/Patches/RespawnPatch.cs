@@ -1,5 +1,6 @@
 using HarmonyLib;
 using Vintagestory.API.Config;
+using Vintagestory.API.Server;
 using Vintagestory.Server;
 
 namespace TemporalRebirth.Patches;
@@ -11,6 +12,10 @@ namespace TemporalRebirth.Patches;
 [HarmonyPatch(typeof(ServerSystemEntitySimulation), "HandleSpecialKey")]
 internal static class RespawnPatch
 {
+    private static bool IsAllowed(IServerPlayer player) =>
+        TemporalRebirthModSystem.Rebirth?.Afterlife.Contains(player.PlayerUID) != true
+        && (LifeRules.GetLivesLeft(player) != 0 || LifeRules.MayRespawn(player.Entity));
+
     private static bool Prefix(ServerMain ___server, ConnectedClient client)
     {
         // Between dying and the game counting the death, the life just lost still looks available.
@@ -19,7 +24,7 @@ internal static class RespawnPatch
             return false;
         }
 
-        if (LifeRules.UnlimitedLives(___server) || (LifeRules.GetLivesLeft(client.Player) != 0 && TemporalRebirthModSystem.Rebirth?.Afterlife.Contains(client.Player.PlayerUID) != true))
+        if (LifeRules.UnlimitedLives(___server) || IsAllowed(client.Player))
         {
             ServerMain.Logger.VerboseDebug("Received respawn request from {0}", client.PlayerName);
             ___server.EventManager.TriggerPlayerRespawn(client.Player);

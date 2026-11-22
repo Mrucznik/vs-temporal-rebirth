@@ -21,6 +21,12 @@ internal static class LifeRules
     /// <summary>Synced to the client so the death screen shows the real count.</summary>
     internal const string LivesLeftAttr = "temporalrebirthLivesLeft";
 
+    /// <summary>
+    /// Dead with no lives left, but it was not the last death (Lives.Count Downs): respawning is allowed. Synced for the
+    /// death screen and saved with the player, so it also survives a relog on that screen.
+    /// </summary>
+    internal const string MayRespawnAttr = "temporalrebirthMayRespawn";
+
     /// <summary>Set by the mod system from the savegame on startup.</summary>
     internal static int CurrentEpoch { get; set; }
 
@@ -54,7 +60,7 @@ internal static class LifeRules
         Math.Max(0, player.WorldData.Deaths - player.GetModData(DeathsBaselineKey, 0));
 
     /// <summary>Can be negative when a player died more often than they had lives.</summary>
-    private static int RawLivesLeft(IServerPlayer player) =>
+    internal static int RawLivesLeft(IServerPlayer player) =>
         WorldLives(player.Entity.World) + GetExtraLives(player) - CountedDeaths(player);
 
     /// <summary>-1 means unlimited.</summary>
@@ -86,6 +92,21 @@ internal static class LifeRules
         if (!UnlimitedLives(player.Entity.World) && RawLivesLeft(player) < 1)
         {
             SetLivesLeft(player, 1);
+        }
+    }
+
+    internal static bool MayRespawn(EntityPlayer entity) => entity.WatchedAttributes.GetBool(MayRespawnAttr);
+
+    internal static void SetMayRespawn(EntityPlayer entity, bool may)
+    {
+        if (may)
+        {
+            entity.WatchedAttributes.SetBool(MayRespawnAttr, true);
+        }
+        else if (entity.WatchedAttributes.HasAttribute(MayRespawnAttr))
+        {
+            entity.WatchedAttributes.RemoveAttribute(MayRespawnAttr);
+            entity.WatchedAttributes.MarkPathDirty(MayRespawnAttr);
         }
     }
 

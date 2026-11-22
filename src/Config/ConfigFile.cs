@@ -13,9 +13,12 @@ internal sealed class ConfigFile(string path, Action<string> warn)
 {
     private static readonly string[] OldKeys =
     [
-        "ReturnMode", "ReturnAfterHours", "NextDayResetHour", "GhostNoClip", "GhostTetherRadius",
+        "LivesPerGear", "ReturnMode", "ReturnAfterHours", "NextDayResetHour", "GhostNoClip", "GhostTetherRadius",
         "RitualRiftRange", "RitualReviveAt", "RitualCooldownHours", "ReturnHealthPercent", "ReturnSatietyPercent",
     ];
+
+    /// <summary>Where the previous file is kept.</summary>
+    public string BackupName => Path.GetFileName(path) + ".bak";
 
     public RebirthConfig Load()
     {
@@ -150,6 +153,16 @@ internal sealed class ConfigFile(string path, Action<string> warn)
 
         double? Number(string key) => old[key]?.Type is JTokenType.Integer or JTokenType.Float ? (double)old[key]! : null;
 
+        // 0.6.x took any number, e.g. a negative distance for no limit.
+        void CopyWithin(string from, string to)
+        {
+            Copy(from, to);
+            if (Number(from) is { } n)
+            {
+                made[to] = Math.Clamp(n, ConfigSchema.ByKey[to].Min, ConfigSchema.ByKey[to].Max);
+            }
+        }
+
         Copy("LivesPerGear", "Lives.PerGear");
         if (old["GhostNoClip"]?.Type == JTokenType.Boolean && (bool)old["GhostNoClip"]!)
         {
@@ -157,12 +170,21 @@ internal sealed class ConfigFile(string path, Action<string> warn)
             made["OutOfLives"] = "Spectator";
         }
 
-        Copy("GhostTetherRadius", "Place.Radius");
+        CopyWithin("GhostTetherRadius", "Place.Radius");
         // Neither existed in 0.6.x; an update must not change what players see.
         made["Ghost.Visible"] = "Nobody";
         made["Time.ShowTimer"] = false;
-        Copy("RitualRiftRange", "Ritual.Range");
-        Copy("RitualCooldownHours", "Ritual.CooldownHours");
+        if (Number("RitualRiftRange") <= 0)
+        {
+            // The only way to turn rituals off in 0.6.x.
+            made["Ritual.Where"] = "Disabled";
+        }
+        else
+        {
+            CopyWithin("RitualRiftRange", "Ritual.Range");
+        }
+
+        CopyWithin("RitualCooldownHours", "Ritual.CooldownHours");
         // Old percentages only lowered what the game gives (full health, 50% satiety); new ones set it exactly.
         if (Number("ReturnHealthPercent") is { } health and < 100)
         {
@@ -171,7 +193,7 @@ internal sealed class ConfigFile(string path, Action<string> warn)
 
         if (Number("ReturnSatietyPercent") is { } satiety and < 50)
         {
-            made["Return.SatietyPercent"] = satiety;
+            made["Return.SatietyPercent"] = Math.Max(0, satiety);
         }
 
         if (old["RitualReviveAt"] is { } reviveAt)
@@ -183,7 +205,7 @@ internal sealed class ConfigFile(string path, Action<string> warn)
         made["Time.Duration"] = (string?)old["ReturnMode"] switch
         {
             "Disabled" => "forever",
-            "Hours" => (Number("ReturnAfterHours") ?? 24).ToString(CultureInfo.InvariantCulture) + "h",
+            "Hours" => Math.Clamp(Number("ReturnAfterHours") ?? 24, 0.01, 10000).ToString(CultureInfo.InvariantCulture) + "h",
             _ => $"next day {hour:00}:00",
         };
 
@@ -192,7 +214,7 @@ internal sealed class ConfigFile(string path, Action<string> warn)
         {
             if (ConfigSchema.ByKey[key].Type == "int" && made[key].Type == JTokenType.Float)
             {
-                made[key] = (long)Math.Round((double)made[key]);
+                made[key] = (long)Math.Round((double)made[key], MidpointRounding.AwayFromZero);
             }
         }
 

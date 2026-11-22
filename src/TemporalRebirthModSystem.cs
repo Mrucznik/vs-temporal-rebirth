@@ -20,6 +20,8 @@ public sealed class TemporalRebirthModSystem : ModSystem
 
     private Harmony? harmony;
     private ICoreServerAPI? sapi;
+    private Zones? zones;
+    private TimerHud? timer;
     private long returnTickId;
     private long tetherTickId;
 
@@ -29,6 +31,9 @@ public sealed class TemporalRebirthModSystem : ModSystem
         // Cosmetic only: without it the death screen shows vanilla's life count.
         TryPatch(api, typeof(DeathDialogPatch));
         new ZombieLook(api).Start();
+        new WispLook(api).Start();
+        new ZonePrediction(api).Start();
+        timer = new TimerHud(api);
     }
 
     public override void StartServerSide(ICoreServerAPI api)
@@ -40,19 +45,24 @@ public sealed class TemporalRebirthModSystem : ModSystem
 
         var afterlife = new Afterlife(api);
         Messages = new Messages(api, Config);
-        Rebirth = new Rebirth(api, Config, afterlife, Messages);
+        zones = new Zones(api, afterlife);
+        Rebirth = new Rebirth(api, Config, afterlife, zones, Messages);
+        zones.Rebirth = Rebirth;
+        zones.Register();
         Rituals = new Rituals(api, Config, afterlife, Rebirth, Messages);
 
         api.Event.SaveGameLoaded += afterlife.Load;
+        api.Event.SaveGameLoaded += () => afterlife.PinOldEntries(Config.Snapshot());
         api.Event.SaveGameLoaded += () => LifeRules.CurrentEpoch = Epochs.Advance(api);
         api.Event.GameWorldSave += afterlife.Save;
         api.Event.PlayerNowPlaying += Rebirth.OnPlayerNowPlaying;
         api.Event.PlayerDeath += Rebirth.OnPlayerDeath;
+        api.Event.PlayerRespawn += Rebirth.OnPlayerRespawn;
         returnTickId = api.Event.RegisterGameTickListener(_ => Rebirth.CheckReturns(), 5_000);
         tetherTickId = api.Event.RegisterGameTickListener(_ => Rebirth.EnforceTethers(), 1_000);
 
         Rights.Register(api);
-        new Commands(api, Config, file, Rebirth, Rituals).Register();
+        new Commands(api, Config, file, Rebirth, Rituals, zones).Register();
         new ZombieRules(api, afterlife, Rebirth).Register();
 
         harmony = new Harmony(HarmonyId + ".server");
@@ -93,14 +103,14 @@ public sealed class TemporalRebirthModSystem : ModSystem
     /// <summary>Settings the configurator already offers but this version does not do yet.</summary>
     private static void WarnAboutUnfinished(ICoreServerAPI api)
     {
-        if (Config.PlaceAt == Place.Zone)
+        if (Config is { Form: Form.Ghost, GhostVisible: GhostVisible.WispAndEcho })
         {
-            api.Logger.Warning("[temporalrebirth] Place.At Zone is not implemented yet; using the marked place with Place.Radius.");
+            api.Logger.Notification("[temporalrebirth] Ghost.Visible WispAndEcho: the echo is not implemented yet; ghosts are wisps.");
         }
 
-        if (Config.LivesCount != "Deaths")
+        if (Config.LivesCount != LivesCount.Deaths && !DownedCompat.IsInstalled(api))
         {
-            api.Logger.Warning("[temporalrebirth] Lives.Count {0} is not implemented yet; deaths take lives.", Config.LivesCount);
+            api.Logger.Warning("[temporalrebirth] Lives.Count {0} needs the Downed mod; deaths take lives.", Config.LivesCount);
         }
     }
 
@@ -112,10 +122,15 @@ public sealed class TemporalRebirthModSystem : ModSystem
             sapi.Event.GameWorldSave -= Rebirth.Afterlife.Save;
             sapi.Event.PlayerNowPlaying -= Rebirth.OnPlayerNowPlaying;
             sapi.Event.PlayerDeath -= Rebirth.OnPlayerDeath;
+            sapi.Event.PlayerRespawn -= Rebirth.OnPlayerRespawn;
+            zones?.Unregister();
             sapi.Event.UnregisterGameTickListener(returnTickId);
             sapi.Event.UnregisterGameTickListener(tetherTickId);
         }
 
+        timer?.Dispose();
+        timer = null;
+        zones = null;
         harmony?.UnpatchAll(harmony.Id);
         harmony = null;
         Rebirth = null;

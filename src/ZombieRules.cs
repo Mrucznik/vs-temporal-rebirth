@@ -1,12 +1,16 @@
 using HarmonyLib;
 using Vintagestory.API.Common;
 using Vintagestory.API.Common.Entities;
+using Vintagestory.API.MathTools;
 using Vintagestory.API.Server;
 using Vintagestory.GameContent;
 
 namespace TemporalRebirth;
 
-/// <summary>A zombie that may not use items: no held items, no picking up, no blocks such as containers or doors.</summary>
+/// <summary>
+/// A zombie that may not use items: no held items, no picking up, no blocks such as containers or doors,
+/// no mounts or other creatures. Bare hands may fight.
+/// </summary>
 internal class ZombieRules(ICoreServerAPI api, Afterlife afterlife, Rebirth rebirth)
 {
     /// <summary>The Harmony patch is static; it reaches the server state through this.</summary>
@@ -18,6 +22,7 @@ internal class ZombieRules(ICoreServerAPI api, Afterlife afterlife, Rebirth rebi
         api.Event.CanUseBlock += (player, _) => !IsBound(player.PlayerUID);
         api.Event.CanPlaceOrBreakBlock += CanPlaceOrBreak;
         api.Event.HandInteract += OnHandInteract;
+        api.Event.OnPlayerInteractEntity += OnInteractEntity;
     }
 
     public bool IsBound(string uid) =>
@@ -27,6 +32,15 @@ internal class ZombieRules(ICoreServerAPI api, Afterlife afterlife, Rebirth rebi
     {
         claimant = null;
         return !IsBound(player.PlayerUID);
+    }
+
+    private void OnInteractEntity(Entity entity, IPlayer player, ItemSlot? slot, Vec3d hit, int mode, ref EnumHandling handling)
+    {
+        bool bareHandedAttack = mode == (int)EnumInteractMode.Attack && slot?.Empty != false;
+        if (!bareHandedAttack && IsBound(player.PlayerUID))
+        {
+            handling = EnumHandling.PreventSubsequent;
+        }
     }
 
     private void OnHandInteract(IServerPlayer player, EnumHandInteractNw interaction, float seconds, ref EnumHandling handling)

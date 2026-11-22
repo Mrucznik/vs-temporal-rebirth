@@ -14,7 +14,7 @@ Read `docs/next-steps.md` first: what is done, decided, not verified, and next.
   `/var/lib/flatpak/app/at.vintagestory.VintageStory/x86_64/stable/active/files/extra/vintagestory`.
 - `dotnet build -c Release -t:Package` -> `dist/temporalrebirth_<version>.zip`.
 - `test/run.py -k TEXT` runs scenarios on a real local server with headless bots; see `test/README.md`.
-  After a fix run only the affected scenarios; the full run (about 5 min, 4 servers) is for the end of a stage.
+  After a fix run only the affected scenarios; the full run (about 12 min, 4 servers) is for the end of a stage.
 - Decompile vanilla to check patch targets: `ilspycmd -p -o <out> VintagestoryLib.dll` (also `VintagestoryAPI.dll`,
   `Mods/VSSurvivalMod.dll`, `Mods/VSEssentials.dll`).
 
@@ -28,10 +28,17 @@ Read `docs/next-steps.md` first: what is done, decided, not verified, and next.
 | gear use (set spawn) | `ItemTemporalGear.OnHeldInteractStop`, 3.45 s threshold | `Patches/TemporalGearPatch.cs` |
 | zombie pickup | `EntityBehaviorCollectEntities.OnFoundCollectible` | `ZombieRules.cs` |
 | rifts | `ModSystemRifts.riftsById` (both sides), `Rift.GetNowSize` | `Rifts.cs` |
+| use / build in claims | `IEventAPI.OnTestBlockAccessClaim`, both sides | `Zones.cs`, `ZonePrediction.cs` |
+| downs take lives | Downed's watched attribute `downed` | `Downs.cs` |
+| clicks on creatures | `IServerEventAPI.OnPlayerInteractEntity` (not part of `HandInteract`) | `ZombieRules.cs` |
 | game mode switch | `/player <name> gamemode <mode>` run as console | `Rebirth.SetGameMode` |
 
 Vanilla increments `WorldData.Deaths` a tick after `Die()` (until then `EntityPlayer.DeadNotify` is set), then raises
 `PlayerDeath`, and opens the death screen 2.5 s later; the mod turns the player into something at 1.5 s.
+
+What clients know comes through watched attributes (`Rebirth.SyncedAttrs`), cleared when a player comes back. After a quick
+relog the game keeps the entity but drops listeners on its attributes; register them again on `PlayerNowPlaying`.
+A player killed while joining has `EntityPlayer.DeadNotify` set in `PlayerNowPlaying`: the death is still to be counted.
 
 ## Config
 
@@ -44,7 +51,7 @@ used by the web configurator (`docs/configurator/index.html`). `ConfigFile.Forma
 - Never copy code from Temporal Lives (git.gay/lunardiver/temporallives): it has no license.
   Same idea, own implementation.
 - Downed compatibility is soft (no assembly reference): it reads `downed` and clears
-  `downeddied` / `downedexecuted` watched attributes. After a Downed update, decompile it,
+  `downeddied` / `downedexecuted` watched attributes, reads `downedcauseid` / `downeddamagetype`, and runs `/downed revive`. After a Downed update, decompile it,
   check those names in `EntityBehaviorDowned` / `DownedModSystem`, then add the version to
   `DownedCompat.TestedVersions` (the server log warns about untested versions).
 - Every Harmony patch is applied separately (`TryPatch`). If `RespawnPatch` fails after a game

@@ -1,5 +1,6 @@
 using System.Text;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using Vintagestory.API.Common;
 using Vintagestory.API.Config;
 using Vintagestory.API.MathTools;
@@ -7,7 +8,7 @@ using Vintagestory.API.Server;
 
 namespace TemporalRebirth;
 
-internal class Commands(ICoreServerAPI api, RebirthConfig config, ConfigFile file, Rebirth rebirth, Rituals rituals)
+internal class Commands(ICoreServerAPI api, RebirthConfig config, ConfigFile file, Rebirth rebirth, Rituals rituals, Zones zones)
 {
     private static readonly string[] PointNames = ["start", "return", "ritual"];
 
@@ -80,7 +81,7 @@ internal class Commands(ICoreServerAPI api, RebirthConfig config, ConfigFile fil
             return Error(args, "cmd-not-ghost", args[0]);
         }
 
-        rituals.Choose(caster, found.Key);
+        rituals.Choose(caster, found.Key, found.Value);
         return Ok(args, "cmd-target-set", found.Value.Name);
     }
 
@@ -152,7 +153,7 @@ internal class Commands(ICoreServerAPI api, RebirthConfig config, ConfigFile fil
             }
 
             Use(ConfigSchema.Apply(preset, config.Values));
-            return Success(args, T(args, "cmd-preset-set", preset.Id) + MissingPoints(args));
+            return Success(args, T(args, "cmd-preset-set", preset.Id) + Reminders(args));
         });
     }
 
@@ -163,7 +164,7 @@ internal class Commands(ICoreServerAPI api, RebirthConfig config, ConfigFile fil
         {
             // Messages are long and have a page of their own in the configurator.
             var lines = ConfigSchema.Fields.Where(f => !f.IsMessage || config.Values[f.Key].ToString().Length > 0).Select(f => f.Key + " = " + Show(f.Key));
-            return Success(args, string.Join("\n", lines) + MissingPoints(args));
+            return Success(args, string.Join("\n", lines) + Reminders(args));
         }
 
         if (!ConfigSchema.ByKey.TryGetValue(key, out ConfigField? field))
@@ -190,8 +191,8 @@ internal class Commands(ICoreServerAPI api, RebirthConfig config, ConfigFile fil
                 return Error(args, "cmd-config-bad-value", field.Key, allowed);
             }
 
-            Use(new Dictionary<string, Newtonsoft.Json.Linq.JToken>(config.Values) { [field.Key] = value });
-            return Success(args, T(args, "cmd-config-set", field.Key, Show(field.Key)) + MissingPoints(args));
+            Use(new Dictionary<string, JToken>(config.Values) { [field.Key] = value });
+            return Success(args, T(args, "cmd-config-set", field.Key, Show(field.Key)) + Reminders(args));
         });
     }
 
@@ -203,11 +204,33 @@ internal class Commands(ICoreServerAPI api, RebirthConfig config, ConfigFile fil
             return Error(args, "cmd-import-bad-code");
         }
 
-        Use(values);
-        return Success(args, T(args, "cmd-import-done") + string.Concat(problems.Select(p => "\n" + p)) + MissingPoints(args));
+        string[] changes = ConfigSchema.Fields
+            .Where(f => !JToken.DeepEquals(config.Values[f.Key], values[f.Key]))
+            .Select(f => $"{f.Key}: {Describe(args, f, config.Values[f.Key], false)} → {Describe(args, f, values[f.Key], true)}")
+            .ToArray();
+        string text = T(args, "cmd-import-same");
+        if (changes.Length > 0)
+        {
+            Use(values);
+            text = T(args, "cmd-import-done") + "\n" + T(args, "cmd-import-changes", string.Join(", ", changes)) + "\n" + T(args, "cmd-import-backup", file.BackupName);
+        }
+
+        return Success(args, text + string.Concat(problems.Select(p => "\n" + p)) + Reminders(args));
     }
 
-    private void Use(IReadOnlyDictionary<string, Newtonsoft.Json.Linq.JToken> values)
+    /// <summary>A value for the list of changes. Texts of admins can be long, so only the new one is shown.</summary>
+    private static string Describe(TextCommandCallingArgs args, ConfigField field, JToken value, bool isNew)
+    {
+        string text = value.Type == JTokenType.String ? (string)value! : value.ToString(Formatting.None);
+        if (field.IsMessage)
+        {
+            return text.Length == 0 ? T(args, "value-builtin") : isNew ? "\"" + text + "\"" : T(args, "value-custom");
+        }
+
+        return field.Special is { } special && special.Value == text ? T(args, "special-" + field.Key.ToLowerInvariant()) : text;
+    }
+
+    private void Use(IReadOnlyDictionary<string, JToken> values)
     {
         config.Replace(values);
         file.Write(values);
@@ -215,8 +238,8 @@ internal class Commands(ICoreServerAPI api, RebirthConfig config, ConfigFile fil
 
     private string Show(string key) => config.Values[key].ToString(Formatting.None);
 
-    /// <summary>Reminds of places these settings need but nobody marked.</summary>
-    private string MissingPoints(TextCommandCallingArgs args)
+    /// <summary>Reminds of what these settings need but the server does not have: marked places, land claims, Downed.</summary>
+    private string Reminders(TextCommandCallingArgs args)
     {
         var missing = new List<string>();
         if (config.Form != Form.Ban && config.PlaceAt is Place.Fixed or Place.Zone && Afterlife.Point("start") == null)
@@ -234,7 +257,16 @@ internal class Commands(ICoreServerAPI api, RebirthConfig config, ConfigFile fil
             missing.Add("ritual");
         }
 
-        return string.Concat(missing.Select(m => "\n" + T(args, "cmd-point-missing", m)));
+        string text = string.Concat(missing.Select(m => "\n" + T(args, "cmd-point-missing", m)));
+        if (config.Form != Form.Ban && config.PlaceAt == Place.Zone)
+        {
+            List<LandClaim> claims = zones.Claims(config.PlaceGroup);
+            text += claims.Count == 0 ? "\n" + T(args, "cmd-zone-missing", config.PlaceGroup)
+                : Afterlife.Point("start") is { } start && !Zones.Contains(claims, start) ? "\n" + T(args, "cmd-zone-start-outside")
+                : "";
+        }
+
+        return config.LivesCount != LivesCount.Deaths && !DownedCompat.IsInstalled(api) ? text + "\n" + T(args, "cmd-downed-missing") : text;
     }
 
     // ---------- places ----------

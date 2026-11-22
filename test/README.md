@@ -12,6 +12,8 @@
 | `harness.py` | starts servers and bots, waits for what should happen |
 | `scenarios/v06_baseline.py` | what 0.6.x does; a migrated config must keep passing after the rewrite |
 | `scenarios/races.py` | leaving, rejoining, crashing or acting twice while the mod waits for something |
+| `scenarios/v07.py`, `scenarios/v08.py` | what these versions add |
+| `scenarios/review07.py` | faults found by reading 0.7.0 |
 | `scenarios/downed.py` | together with Downed |
 
 `@known_bug(text, failure)` expects the test to fail with `failure`. When the bug is fixed the run reports `FIXED`: remove the mark.

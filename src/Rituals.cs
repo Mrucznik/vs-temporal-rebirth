@@ -1,5 +1,4 @@
 using Vintagestory.API.Common;
-using Vintagestory.API.Common.Entities;
 using Vintagestory.API.MathTools;
 using Vintagestory.API.Server;
 
@@ -8,12 +7,15 @@ namespace TemporalRebirth;
 /// <summary>A normal, living player offers a temporal gear to bring back someone who is out of lives.</summary>
 internal class Rituals(ICoreServerAPI api, RebirthConfig config, Afterlife afterlife, Rebirth rebirth, Messages messages)
 {
-    /// <summary>Caster uid -> uid chosen with /rebirth target. Not persisted; a restart clears choices.</summary>
-    private readonly Dictionary<string, string> targets = new();
+    /// <summary>
+    /// Caster uid -> who was chosen with /rebirth target: the uid and that time out of lives, so a choice does not outlive
+    /// it. Not persisted; a restart clears choices.
+    /// </summary>
+    private readonly Dictionary<string, (string Uid, LostPlayer Lost)> targets = new();
 
     private sealed record Candidate(string Uid, LostPlayer Lost, IServerPlayer? Player);
 
-    public void Choose(IServerPlayer caster, string uid) => targets[caster.PlayerUID] = uid;
+    public void Choose(IServerPlayer caster, string uid, LostPlayer lost) => targets[caster.PlayerUID] = (uid, lost);
 
     public static bool CanPerform(IServerPlayer player, Afterlife afterlife) =>
         player.Entity.Alive
@@ -30,8 +32,8 @@ internal class Rituals(ICoreServerAPI api, RebirthConfig config, Afterlife after
             RitualPlace.Rift => Rifts.IsNearActiveRift(api.World, pos, config.RitualRange),
             RitualPlace.FixedPlace => afterlife.Point("ritual") is { } point && point.DistanceTo(pos) <= config.RitualRange,
             RitualPlace.NearPlayer => Nearest(caster) != null,
-            // Without a chosen player a gear anywhere works as usual.
-            RitualPlace.Anywhere => targets.ContainsKey(caster.PlayerUID),
+            // Without a chosen player who can be brought back, a gear works as usual.
+            RitualPlace.Anywhere => Chosen(caster, Candidates(caster)) != null,
             _ => false,
         };
     }
@@ -53,7 +55,7 @@ internal class Rituals(ICoreServerAPI api, RebirthConfig config, Afterlife after
 
         targets.Remove(caster.PlayerUID);
         afterlife.RitualDone(target.Uid);
-        rebirth.ReturnByRitual(target.Uid, target.Lost, caster.PlayerName, Destination(caster, target));
+        rebirth.ReturnByRitual(target.Uid, target.Lost, caster, config.RitualReviveAt);
 
         messages.Tell(caster, "RitualDone", ("player", target.Lost.Name));
         messages.TellEveryone("AnnounceRitual", ("caster", caster.PlayerName), ("player", target.Lost.Name));
@@ -68,19 +70,20 @@ internal class Rituals(ICoreServerAPI api, RebirthConfig config, Afterlife after
         var found = new List<Candidate>();
         foreach (var (uid, lost) in afterlife.Players.OrderBy(p => p.Value.DiedAtUtc))
         {
-            if (lost.Phase != Phase.Serving || uid == caster.PlayerUID)
+            if (lost.Phase == Phase.Returning || uid == caster.PlayerUID)
             {
                 continue;
             }
 
             if (rebirth.FormOf(lost) == Form.Ban)
             {
+                // Also those who left before they were banned: they cannot join until then.
                 if (config.RitualLiftsBan)
                 {
                     found.Add(new Candidate(uid, lost, null));
                 }
             }
-            else if (api.World.PlayerByUid(uid) is IServerPlayer { Entity: not null, ConnectionState: EnumClientState.Playing } player)
+            else if (lost.Phase == Phase.Serving && api.World.PlayerByUid(uid) is IServerPlayer { Entity: not null, ConnectionState: EnumClientState.Playing } player)
             {
                 found.Add(new Candidate(uid, lost, player));
             }
@@ -94,11 +97,18 @@ internal class Rituals(ICoreServerAPI api, RebirthConfig config, Afterlife after
             .Where(c => c.Player != null && c.Player.Entity.Pos.DistanceTo(caster.Entity.Pos) <= config.RitualRange)
             .MinBy(c => c.Player!.Entity.Pos.DistanceTo(caster.Entity.Pos));
 
+    private Candidate? Chosen(IServerPlayer caster, List<Candidate> candidates) =>
+        targets.TryGetValue(caster.PlayerUID, out var chosen) ? candidates.FirstOrDefault(c => c.Uid == chosen.Uid && c.Lost == chosen.Lost) : null;
+
     private Candidate? PickTarget(IServerPlayer caster)
     {
         List<Candidate> candidates = Candidates(caster);
-        Candidate? target = targets.TryGetValue(caster.PlayerUID, out string? uid) ? candidates.FirstOrDefault(c => c.Uid == uid) : null;
-        target ??= candidates.Count == 1 ? candidates[0] : null;
+        Candidate? target = Chosen(caster, candidates);
+        if (config.RitualWhere != RitualPlace.Anywhere && candidates.Count == 1)
+        {
+            target ??= candidates[0];
+        }
+
         if (target == null && candidates.Count == 0)
         {
             messages.Tell(caster, "RitualNobody");
@@ -109,21 +119,5 @@ internal class Rituals(ICoreServerAPI api, RebirthConfig config, Afterlife after
         }
 
         return target;
-    }
-
-    private Vec3d? Destination(IServerPlayer caster, Candidate target)
-    {
-        switch (config.RitualReviveAt)
-        {
-            case ReviveAt.Caster:
-                return caster.Entity.Pos.XYZ;
-            case ReviveAt.Body when target.Lost.DeathVec != null:
-                return target.Lost.DeathVec;
-            case ReviveAt.InPlace:
-                return null;
-            default:
-                // A banned player's own spawn point is only known once they join.
-                return (target.Player ?? api.World.PlayerByUid(target.Uid) as IServerPlayer)?.GetSpawnPosition(false).XYZ;
-        }
     }
 }

@@ -14,23 +14,39 @@ namespace TemporalRebirth;
 /// saved phase, never by a captured player object: the player may have left, come back as a new object, or the server
 /// may have restarted in between.
 /// </summary>
-internal class Rebirth(ICoreServerAPI api, RebirthConfig config, Afterlife afterlife, Messages messages)
+internal class Rebirth(ICoreServerAPI api, RebirthConfig config, Afterlife afterlife, Zones zones, Messages messages)
 {
     /// <summary>Synced, so clients can show what a player has become.</summary>
     internal const string FormAttr = "temporalrebirthForm";
 
+    /// <summary>Synced: how other players see a ghost, a <see cref="GhostVisible"/>. Missing when they do not.</summary>
+    internal const string GhostLookAttr = "temporalrebirthGhostLook";
+
+    /// <summary>Everything the mod tells clients about a player out of lives.</summary>
+    private static readonly string[] SyncedAttrs = [FormAttr, GhostLookAttr, TimerHud.SecondsAttr, TimerHud.TextAttr, Zones.GroupAttr, Zones.AccessAttr];
+
     /// <summary>The vanilla death screen opens 2.5 s after death; players are turned into something before that.</summary>
     private const int SettleDelayMs = 1500;
+
+    /// <summary>Dying again this soon after being let loose moves a player from where they died to their spawn point.</summary>
+    private const int QuickDeathSeconds = 60;
 
     private const string OldReturningKey = "temporalrebirth.returning";
 
     private readonly Dictionary<string, long> lastTetherMessageMs = new();
     private readonly Dictionary<string, Vec3d> lastInside = new();
 
+    /// <summary>Groups already reported as having no land claims, so the log says it once.</summary>
+    private readonly HashSet<string> missingZones = new();
+
+    private Downs? downs;
+
     /// <summary>The latest teleport of each player; older ones that finish late are ignored.</summary>
     private readonly Dictionary<string, int> journeys = new();
 
     public Afterlife Afterlife => afterlife;
+
+    private Downs Downs => downs ??= new Downs(api, config, afterlife, OnLastDown);
 
     public RebirthConfig Rules(LostPlayer lost) => config.With(lost.Settings);
 
@@ -50,11 +66,13 @@ internal class Rebirth(ICoreServerAPI api, RebirthConfig config, Afterlife after
     {
         LifeRules.EnsureBaseline(player);
         LifeRules.Sync(player);
+        LifeRules.SetMayRespawn(player.Entity, !player.Entity.Alive && LifeRules.MayRespawn(player.Entity));
+        Downs.Watch(player);
 
         LostPlayer? lost = afterlife.Get(player.PlayerUID);
         if (lost == null)
         {
-            player.Entity.WatchedAttributes.RemoveAttribute(FormAttr);
+            ClearSynced(player.Entity);
             if (player.GetModData(OldReturningKey, false))
             {
                 // 0.6.x: left mid-return, so the switch back to survival never happened.
@@ -63,9 +81,18 @@ internal class Rebirth(ICoreServerAPI api, RebirthConfig config, Afterlife after
             }
 
             // Died on their last life without the mod noticing: they would be stuck on the death screen.
-            if (player.Entity is { Alive: false } && !Unlimited && LifeRules.GetLivesLeft(player) == 0)
+            // With DeadNotify they died while joining and the game is about to count it.
+            if (player.Entity is { Alive: false, DeadNotify: false } && !Unlimited && LifeRules.GetLivesLeft(player) == 0 && !LifeRules.MayRespawn(player.Entity))
             {
-                Lose(player);
+                // Unless they left dying of a down, before the game counted the death.
+                if (Downs.TakePaid(player) && Downs.Mode != LivesCount.DownsFinalDeath)
+                {
+                    LifeRules.SetMayRespawn(player.Entity, true);
+                }
+                else
+                {
+                    Lose(player);
+                }
             }
 
             return;
@@ -77,17 +104,23 @@ internal class Rebirth(ICoreServerAPI api, RebirthConfig config, Afterlife after
             return;
         }
 
+        // Becoming something says when they return by itself.
+        bool dying = lost.Phase == Phase.Dying;
         CheckReturn(player.PlayerUID, lost);
         if (lost.Phase != Phase.Returning)
         {
             Enter(player, lost);
-            TellWhenReturn(player, lost);
+            if (!dying)
+            {
+                TellWhenReturn(player, lost);
+            }
         }
     }
 
     public void OnPlayerDeath(IServerPlayer player, DamageSource damageSource)
     {
         // Vanilla increments WorldData.Deaths before raising PlayerDeath.
+        LifeRules.SetMayRespawn(player.Entity, false);
         LifeRules.Sync(player);
         if (Unlimited)
         {
@@ -97,12 +130,26 @@ internal class Rebirth(ICoreServerAPI api, RebirthConfig config, Afterlife after
         if (afterlife.Contains(player.PlayerUID))
         {
             // Dying while out of lives costs nothing and sets nobody free.
+            Downs.TakePaid(player);
             SettleLater(player.PlayerUID);
         }
-        else if (LifeRules.GetLivesLeft(player) == 0)
+        else if (Downs.ChargeDeath(player))
         {
             Lose(player);
         }
+        else if (LifeRules.GetLivesLeft(player) == 0)
+        {
+            LifeRules.SetMayRespawn(player.Entity, true);
+        }
+    }
+
+    public void OnPlayerRespawn(IServerPlayer player) => LifeRules.SetMayRespawn(player.Entity, false);
+
+    /// <summary>Downed with no lives left: nobody gets up from this one.</summary>
+    private void OnLastDown(IServerPlayer player)
+    {
+        Lose(player);
+        player.Entity.Die(EnumDespawnReason.Death, DownedCompat.CauseOfDown(player.Entity));
     }
 
     private void Lose(IServerPlayer player)
@@ -163,22 +210,20 @@ internal class Rebirth(ICoreServerAPI api, RebirthConfig config, Afterlife after
         }
 
         entity.WatchedAttributes.SetString(FormAttr, rules.Form == Form.Zombie && !rules.ZombieGlow ? "Player" : rules.Form.ToString());
+        SyncAttr(entity, GhostLookAttr, rules.Form == Form.Ghost && rules.GhostVisible != GhostVisible.Nobody ? rules.GhostVisible.ToString() : null);
+        SyncTimer(player, lost);
+        if (died && !first && rules.PlaceAt == Place.Body && Walks(rules.Form) && lost.LandedAtUtc is { } landed && DateTime.UtcNow < landed.AddSeconds(QuickDeathSeconds))
+        {
+            MoveToSpawn(player, lost);
+        }
+
         Vec3d start = lost.StartVec ?? lost.DeathVec ?? entity.Pos.XYZ;
         lost.Start ??= LostPlayer.Pack(start);
 
         if (!Walks(rules.Form))
         {
             SetGameMode(player, EnumGameMode.Spectator);
-            if (first || lost.Travelling)
-            {
-                lost.Travelling = false;
-                if (entity.Pos.XYZ.DistanceTo(start) > 0.1)
-                {
-                    entity.TeleportToDouble(start.X, start.Y, start.Z);
-                }
-            }
-
-            return;
+            died = false;
         }
 
         if (!first && !died && !lost.Travelling)
@@ -186,7 +231,7 @@ internal class Rebirth(ICoreServerAPI api, RebirthConfig config, Afterlife after
             return;
         }
 
-        if (entity.Pos.XYZ.DistanceTo(start) < 1)
+        if (entity.Pos.XYZ.DistanceTo(start) < (Walks(rules.Form) ? 1 : 0.1) && SafeSpot.IsLoaded(api.World.BlockAccessor, start))
         {
             Land(player.PlayerUID);
             return;
@@ -205,8 +250,49 @@ internal class Rebirth(ICoreServerAPI api, RebirthConfig config, Afterlife after
             return;
         }
 
+        RebirthConfig rules = Rules(lost);
+        if (!Walks(rules.Form))
+        {
+            lost.Travelling = false;
+            return;
+        }
+
+        // Only now the land is loaded for sure.
+        Vec3d here = player.Entity.Pos.XYZ;
+        Vec3d? ground = here;
+        if (rules.PlaceAt == Place.Body)
+        {
+            ground = SafeSpot.FindGround(api.World.BlockAccessor, here);
+            if (ground == null && !lost.AtSpawn)
+            {
+                // Died at sea or in a lake of lava.
+                MoveToSpawn(player, lost);
+                lost.Travelling = true;
+                SetGameMode(player, EnumGameMode.Spectator);
+                GoTo(player, lost.StartVec!, () => Land(uid));
+                return;
+            }
+        }
+        else if (rules.PlaceAt == Place.Zone && zones.Claims(rules.PlaceGroup) is { Count: > 0 } claims)
+        {
+            ground = zones.Ground(claims, here);
+        }
+
+        if (ground != null && ground.DistanceTo(here) > 1)
+        {
+            player.Entity.TeleportToDouble(ground.X, ground.Y, ground.Z);
+            lost.Start = LostPlayer.Pack(ground);
+        }
+
         lost.Travelling = false;
+        lost.LandedAtUtc = DateTime.UtcNow;
         SetGameMode(player, EnumGameMode.Survival);
+    }
+
+    private static void MoveToSpawn(IServerPlayer player, LostPlayer lost)
+    {
+        lost.AtSpawn = true;
+        lost.Start = LostPlayer.Pack(player.GetSpawnPosition(false).XYZ);
     }
 
     private Vec3d StartOf(IServerPlayer player, LostPlayer lost, RebirthConfig rules)
@@ -216,8 +302,14 @@ internal class Rebirth(ICoreServerAPI api, RebirthConfig config, Afterlife after
         {
             case Place.Spawn:
                 return player.GetSpawnPosition(false).XYZ;
-            case Place.Fixed:
             case Place.Zone:
+                if (StartInZone(player, death, rules) is { } inZone)
+                {
+                    return inZone;
+                }
+
+                break;
+            case Place.Fixed:
                 if (afterlife.Point("start") is { } point)
                 {
                     return point;
@@ -229,6 +321,27 @@ internal class Rebirth(ICoreServerAPI api, RebirthConfig config, Afterlife after
 
         // Died inside a block (suffocation, sand): a solid ghost would be stuck there.
         return rules.Form == Form.Ghost ? SafeSpot.FindAbove(api.World.BlockAccessor, death) ?? death : death;
+    }
+
+    /// <summary>The marked place if it is in the zone, else where they died if that is, else the closest spot of the zone.</summary>
+    private Vec3d? StartInZone(IServerPlayer player, Vec3d death, RebirthConfig rules)
+    {
+        Vec3d? point = afterlife.Point("start");
+        List<LandClaim> claims = zones.Claims(rules.PlaceGroup);
+        if (claims.Count == 0)
+        {
+            api.Logger.Error("[temporalrebirth] No land claim is shared with the group {0}; nobody is held there. {1} may go anywhere.", rules.PlaceGroup, player.PlayerName);
+            missingZones.Add(rules.PlaceGroup);
+            return point;
+        }
+
+        if (point != null && Zones.Contains(claims, point))
+        {
+            return point;
+        }
+
+        api.Logger.Error("[temporalrebirth] No place is marked inside the zone of the group {0} (/rebirth point set start).", rules.PlaceGroup);
+        return Zones.Contains(claims, death) ? null : zones.Nearest(claims, point ?? death);
     }
 
     private void Announce(IServerPlayer player, LostPlayer lost, RebirthConfig rules)
@@ -310,7 +423,11 @@ internal class Rebirth(ICoreServerAPI api, RebirthConfig config, Afterlife after
 
             RebirthConfig rules = Rules(lost);
             KeepNoClipSetting(player, rules);
-            if (rules.Radius > 0 && lost.StartVec is { } anchor && player.Entity.Alive)
+            if (rules.PlaceAt == Place.Zone)
+            {
+                HoldInZone(player, lost, rules);
+            }
+            else if (rules.Radius > 0 && lost.StartVec is { } anchor && player.Entity.Alive)
             {
                 Tether(player, anchor, rules.Radius, Walks(rules.Form));
             }
@@ -347,7 +464,70 @@ internal class Rebirth(ICoreServerAPI api, RebirthConfig config, Afterlife after
         }
 
         player.Entity.TeleportToDouble(target.X, target.Y, target.Z);
+        TellTooFar(player);
+    }
 
+    private void HoldInZone(IServerPlayer player, LostPlayer lost, RebirthConfig rules)
+    {
+        SyncZone(player.Entity, rules);
+        List<LandClaim> claims = zones.Claims(rules.PlaceGroup);
+        if (claims.Count == 0)
+        {
+            if (missingZones.Add(rules.PlaceGroup))
+            {
+                api.Logger.Error("[temporalrebirth] No land claim is shared with the group {0} any more; nobody is held there.", rules.PlaceGroup);
+            }
+
+            return;
+        }
+
+        missingZones.Remove(rules.PlaceGroup);
+        if (!player.Entity.Alive)
+        {
+            return;
+        }
+
+        Vec3d pos = player.Entity.Pos.XYZ;
+        if (Zones.Contains(claims, pos))
+        {
+            lastInside[player.PlayerUID] = pos;
+            return;
+        }
+
+        if (lastInside.TryGetValue(player.PlayerUID, out Vec3d? inside) && Zones.Contains(claims, inside))
+        {
+            player.Entity.TeleportToDouble(inside.X, inside.Y, inside.Z);
+        }
+        else
+        {
+            // After a restart, or when the claims changed. May be far away, so travel like at the start of the sentence.
+            Vec3d target = lost.StartVec is { } start && Zones.Contains(claims, start) ? start : zones.Nearest(claims, pos);
+            lost.Start = LostPlayer.Pack(target);
+            lost.Travelling = true;
+            Enter(player, lost);
+        }
+
+        TellTooFar(player);
+    }
+
+    private void SyncZone(EntityPlayer entity, RebirthConfig rules)
+    {
+        if (Walks(rules.Form) && zones.GroupId(rules.PlaceGroup) is { } group)
+        {
+            SyncAttr(entity, Zones.AccessAttr, rules.PlaceAccess.ToString());
+            if (entity.WatchedAttributes.GetInt(Zones.GroupAttr, -1) != group)
+            {
+                entity.WatchedAttributes.SetInt(Zones.GroupAttr, group);
+            }
+        }
+        else
+        {
+            SyncAttr(entity, Zones.AccessAttr, null);
+        }
+    }
+
+    private void TellTooFar(IServerPlayer player)
+    {
         long now = api.World.ElapsedMilliseconds;
         if (!lastTetherMessageMs.TryGetValue(player.PlayerUID, out long last) || now - last > 15_000)
         {
@@ -366,6 +546,10 @@ internal class Rebirth(ICoreServerAPI api, RebirthConfig config, Afterlife after
             if (Online(uid) != null)
             {
                 CheckReturn(uid, lost);
+                if (lost.Phase == Phase.Serving && Online(uid) is { } player)
+                {
+                    SyncTimer(player, lost);
+                }
             }
         }
     }
@@ -397,11 +581,16 @@ internal class Rebirth(ICoreServerAPI api, RebirthConfig config, Afterlife after
         BeginReturn(uid, lost, ReturnReason.Admin);
     }
 
-    /// <summary>Back by a ritual to <paramref name="destination"/>; null means wherever the player is.</summary>
-    public void ReturnByRitual(string uid, LostPlayer lost, string helper, Vec3d? destination)
+    public void ReturnByRitual(string uid, LostPlayer lost, IServerPlayer caster, ReviveAt at)
     {
-        lost.Helper = helper;
-        lost.Destination = destination == null ? null : LostPlayer.Pack(destination);
+        lost.Helper = caster.PlayerName;
+        lost.Destination = at switch
+        {
+            ReviveAt.Caster => LostPlayer.Pack(caster.Entity.Pos.XYZ),
+            ReviveAt.Body => lost.DeathPos,
+            _ => null,
+        };
+        lost.ToSpawn = at == ReviveAt.Spawn || (at == ReviveAt.Body && lost.DeathPos == null);
         BeginReturn(uid, lost, ReturnReason.Ritual);
     }
 
@@ -437,10 +626,16 @@ internal class Rebirth(ICoreServerAPI api, RebirthConfig config, Afterlife after
     {
         EntityPlayer entity = player.Entity;
         entity.TryUnmount();
+        ClearSynced(entity);
         if (!entity.Alive)
         {
             entity.Revive();
             DownedCompat.ClearDeathFlags(entity);
+        }
+        else if (DownedCompat.IsDowned(entity))
+        {
+            // Went down while out of lives; that must not cost the life they come back with.
+            RunForPlayer(player, $"/downed revive {player.PlayerName}", _ => { });
         }
 
         // Same order as vanilla respawn: wait for the chunks at the destination and only then become mortal.
@@ -451,13 +646,19 @@ internal class Rebirth(ICoreServerAPI api, RebirthConfig config, Afterlife after
 
     private Vec3d DestinationOf(IServerPlayer player, LostPlayer lost)
     {
-        if (lost.Reason == ReturnReason.Ritual)
+        if (lost.Reason == ReturnReason.Ritual && !lost.ToSpawn)
         {
-            Vec3d here = lost.DestinationVec ?? player.Entity.Pos.XYZ;
-            return lost.DestinationVec ?? SafeSpot.FindGround(api.World.BlockAccessor, here) ?? here;
+            Vec3d here = player.Entity.Pos.XYZ;
+            IBlockAccessor blocks = api.World.BlockAccessor;
+            return lost.DestinationVec ?? SafeSpot.FindGround(blocks, here) ?? SafeSpot.FindGround(blocks, here, true) ?? here;
         }
 
         Vec3d spawn = player.GetSpawnPosition(false).XYZ;
+        if (lost.Reason == ReturnReason.Ritual)
+        {
+            return spawn;
+        }
+
         switch (Rules(lost).ReturnAt)
         {
             case Place.Body:
@@ -498,8 +699,7 @@ internal class Rebirth(ICoreServerAPI api, RebirthConfig config, Afterlife after
 
         afterlife.Remove(uid);
         lastInside.Remove(uid);
-        entity.WatchedAttributes.RemoveAttribute(FormAttr);
-        entity.WatchedAttributes.MarkPathDirty(FormAttr);
+        ClearSynced(entity);
         LifeRules.Sync(player);
         SetGameMode(player, EnumGameMode.Survival);
         SetVital(entity, "health", "currenthealth", "maxhealth", rules.HealthPercent, 1f);
@@ -582,6 +782,21 @@ internal class Rebirth(ICoreServerAPI api, RebirthConfig config, Afterlife after
         }
 
         string modeName = mode == EnumGameMode.Spectator ? "spectator" : "survival";
+        RunForPlayer(player, $"/player {player.PlayerName} gamemode {modeName}", result =>
+        {
+            if (result.Status != EnumCommandStatus.Success)
+            {
+                api.Logger.Error("[temporalrebirth] Could not set {0} to {1}: {2}", player.PlayerName, modeName, result.StatusMessage);
+            }
+            else if (mode == EnumGameMode.Spectator && afterlife.Get(player.PlayerUID) is { } lost)
+            {
+                KeepNoClipSetting(player, Rules(lost));
+            }
+        });
+    }
+
+    private void RunForPlayer(IServerPlayer player, string command, Action<TextCommandResult> done)
+    {
         var args = new TextCommandCallingArgs
         {
             Caller = new Caller
@@ -594,16 +809,52 @@ internal class Rebirth(ICoreServerAPI api, RebirthConfig config, Afterlife after
             },
         };
 
-        api.ChatCommands.ExecuteUnparsed($"/player {player.PlayerName} gamemode {modeName}", args, result =>
+        api.ChatCommands.ExecuteUnparsed(command, args, result => done(result));
+    }
+
+    // ---------- what clients know ----------
+
+    private static void SyncAttr(EntityPlayer entity, string key, string? value)
+    {
+        if (value != null)
         {
-            if (result.Status != EnumCommandStatus.Success)
+            if (entity.WatchedAttributes.GetString(key) != value)
             {
-                api.Logger.Error("[temporalrebirth] Could not set {0} to {1}: {2}", player.PlayerName, modeName, result.StatusMessage);
+                entity.WatchedAttributes.SetString(key, value);
             }
-            else if (mode == EnumGameMode.Spectator && afterlife.Get(player.PlayerUID) is { } lost)
-            {
-                KeepNoClipSetting(player, Rules(lost));
-            }
-        });
+        }
+        else if (entity.WatchedAttributes.HasAttribute(key))
+        {
+            entity.WatchedAttributes.RemoveAttribute(key);
+            entity.WatchedAttributes.MarkPathDirty(key);
+        }
+    }
+
+    private static void ClearSynced(EntityPlayer entity)
+    {
+        foreach (string key in SyncedAttrs)
+        {
+            SyncAttr(entity, key, null);
+        }
+    }
+
+    /// <summary>How long until they come back, for the timer on their screen.</summary>
+    private void SyncTimer(IServerPlayer player, LostPlayer lost)
+    {
+        EntityPlayer entity = player.Entity;
+        RebirthConfig rules = Rules(lost);
+        if (!rules.ShowTimer || rules.Form == Form.Ban || ReturnAtUtc(lost) is not { } at)
+        {
+            SyncAttr(entity, TimerHud.SecondsAttr, null);
+            SyncAttr(entity, TimerHud.TextAttr, null);
+            return;
+        }
+
+        SyncAttr(entity, TimerHud.TextAttr, config.Message("Timer"));
+        int seconds = (int)Math.Clamp((at - DateTime.UtcNow).TotalSeconds, 0, int.MaxValue);
+        if (entity.WatchedAttributes.GetInt(TimerHud.SecondsAttr, -1) != seconds)
+        {
+            entity.WatchedAttributes.SetInt(TimerHud.SecondsAttr, seconds);
+        }
     }
 }

@@ -8,7 +8,7 @@ namespace TemporalRebirth;
 ///
 /// Downed keeps players alive in a downed state and only calls Entity.Die() once they bleed
 /// out, give up or are executed, so the vanilla death counter stays correct and we need no
-/// special handling for the downed state itself. What Downed does expect is the vanilla
+/// special handling for the downed state itself, unless downs take lives (<see cref="Downs"/>). What Downed does expect is the vanilla
 /// respawn event, where it clears its "died while downed" flags. We revive players ourselves
 /// (spectator conversion, rituals), so we clear those flags the same way.
 /// </summary>
@@ -16,8 +16,10 @@ internal static class DownedCompat
 {
     private static readonly string[] DownedFlags = ["downeddied", "downedexecuted"];
 
+    internal const string DownedAttr = "downed";
+
     /// <summary>Downed versions whose attribute names were checked against this file.</summary>
-    private static readonly string[] TestedVersions = ["2.7.6"];
+    private static readonly string[] TestedVersions = ["2.7.6", "2.9.4"];
 
     /// <summary>
     /// The attribute names above are Downed internals. Nothing breaks if they change, but the
@@ -49,5 +51,20 @@ internal static class DownedCompat
     }
 
     /// <summary>A downed player is alive but helpless; they cannot take part in a ritual.</summary>
-    internal static bool IsDowned(Entity entity) => entity.WatchedAttributes.GetBool("downed", false);
+    internal static bool IsDowned(Entity entity) => entity.WatchedAttributes.GetBool(DownedAttr, false);
+
+    internal static bool IsInstalled(ICoreAPI api) => api.ModLoader.IsModEnabled("downed");
+
+    /// <summary>What put the player down, for the death message.</summary>
+    internal static DamageSource CauseOfDown(Entity entity)
+    {
+        Entity? cause = entity.World.GetEntityById(entity.WatchedAttributes.GetLong("downedcauseid"));
+        return new DamageSource
+        {
+            Source = cause is EntityPlayer ? EnumDamageSource.Player : cause != null ? EnumDamageSource.Entity : EnumDamageSource.Unknown,
+            SourceEntity = cause,
+            CauseEntity = cause,
+            Type = (EnumDamageType)entity.WatchedAttributes.GetInt("downeddamagetype", (int)EnumDamageType.Injury),
+        };
+    }
 }

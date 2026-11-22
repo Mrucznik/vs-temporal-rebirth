@@ -51,6 +51,14 @@ public sealed class HelperModSystem : ModSystem
         Add("hurt", a => Hurt(Player(a), (int)a[1]), parsers.Word("player"), parsers.Int("damage"));
         Add("age", a => Age((string)a[0], (int)a[1]), parsers.Word("player"), parsers.Int("hours"));
         Add("checkreturns", _ => CheckReturns());
+        Add("claim", a => Claim(Player(a), (string)a[1], (int)a[2], (bool)a[3]), parsers.Word("player"), parsers.Word("group"), parsers.Int("size"), parsers.Bool("everyone may use"));
+        Add("unclaim", _ => Unclaim());
+        Add("access", a => Access(Player(a), (int)a[1]), parsers.Word("player"), parsers.Int("dx"));
+        Add("tracks", a => Tracks(Player(a), Find((string)a[1])), parsers.Word("player"), parsers.Word("other"));
+        Add("surround", a => Surround(Player(a), (string)a[1], (int)a[2]), parsers.Word("player"), parsers.Word("block"), parsers.Int("radius"));
+        Add("pointfar", a => PointFar(Player(a), (string)a[1], (int)a[2]), parsers.Word("player"), parsers.Word("place"), parsers.Int("distance"));
+        Add("interact", a => Interact(Player(a), Find((string)a[1]), (string)a[2], (int)a[3]), parsers.Word("player"), parsers.Word("other"), parsers.Word("item or none"), parsers.Int("mouse button"));
+        Add("oldentry", a => OldEntry((string)a[0]), parsers.Word("player"));
         Add("privileges", a => Player(a).Privileges, parsers.Word("player"));
     }
 
@@ -79,6 +87,13 @@ public sealed class HelperModSystem : ModSystem
             health = health?.GetFloat("currenthealth", 0f), maxHealth = health?.GetFloat("maxhealth", 0f),
             satiety = hunger?.GetFloat("currentsaturation", 0f), maxSatiety = hunger?.GetFloat("maxsaturation", 0f),
             gears = CountGears(p),
+            liquid = e.World.BlockAccessor.GetBlock(e.Pos.AsBlockPos, BlockLayersAccess.Fluid).IsLiquid(),
+            mayRespawn = e.WatchedAttributes.GetBool("temporalrebirthMayRespawn"),
+            form = e.WatchedAttributes.GetString("temporalrebirthForm"),
+            look = e.WatchedAttributes.GetString("temporalrebirthGhostLook"),
+            seconds = e.WatchedAttributes.GetInt("temporalrebirthSecondsLeft", -1),
+            timerText = e.WatchedAttributes.GetString("temporalrebirthTimerText"),
+            zoneAccess = e.WatchedAttributes.GetString("temporalrebirthZoneAccess"),
         };
     }
 
@@ -132,9 +147,11 @@ public sealed class HelperModSystem : ModSystem
         return new { ok = true };
     }
 
-    private static object Move(IServerPlayer p, int dx, int dy, int dz)
+    /// <summary>Teleports wait for the land; "ARRIVED name" in the log says when it is done.</summary>
+    private object Move(IServerPlayer p, int dx, int dy, int dz)
     {
-        p.Entity.TeleportToDouble(p.Entity.Pos.X + dx, p.Entity.Pos.Y + dy, p.Entity.Pos.Z + dz);
+        string name = p.PlayerName;
+        p.Entity.TeleportToDouble(p.Entity.Pos.X + dx, p.Entity.Pos.Y + dy, p.Entity.Pos.Z + dz, () => api.Logger.Notification("ARRIVED {0}", name));
         return new { ok = true };
     }
 
@@ -176,6 +193,104 @@ public sealed class HelperModSystem : ModSystem
     {
         bool received = p.Entity.ReceiveDamage(new DamageSource { Source = EnumDamageSource.Internal, Type = EnumDamageType.BluntAttack, IgnoreInvFrames = true }, damage);
         return new { received };
+    }
+
+    /// <summary>A claim of someone else, full height, around a player and shared with a group that is made if needed.</summary>
+    private object Claim(IServerPlayer p, string group, int size, bool everyone)
+    {
+        if (api.Groups.GetPlayerGroupByName(group) is not { } shared)
+        {
+            api.Groups.AddPlayerGroup(shared = new PlayerGroup { Name = group, OwnerUID = "someone" });
+        }
+
+        BlockPos at = p.Entity.Pos.AsBlockPos;
+        LandClaim claim = LandClaim.CreateClaim("someone", 0);
+        claim.OwnedByPlayerUid = "someone";
+        claim.AllowUseEveryone = everyone;
+        claim.Areas.Add(new Cuboidi(at.X - size, 0, at.Z - size, at.X + size, api.WorldManager.MapSizeY, at.Z + size));
+        claim.PermittedPlayerGroupIds[shared.Uid] = EnumBlockAccessFlags.Traverse;
+        api.World.Claims.Add(claim);
+        return new { group = shared.Uid };
+    }
+
+    /// <summary>Puts a block (lava, for example) around a player, from two below the feet to head height.</summary>
+    private object Surround(IServerPlayer p, string code, int radius)
+    {
+        Block block = api.World.GetBlock(new AssetLocation(code)) ?? throw new InvalidOperationException("no such block: " + code);
+        BlockPos at = p.Entity.Pos.AsBlockPos;
+        for (int x = -radius; x <= radius; x++)
+        {
+            for (int y = -2; y <= 1; y++)
+            {
+                for (int z = -radius; z <= radius; z++)
+                {
+                    BlockPos pos = at.AddCopy(x, y, z);
+                    api.World.BlockAccessor.SetBlock(0, pos);
+                    api.World.BlockAccessor.SetBlock(block.BlockId, pos, block.ForFluidsLayer ? BlockLayersAccess.Fluid : BlockLayersAccess.Default);
+                }
+            }
+        }
+
+        return new { ok = true };
+    }
+
+    /// <summary>Marks a place in land nobody visited.</summary>
+    private object PointFar(IServerPlayer p, string name, int distance)
+    {
+        object rebirth = Rebirth();
+        object afterlife = rebirth.GetType().GetProperty("Afterlife")!.GetValue(rebirth)!;
+        Vec3d pos = new(p.Entity.Pos.X + distance, 160, p.Entity.Pos.Z);
+        afterlife.GetType().GetMethod("SetPoint")!.Invoke(afterlife, [name, pos]);
+        return new { x = pos.X, y = pos.Y, z = pos.Z };
+    }
+
+    /// <summary>What the server does with a click on another player, up to the entity itself.</summary>
+    private object Interact(IServerPlayer p, IServerPlayer other, string item, int button)
+    {
+        ItemSlot slot = p.InventoryManager.ActiveHotbarSlot;
+        slot.Itemstack = item == "none" ? null : new ItemStack(api.World.GetItem(new AssetLocation(item)) ?? throw new InvalidOperationException("no such item: " + item));
+        EnumHandling handling = EnumHandling.PassThrough;
+        ((Vintagestory.Server.ServerMain)api.World).EventManager.TriggerPlayerInteractEntity(other.Entity, p, slot, new Vec3d(), button, ref handling);
+        slot.Itemstack = null;
+        return new { allowed = handling == EnumHandling.PassThrough };
+    }
+
+    /// <summary>Makes an entry look as if 0.6.x had written it.</summary>
+    private object OldEntry(string name)
+    {
+        object rebirth = Rebirth();
+        object afterlife = rebirth.GetType().GetProperty("Afterlife")!.GetValue(rebirth)!;
+        object lost = afterlife.GetType().GetMethod("Get")!.Invoke(afterlife, ["bot-" + name])!;
+        lost.GetType().GetProperty("Settings")!.SetValue(lost, null);
+        afterlife.GetType().GetMethod("Save")!.Invoke(afterlife, null);
+        return new { ok = true };
+    }
+
+    private object Unclaim()
+    {
+        foreach (LandClaim claim in api.World.Claims.All.ToList())
+        {
+            api.World.Claims.Remove(claim);
+        }
+
+        return new { left = api.World.Claims.All.Count };
+    }
+
+    private object Access(IServerPlayer p, int dx)
+    {
+        BlockPos pos = p.Entity.Pos.AsBlockPos.AddCopy(dx, -1, 0);
+        return new
+        {
+            use = api.World.Claims.TestAccess(p, pos, EnumBlockAccessFlags.Use).ToString(),
+            build = api.World.Claims.TestAccess(p, pos, EnumBlockAccessFlags.BuildOrBreak).ToString(),
+        };
+    }
+
+    /// <summary>Whether the server sends one player the position of another.</summary>
+    private object Tracks(IServerPlayer p, IServerPlayer other)
+    {
+        var client = ((Vintagestory.Server.ServerMain)api.World).Clients.Values.First(c => c.Player == p);
+        return new { tracked = client.TrackedEntities.Contains(other.Entity.EntityId) };
     }
 
     private object Rebirth()

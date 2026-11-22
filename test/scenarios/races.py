@@ -1,23 +1,22 @@
 """Leaving, rejoining, crashing or acting twice while the mod is waiting for something."""
 import time
 from harness import Failed, check, distance
-from v06_baseline import known_bug, slow
+from v06_baseline import slow
 
 
 def consistent(w, bot, timeout=8):
-    """Nobody may end up alive in survival with no lives, or in the registry without a name."""
+    """Waits until the mod is done with the player. Nobody may end up alive with no lives, or listed without a name."""
     end = time.monotonic() + timeout
     while True:
-        s, registry = bot.state(), w.trt("registry")
-        listed = "bot-" + bot.name in registry
-        nameless = listed and registry["bot-" + bot.name] != bot.name
-        good = not nameless and (
-            (s["mode"] == "Spectator" and s["alive"] and s["lives"] == 0 and listed)
-            or (s["mode"] == "Survival" and s["alive"] and s["lives"] > 0 and not listed))
+        s, entry = bot.state(), w.trt("registry").get("bot-" + bot.name)
+        if entry is None:
+            good = s["mode"] == "Survival" and s["alive"] and s["lives"] > 0
+        else:
+            good = entry["name"] == bot.name and entry["phase"] == "Serving" and s["mode"] == "Spectator" and s["alive"] and s["lives"] == 0
         if good:
             return s
         if time.monotonic() > end:
-            raise Failed(f"inconsistent {bot.name}: {s['mode']} alive={s['alive']} lives={s['lives']} listed={listed} nameless={nameless}")
+            raise Failed(f"inconsistent {bot.name}: {s['mode']} alive={s['alive']} lives={s['lives']} entry={entry}")
         time.sleep(0.4)
 
 
@@ -46,7 +45,6 @@ def ghost(w, bot):
 
 # ---------- 1.5 s between the last death and becoming a ghost ----------
 
-@known_bug("a relog within 1.5 s of the last death: alive with no lives, or a nameless registry entry", "inconsistent after a relog")
 @slow(60)
 def relog_at_every_moment_after_death(w):
     failures = []
@@ -64,7 +62,6 @@ def relog_at_every_moment_after_death(w):
     check(not failures, "inconsistent after a relog: " + " | ".join(failures))
 
 
-@known_bug("a respawn sent before the game counts the last death brings the player back (needs a modified client)", "dodged becoming a ghost")
 @slow(60)
 def early_respawn_key_after_last_death(w):
     dodged = []
@@ -197,7 +194,6 @@ def killed_during_return(w):
     bot.quit()
 
 
-@known_bug("a server stop while a return is under way leaves the player at the death spot", "blocks away from the spawn point")
 @slow(35)
 def server_stops_during_return(w):
     bot, = w.join("Ssd")
@@ -206,7 +202,7 @@ def server_stops_during_return(w):
     w.trt("age Ssd 48")
     w.trt("checkreturns")
     s = bot.state()
-    check(s["mode"] == "Spectator" and "bot-Ssd" not in w.trt("registry"), "the server stops while the return is under way")
+    check(s["mode"] == "Spectator" and w.trt("registry")["bot-Ssd"]["phase"] == "Returning", "the server stops while the return is under way")
     w.restart()
     bot, = w.join("Ssd")
     check(consistent(w, bot, 20)["mode"] == "Survival", "the return is finished after the restart")

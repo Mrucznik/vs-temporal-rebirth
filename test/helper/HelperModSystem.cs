@@ -151,17 +151,21 @@ public sealed class HelperModSystem : ModSystem
         return new { ok = true };
     }
 
-    /// <summary>Who the mod thinks is out of lives: uid -> name.</summary>
+    /// <summary>Who the mod thinks is out of lives: uid -> name and phase.</summary>
     private object Registry()
     {
         object rebirth = Rebirth();
         object afterlife = rebirth.GetType().GetProperty("Afterlife")!.GetValue(rebirth)!;
-        var ghosts = (System.Collections.IEnumerable)afterlife.GetType().GetProperty("Ghosts")!.GetValue(afterlife)!;
-        var answer = new Dictionary<string, string>();
-        foreach (object pair in ghosts)
+        var players = (System.Collections.IEnumerable)afterlife.GetType().GetProperty("Players")!.GetValue(afterlife)!;
+        var answer = new Dictionary<string, object>();
+        foreach (object pair in players)
         {
             object value = pair.GetType().GetProperty("Value")!.GetValue(pair)!;
-            answer[(string)pair.GetType().GetProperty("Key")!.GetValue(pair)!] = (string)value.GetType().GetProperty("Name")!.GetValue(value)!;
+            answer[(string)pair.GetType().GetProperty("Key")!.GetValue(pair)!] = new
+            {
+                name = (string)value.GetType().GetProperty("Name")!.GetValue(value)!,
+                phase = value.GetType().GetProperty("Phase")!.GetValue(value)!.ToString(),
+            };
         }
 
         return answer;

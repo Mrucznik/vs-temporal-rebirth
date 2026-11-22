@@ -16,4 +16,6 @@
 
 `@known_bug(text, failure)` expects the test to fail with `failure`. When the bug is fixed the run reports `FIXED`: remove the mark.
 
+- `node test/configurator/ui.mjs file://$PWD/docs/configurator/index.html <out dir>` — drives the page in headless Chrome, screenshots included.
+
 Not covered: anything drawn on a client (timer, wisp, echo, dialogs) and real item input. Bots do not move on their own.

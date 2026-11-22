@@ -1,6 +1,5 @@
 using HarmonyLib;
 using Vintagestory.API.Common;
-using Vintagestory.API.Config;
 using Vintagestory.API.Server;
 using Vintagestory.GameContent;
 
@@ -8,8 +7,9 @@ namespace TemporalRebirth.Patches;
 
 /// <summary>
 /// Holding a temporal gear (right click on a block for 3.5 s, the vanilla "set respawn point" use):
-///  - next to an active rift: performs the revival ritual instead of setting the respawn point;
+///  - at a ritual site: performs the ritual instead of setting the respawn point;
 ///  - anywhere else: vanilla sets the respawn point and we add extra lives on top.
+/// Players out of lives get neither: a gear would be a way out.
 /// </summary>
 [HarmonyPatch(typeof(ItemTemporalGear), nameof(ItemTemporalGear.OnHeldInteractStop))]
 internal static class TemporalGearPatch
@@ -17,7 +17,7 @@ internal static class TemporalGearPatch
     // Same threshold vanilla uses before it consumes the gear.
     private const double VanillaUseSeconds = 3.45;
 
-    /// <returns>false to skip vanilla (ritual took over).</returns>
+    /// <returns>false to skip vanilla (the gear did something else, or nothing).</returns>
     private static bool Prefix(float secondsUsed, ItemSlot slot, EntityAgent byEntity, BlockSelection blockSel, out bool __state)
     {
         __state = false;
@@ -28,19 +28,21 @@ internal static class TemporalGearPatch
             || byEntity is not EntityPlayer playerEntity
             || playerEntity.World.PlayerByUid(playerEntity.PlayerUID) is not IServerPlayer player
             || LifeRules.UnlimitedLives(playerEntity.World)
-            || !Rifts.IsNearActiveRift(playerEntity.World, playerEntity.Pos.XYZ, TemporalRebirthModSystem.Config.RitualRiftRange)
+            || TemporalRebirthModSystem.Rituals is not { } rituals
         )
         {
             return true;
         }
 
-        __state = true;
-        if (DownedCompat.IsDowned(playerEntity))
+        Afterlife afterlife = TemporalRebirthModSystem.Rebirth!.Afterlife;
+        bool lost = afterlife.Contains(player.PlayerUID);
+        if (!lost && !rituals.IsRitualSite(player))
         {
-            return false;
+            return true;
         }
 
-        if (TemporalRebirthModSystem.Rebirth!.PerformRitual(player, blockSel.Position))
+        __state = true;
+        if (!lost && Rituals.CanPerform(player, afterlife) && rituals.Perform(player, blockSel.Position))
         {
             slot.TakeOut(1);
         }
@@ -59,6 +61,7 @@ internal static class TemporalGearPatch
             || byEntity is not EntityPlayer playerEntity
             || playerEntity.World.PlayerByUid(playerEntity.PlayerUID) is not IServerPlayer player
             || LifeRules.UnlimitedLives(playerEntity.World)
+            || TemporalRebirthModSystem.Messages is not { } messages
         )
         {
             return;
@@ -77,19 +80,22 @@ internal static class TemporalGearPatch
             return;
         }
 
-        int perGear = TemporalRebirthModSystem.Config.LivesPerGear;
-        int lives = perGear < 0 ? Math.Max(respawnUses, 1) : perGear;
-        if (lives <= 0)
+        RebirthConfig config = TemporalRebirthModSystem.Config;
+        int lives = config.LivesPerGear < 0 ? Math.Max(respawnUses, 1) : config.LivesPerGear;
+        int left = LifeRules.GetLivesLeft(player);
+        if (config.LivesMax > 0)
         {
-            return;
+            lives = Math.Min(lives, config.LivesMax - left);
+            if (lives <= 0 && config.LivesPerGear != 0)
+            {
+                messages.Tell(player, "LivesFull", ("lives", left));
+            }
         }
 
-        LifeRules.AddLives(player, lives);
-        player.SendLocalisedMessage(
-            GlobalConstants.GeneralChatGroup,
-            "temporalrebirth:gear-lives",
-            lives,
-            LifeRules.GetLivesLeft(player)
-        );
+        if (lives > 0)
+        {
+            LifeRules.AddLives(player, lives);
+            messages.Tell(player, "GearLives", ("count", lives), ("lives", LifeRules.GetLivesLeft(player)));
+        }
     }
 }

@@ -6,14 +6,20 @@ namespace TemporalRebirth.Patches;
 
 /// <summary>
 /// Vanilla refuses a respawn once playerlives &lt;= deaths. Count our extra lives too.
-/// Players with no lives left never reach this: they become ghosts before the death screen opens.
+/// Players with no lives left never reach this: they become something else before the death screen opens.
 /// </summary>
 [HarmonyPatch(typeof(ServerSystemEntitySimulation), "HandleSpecialKey")]
 internal static class RespawnPatch
 {
     private static bool Prefix(ServerMain ___server, ConnectedClient client)
     {
-        if (LifeRules.UnlimitedLives(___server) || LifeRules.GetLivesLeft(client.Player) != 0)
+        // Between dying and the game counting the death, the life just lost still looks available.
+        if (client.Entityplayer is { DeadNotify: true } && !LifeRules.UnlimitedLives(___server))
+        {
+            return false;
+        }
+
+        if (LifeRules.UnlimitedLives(___server) || (LifeRules.GetLivesLeft(client.Player) != 0 && TemporalRebirthModSystem.Rebirth?.Afterlife.Contains(client.Player.PlayerUID) != true))
         {
             ServerMain.Logger.VerboseDebug("Received respawn request from {0}", client.PlayerName);
             ___server.EventManager.TriggerPlayerRespawn(client.Player);

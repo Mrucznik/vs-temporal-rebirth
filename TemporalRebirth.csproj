@@ -18,6 +18,10 @@
       <HintPath>$(VINTAGE_STORY)/VintagestoryLib.dll</HintPath>
       <Private>false</Private>
     </Reference>
+    <Reference Include="VSEssentials">
+      <HintPath>$(VINTAGE_STORY)/Mods/VSEssentials.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
     <Reference Include="VSSurvivalMod">
       <HintPath>$(VINTAGE_STORY)/Mods/VSSurvivalMod.dll</HintPath>
       <Private>false</Private>
@@ -35,6 +39,8 @@
   <ItemGroup>
     <!-- Test tools are separate projects. -->
     <Compile Remove="test/**" />
+    <!-- Keys, ranges, presets and texts shared with the web configurator. -->
+    <EmbeddedResource Include="docs/configurator/schema.js" LogicalName="schema.js" />
   </ItemGroup>
 
   <ItemGroup>

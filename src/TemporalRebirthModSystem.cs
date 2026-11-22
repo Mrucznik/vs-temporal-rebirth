@@ -10,11 +10,13 @@ namespace TemporalRebirth;
 public sealed class TemporalRebirthModSystem : ModSystem
 {
     private const string HarmonyId = "temporalrebirth";
-    private const string ConfigFile = "temporalrebirth.json";
+    private const string ConfigFileName = "temporalrebirth.json";
 
     // Harmony patches are static; they reach the server state through these.
-    internal static RebirthConfig Config { get; private set; } = new();
+    internal static RebirthConfig Config { get; private set; } = RebirthConfig.Default();
     internal static Rebirth? Rebirth { get; private set; }
+    internal static Rituals? Rituals { get; private set; }
+    internal static Messages? Messages { get; private set; }
 
     private Harmony? harmony;
     private ICoreServerAPI? sapi;
@@ -26,25 +28,32 @@ public sealed class TemporalRebirthModSystem : ModSystem
         harmony = new Harmony(HarmonyId + ".client");
         // Cosmetic only: without it the death screen shows vanilla's life count.
         TryPatch(api, typeof(DeathDialogPatch));
+        new ZombieLook(api).Start();
     }
 
     public override void StartServerSide(ICoreServerAPI api)
     {
         sapi = api;
-        Config = LoadConfig(api);
+        var file = new ConfigFile(Path.Combine(GamePaths.ModConfig, ConfigFileName), text => api.Logger.Error("[temporalrebirth] {0}", text));
+        Config = file.Load();
+        WarnAboutUnfinished(api);
 
         var afterlife = new Afterlife(api);
-        Rebirth = new Rebirth(api, Config, afterlife);
+        Messages = new Messages(api, Config);
+        Rebirth = new Rebirth(api, Config, afterlife, Messages);
+        Rituals = new Rituals(api, Config, afterlife, Rebirth, Messages);
 
         api.Event.SaveGameLoaded += afterlife.Load;
         api.Event.SaveGameLoaded += () => LifeRules.CurrentEpoch = Epochs.Advance(api);
         api.Event.GameWorldSave += afterlife.Save;
         api.Event.PlayerNowPlaying += Rebirth.OnPlayerNowPlaying;
         api.Event.PlayerDeath += Rebirth.OnPlayerDeath;
-        returnTickId = api.Event.RegisterGameTickListener(_ => Rebirth.CheckReturns(), 30_000);
+        returnTickId = api.Event.RegisterGameTickListener(_ => Rebirth.CheckReturns(), 5_000);
         tetherTickId = api.Event.RegisterGameTickListener(_ => Rebirth.EnforceTethers(), 1_000);
 
-        Commands.Register(api, Rebirth);
+        Rights.Register(api);
+        new Commands(api, Config, file, Rebirth, Rituals).Register();
+        new ZombieRules(api, afterlife, Rebirth).Register();
 
         harmony = new Harmony(HarmonyId + ".server");
         // Without the respawn patch, extra lives would be shown but vanilla would still refuse the respawn.
@@ -55,6 +64,11 @@ public sealed class TemporalRebirthModSystem : ModSystem
         }
 
         TryPatch(api, typeof(TemporalGearPatch));
+        TryPatch(api, typeof(ZombiePickupPatch));
+        if (!TryPatch(api, typeof(JoinPatch)))
+        {
+            api.Logger.Error("[temporalrebirth] Bans do not work until the mod is updated for this game version: players are disconnected but can rejoin.");
+        }
         DownedCompat.WarnIfUntested(api);
     }
 
@@ -76,22 +90,18 @@ public sealed class TemporalRebirthModSystem : ModSystem
         }
     }
 
-    private static RebirthConfig LoadConfig(ICoreServerAPI api)
+    /// <summary>Settings the configurator already offers but this version does not do yet.</summary>
+    private static void WarnAboutUnfinished(ICoreServerAPI api)
     {
-        RebirthConfig? config = null;
-        try
+        if (Config.PlaceAt == Place.Zone)
         {
-            config = api.LoadModConfig<RebirthConfig>(ConfigFile);
-        }
-        catch (Exception e)
-        {
-            api.Logger.Error("[temporalrebirth] {0} is invalid, using defaults: {1}", ConfigFile, e.Message);
+            api.Logger.Warning("[temporalrebirth] Place.At Zone is not implemented yet; using the marked place with Place.Radius.");
         }
 
-        config ??= new RebirthConfig();
-        // Writes back new keys after an update.
-        api.StoreModConfig(config, ConfigFile);
-        return config;
+        if (Config.LivesCount != "Deaths")
+        {
+            api.Logger.Warning("[temporalrebirth] Lives.Count {0} is not implemented yet; deaths take lives.", Config.LivesCount);
+        }
     }
 
     public override void Dispose()
@@ -109,6 +119,9 @@ public sealed class TemporalRebirthModSystem : ModSystem
         harmony?.UnpatchAll(harmony.Id);
         harmony = null;
         Rebirth = null;
+        Rituals = null;
+        Messages = null;
+        ZombieRules.Current = null;
         sapi = null;
     }
 }

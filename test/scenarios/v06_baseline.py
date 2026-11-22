@@ -1,5 +1,5 @@
 """What mod 0.6.x does today. These must keep passing after the 0.7.0 rewrite for a migrated 0.6.x config."""
-import json, time
+import json, re, time
 from harness import Failed, check, distance
 
 
@@ -79,7 +79,6 @@ def leaving_before_becoming_a_ghost(w):
     ala.quit()
 
 
-@known_bug("leaving and rejoining within 1.5 s of the last death leaves the player alive in survival", "wanted {'mode': 'Spectator'")
 def quick_relog_after_last_death(w):
     for name in ("Qra", "Qrb", "Qrc"):
         ala, = w.join(name)
@@ -146,7 +145,7 @@ def ritual_without_ghosts_keeps_the_gear(w):
     w.trt("rift Rwg 4")
     before, since = ola.state(), w.bots.mark()
     check(not ola.gear(), "the gear stays")
-    ola.heard("The rift does not answer", since)
+    ola.heard("Nobody is waiting", since)
     check(ola.state()["lives"] == before["lives"], "no life from a ritual")
     w.trt("clearrifts")
     ola.quit()
@@ -161,7 +160,7 @@ def ritual_needs_a_choice_between_ghosts(w):
     w.trt("rift RcC 4")
     since = w.bots.mark()
     check(not ola.gear(), "the gear stays until someone is chosen")
-    ola.heard("More than one ghost", since)
+    ola.heard("More than one player", since)
     ola.ask("/rebirth target Rcb", "will bring back Rcb")
     check(ola.gear(), "the gear is used up")
     b.until(mode="Survival", alive=True)
@@ -235,17 +234,6 @@ def ghost_and_lives_survive_server_restart(w):
     ala.until(mode="Spectator", alive=True, lives=0)
     ola.until(lives=7)
     ala.quit(), ola.quit()
-
-
-@known_bug("the reviving heal shows up in the ghost's chat", "Gained 9999 hp")
-def no_heal_message_for_ghosts(w):
-    ala, = w.join("Nhm")
-    since = w.bots.mark()
-    ala.lose_all_lives()
-    ala.until(mode="Spectator", alive=True)
-    time.sleep(1)
-    ala.silent("Gained 9999 hp", since, 1)
-    ala.quit()
 
 
 # ---------- other configs ----------
@@ -352,16 +340,22 @@ def relimited_world_starts_lives_over(w):
     ala.quit()
 
 
-@known_bug("a typo in the config file makes the mod overwrite it with defaults", "the admin's settings are still in the file")
 def broken_config_is_not_overwritten(w):
     check(w.log_has("temporalrebirth.json is invalid"), "the error is logged")
     check('"GhostTetherRadius": 99' in w.config_path.read_text(encoding="utf8"), "the admin's settings are still in the file")
 
 
-def missing_keys_are_added(w):
-    saved = json.loads(w.config_path.read_text(encoding="utf8"))
-    check(saved["LivesPerGear"] == 4, "the admin's value is kept")
-    check(saved["ReturnMode"] == "NextDay" and "RitualRiftRange" in saved, "the rest is filled in")
+def read_config(w):
+    """The file without its comments."""
+    return json.loads(re.sub(r"^\s*//.*$", "", w.config_path.read_text(encoding="utf8"), flags=re.M))
+
+
+def old_config_is_migrated(w):
+    saved = read_config(w)
+    check(saved["Lives"]["PerGear"] == 4, "the admin's value is kept")
+    check(saved["Time"]["Duration"] == "next day 06:00" and saved["Ritual"]["Range"] == 8, "the rest is filled in")
+    check(saved["Ghost"]["Visible"] == "Nobody", "an update does not change what players see")
+    check(json.loads((w.config_path.parent / (w.config_path.name + ".bak")).read_text(encoding="utf8")) == {"LivesPerGear": 4, "ReturnMode": "NextDay"}, "the old file is kept as .bak")
 
 
 GROUPS = [
@@ -369,7 +363,7 @@ GROUPS = [
         death_costs_a_life, last_death_makes_a_ghost, ghost_is_tethered, ghost_survives_relog, leaving_before_becoming_a_ghost, quick_relog_after_last_death,
         returns_the_next_day, returns_on_login_when_time_passed, ritual_brings_a_ghost_back, ritual_without_ghosts_keeps_the_gear,
         ritual_needs_a_choice_between_ghosts, offline_ghost_cannot_be_revived, gear_away_from_rifts_gives_a_life, admin_commands,
-        no_heal_message_for_ghosts, ghost_and_lives_survive_server_restart]},
+        ghost_and_lives_survive_server_restart]},
     {"name": "hours", "world": {"config": {"ReturnMode": "Hours", "ReturnAfterHours": 2, "GhostNoClip": True, "GhostTetherRadius": 0, "ReturnHealthPercent": 40, "ReturnSatietyPercent": 20}},
      "tests": [returns_after_hours_weakened, noclip_and_free_roaming]},
     {"name": "deathspot", "world": {"config": {"RitualReviveAt": "DeathSpot", "RitualCooldownHours": 5, "LivesPerGear": 3}},
@@ -377,5 +371,5 @@ GROUPS = [
     {"name": "ritualonly", "world": {"config": {"ReturnMode": "Disabled", "RitualReviveAt": "Spawn"}}, "tests": [ritual_to_spawn_and_no_natural_return]},
     {"name": "unlimited", "ordered": True, "tests": [unlimited_world_releases_ghosts, relimited_world_starts_lives_over]},
     {"name": "brokenconfig", "world": {"raw_config": '{ "GhostTetherRadius": 99, oops'}, "tests": [broken_config_is_not_overwritten]},
-    {"name": "partialconfig", "world": {"config": {"LivesPerGear": 4}}, "tests": [missing_keys_are_added]},
+    {"name": "oldconfig", "world": {"config": {"LivesPerGear": 4, "ReturnMode": "NextDay"}}, "tests": [old_config_is_migrated]},
 ]

@@ -11,11 +11,11 @@ internal class ZonePrediction(ICoreClientAPI api)
     private EnumWorldAccessResponse TestAccess(IPlayer player, BlockSelection selection, EnumBlockAccessFlags wanted, ref string claimant, LandClaim claim, EnumWorldAccessResponse response)
     {
         // The game passes a null selection when nothing is targeted.
-        if (selection?.Position == null || player.Entity?.WatchedAttributes is not { } attrs || !Enum.TryParse(attrs.GetString(Zones.AccessAttr), out ZoneAccess access))
+        if (selection?.Position == null || player.Entity?.WatchedAttributes is not { } attrs || !Enum.TryParse(attrs.GetString(ClientState.ZoneAccess), out ZoneAccess access))
         {
             return response;
         }
 
-        return Zones.Decide(api.World.Claims, selection.Position, attrs.GetInt(Zones.GroupAttr), access, wanted, claim, response, ref claimant);
+        return Zones.Decide(api.World.Claims, selection.Position, attrs.GetInt(ClientState.ZoneGroup), access, wanted, claim, response, ref claimant);
     }
 }

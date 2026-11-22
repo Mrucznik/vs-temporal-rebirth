@@ -52,7 +52,7 @@ internal class WispLook(ICoreClientAPI api)
         var seen = new HashSet<long>();
         foreach (IPlayer player in api.World.AllOnlinePlayers)
         {
-            if (player.Entity is { } entity && IsWisp(player) && IsInView(entity, self))
+            if (player.Entity is { } entity && LookOf(player) != GhostVisible.Nobody && IsInView(entity, self))
             {
                 seen.Add(entity.EntityId);
                 Show(entity);
@@ -66,9 +66,10 @@ internal class WispLook(ICoreClientAPI api)
         }
     }
 
-    private static bool IsWisp(IPlayer player) =>
-        player.WorldData?.CurrentGameMode == EnumGameMode.Spectator
-        && player.Entity.WatchedAttributes.GetString(Rebirth.GhostLookAttr) is nameof(GhostVisible.Wisp) or nameof(GhostVisible.WispAndEcho);
+    internal static GhostVisible LookOf(IPlayer player) =>
+        player.WorldData?.CurrentGameMode == EnumGameMode.Spectator && Enum.TryParse(player.Entity.WatchedAttributes.GetString(ClientState.GhostLook), out GhostVisible look)
+            ? look
+            : GhostVisible.Nobody;
 
     /// <summary>Own light would only blind in first person.</summary>
     private bool IsInView(EntityPlayer entity, EntityPlayer self) =>

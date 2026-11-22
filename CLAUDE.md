@@ -29,6 +29,9 @@ Read `docs/next-steps.md` first: what is done, decided, not verified, and next.
 | zombie pickup | `EntityBehaviorCollectEntities.OnFoundCollectible` | `ZombieRules.cs` |
 | rifts | `ModSystemRifts.riftsById` (both sides), `Rift.GetNowSize` | `Rifts.cs` |
 | use / build in claims | `IEventAPI.OnTestBlockAccessClaim`, both sides | `Zones.cs`, `ZonePrediction.cs` |
+| player movement (client) | `EntityBehaviorPlayerPhysics.SimPhysics`, before the position is sent | `Client/LeashGuard.cs` |
+| damage | `EntityPlayer.ShouldReceiveDamage` | `Patches/ProtectionPatch.cs` |
+| shaders | stage `AfterBlit` over the primary frame buffer, like the game's `RiftRenderer` | `Client/SceneShader.cs` |
 | downs take lives | Downed's watched attribute `downed` | `Downs.cs` |
 | clicks on creatures | `IServerEventAPI.OnPlayerInteractEntity` (not part of `HandInteract`) | `ZombieRules.cs` |
 | game mode switch | `/player <name> gamemode <mode>` run as console | `Rebirth.SetGameMode` |
@@ -36,9 +39,13 @@ Read `docs/next-steps.md` first: what is done, decided, not verified, and next.
 Vanilla increments `WorldData.Deaths` a tick after `Die()` (until then `EntityPlayer.DeadNotify` is set), then raises
 `PlayerDeath`, and opens the death screen 2.5 s later; the mod turns the player into something at 1.5 s.
 
-What clients know comes through watched attributes (`Rebirth.SyncedAttrs`), cleared when a player comes back. After a quick
+What clients know comes through watched attributes (`ClientState.cs`), cleared when a player comes back. After a quick
 relog the game keeps the entity but drops listeners on its attributes; register them again on `PlayerNowPlaying`.
 A player killed while joining has `EntityPlayer.DeadNotify` set in `PlayerNowPlaying`: the death is still to be counted.
+
+Players are stopped at the edge of their place by their own client (`LeashShape`, shared with the server); the server only
+pulls back who is more than `LeashShape.Slack` outside. Client code is in `src/Client`. Setting a uniform a shader does not
+have throws; a shader that does not compile only makes its effect invisible.
 
 ## Config
 

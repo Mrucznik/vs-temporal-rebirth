@@ -10,9 +10,10 @@ As of 2026-11-23, branch `presets` (not pushed). Released: 0.6.1.
 - **0.7.0 mechanics** (`0.7.0-dev.1`): config with migration, presets, commands, privileges, forms (Ghost, Spectator, Zombie,
   Player, Ban), places, time, return, rituals, lives limit, custom messages (en, pl).
 - **0.8.0** (`0.8.0-dev.1`): zones, `Lives.Count` Downs and DownsFinalDeath, timer, wisp.
+- **0.9.0** (`0.9.0-dev.1`): protection after rising, leash on the client, echo.
 - **Review of 0.7.0**: 11 faults, each with a test (`test/scenarios/review07.py`) and fixed.
-- **Tests**: 112 scenarios on a real server plus configurator tests. Last full run 111/112; the one that failed (a fixed wait in
-  the test) passes since, only tests changed after that run. A full run takes about 12 min.
+- **Tests**: 116 scenarios on a real server plus configurator tests. Last full run 115/116; the one that failed (a ghost pulled
+  back onto a hill outside its sphere) is fixed and passes since. A full run takes about 12 min.
 
 ## Decided by the user
 
@@ -33,25 +34,23 @@ As of 2026-11-23, branch `presets` (not pushed). Released: 0.6.1.
 - Languages at the end: en, pl, ru, de. Custom messages replace the text for everyone.
 - Zombies without items: no weapons, no interacting with creatures; attacking bare-handed is allowed.
 - `/rebirth import` sets everything (what is not in the code is at its default), lists what changed and names the `.bak`.
-
-- Leash (0.9.0, with the echo): a sphere around the place, for everyone whose movement is limited. Nearly invisible from afar,
-  its wall shows only up close; looks akin to a rift (own shader, not a copy); glows where it is hit. The client stops the
-  player at the edge; the server only checks now and then for being far outside.
+- Leash: a sphere around the place, for everyone whose movement is limited. Nearly invisible from afar, its wall shows only up
+  close; looks akin to a rift (own shader, not a copy); glows where it is hit. The client stops the player at the edge; the
+  server only checks now and then for being far outside. Zones (boxes) stop smoothly too, but have no drawn walls for now.
+- Zombies and normal players out of lives cannot be hurt for 5 s after they rise, in addition to the safe ground and the move to
+  the spawn point after a second quick death.
 
 ## Next
 
-1. Zombies and normal players out of lives cannot be hurt for 5 s after they rise (agreed). In addition to the safe ground and
-   the move to the spawn point after a second quick death.
-2. The user looks at what 0.8.0 draws: GIFs of the timer and the wisp.
-3. 0.9.0: echo and leash (decided above). Open question on the leash: in zones (boxes, not a sphere), draw walls at once or
-   only stop players at first. Until the echo is there, `Ghost.Visible` WispAndEcho shows the wisp only and the log says so; remove
-   `WarnAboutUnfinished` when nothing is unfinished.
-4. German and Russian read by someone who speaks them (terms follow the game's own translations); publish the configurator; new ModDB text and README.
+1. Branch `refactor` (worktree `../vs-temporal-rebirth-refactor`): Rebirth split up, performance, faster tests. Merge when its
+   full run is green (agreed).
+2. The user looks at what 0.8.0 and 0.9.0 draw (they are logged in): GIFs of the timer, wisp, echo and leash.
+3. German and Russian read by someone who speaks them (terms follow the game's own translations); publish the configurator; new ModDB text and README.
 
 ## Not verified
 
-- Anything drawn on a client: timer, wisp, zombie look, death screen (with a respawn button at 0 lives for Downs),
-  client prediction in zones.
+- Anything drawn on a client: timer, wisp, echo, leash (both shaders compile and look right in WebGL, not seen in the game), zombie look, death screen (with a respawn button at 0 lives for Downs),
+  client prediction in zones. Being stopped at the edge (bots do not move on their own).
 - Zombie item limits with real input (bots do not use items; attacks and clicks on creatures are tested as events). Loading of privileges after a restart (saving is verified).
 - Client chat length for long `/rebirth import` codes (the server takes 3000 characters).
 - The in-game recorder (`.cam rec`, AVI) on Linux.

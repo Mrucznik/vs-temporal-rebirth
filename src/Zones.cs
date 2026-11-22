@@ -13,10 +13,6 @@ internal enum ZoneAccess { Traverse, Use, All }
 /// </summary>
 internal class Zones(ICoreServerAPI api, Afterlife afterlife)
 {
-    /// <summary>Synced to the player held in a zone, so their client does not refuse what the server allows.</summary>
-    internal const string GroupAttr = "temporalrebirthZoneGroup";
-    internal const string AccessAttr = "temporalrebirthZoneAccess";
-
     /// <summary>Set after construction; the two need each other.</summary>
     public Rebirth Rebirth { get; set; } = null!;
 
@@ -47,7 +43,7 @@ internal class Zones(ICoreServerAPI api, Afterlife afterlife)
         Math.Clamp(pos.Y, area.MinY, Math.Max(area.MinY, area.MaxY - 2)),
         Math.Clamp(pos.Z, area.MinZ + 0.5, area.MaxZ - 0.5));
 
-    private static bool IsPart(LandClaim claim, int group) => claim.PermittedPlayerGroupIds?.ContainsKey(group) == true;
+    internal static bool IsPart(LandClaim claim, int group) => claim.PermittedPlayerGroupIds?.ContainsKey(group) == true;
 
     // ---------- access ----------
 

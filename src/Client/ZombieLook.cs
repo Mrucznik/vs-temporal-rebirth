@@ -23,7 +23,7 @@ internal class ZombieLook(ICoreClientAPI api)
                 continue;
             }
 
-            if (entity.WatchedAttributes.GetString(Rebirth.FormAttr) == nameof(Form.Zombie))
+            if (entity.WatchedAttributes.GetString(ClientState.Form) == nameof(Form.Zombie))
             {
                 entity.RenderColor = Tint;
                 entity.LightHsv = Glow;

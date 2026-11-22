@@ -22,18 +22,29 @@ public sealed class TemporalRebirthModSystem : ModSystem
     private ICoreServerAPI? sapi;
     private Zones? zones;
     private TimerHud? timer;
+    private readonly List<IRenderer> renderers = new();
     private long returnTickId;
-    private long tetherTickId;
+    private long limitTickId;
 
     public override void StartClientSide(ICoreClientAPI api)
     {
         harmony = new Harmony(HarmonyId + ".client");
         // Cosmetic only: without it the death screen shows vanilla's life count.
         TryPatch(api, typeof(DeathDialogPatch));
+        var guard = new LeashGuard(api);
+        guard.Start();
+        // Without it only the server holds players, with jerks.
+        TryPatch(api, typeof(LeashStepPatch));
         new ZombieLook(api).Start();
         new WispLook(api).Start();
         new ZonePrediction(api).Start();
         timer = new TimerHud(api);
+        // After the assets: shaders are among them.
+        api.Event.BlockTexturesLoaded += () =>
+        {
+            renderers.Add(new LeashLook(api, guard));
+            renderers.Add(new EchoLook(api));
+        };
     }
 
     public override void StartServerSide(ICoreServerAPI api)
@@ -41,7 +52,7 @@ public sealed class TemporalRebirthModSystem : ModSystem
         sapi = api;
         var file = new ConfigFile(Path.Combine(GamePaths.ModConfig, ConfigFileName), text => api.Logger.Error("[temporalrebirth] {0}", text));
         Config = file.Load();
-        WarnAboutUnfinished(api);
+        WarnAboutMissing(api);
 
         var afterlife = new Afterlife(api);
         Messages = new Messages(api, Config);
@@ -59,7 +70,7 @@ public sealed class TemporalRebirthModSystem : ModSystem
         api.Event.PlayerDeath += Rebirth.OnPlayerDeath;
         api.Event.PlayerRespawn += Rebirth.OnPlayerRespawn;
         returnTickId = api.Event.RegisterGameTickListener(_ => Rebirth.CheckReturns(), 5_000);
-        tetherTickId = api.Event.RegisterGameTickListener(_ => Rebirth.EnforceTethers(), 1_000);
+        limitTickId = api.Event.RegisterGameTickListener(_ => Rebirth.EnforceLimits(), 1_000);
 
         Rights.Register(api);
         new Commands(api, Config, file, Rebirth, Rituals, zones).Register();
@@ -75,6 +86,7 @@ public sealed class TemporalRebirthModSystem : ModSystem
 
         TryPatch(api, typeof(TemporalGearPatch));
         TryPatch(api, typeof(ZombiePickupPatch));
+        TryPatch(api, typeof(ProtectionPatch));
         if (!TryPatch(api, typeof(JoinPatch)))
         {
             api.Logger.Error("[temporalrebirth] Bans do not work until the mod is updated for this game version: players are disconnected but can rejoin.");
@@ -100,14 +112,9 @@ public sealed class TemporalRebirthModSystem : ModSystem
         }
     }
 
-    /// <summary>Settings the configurator already offers but this version does not do yet.</summary>
-    private static void WarnAboutUnfinished(ICoreServerAPI api)
+    /// <summary>Settings that need something this server does not have.</summary>
+    private static void WarnAboutMissing(ICoreServerAPI api)
     {
-        if (Config is { Form: Form.Ghost, GhostVisible: GhostVisible.WispAndEcho })
-        {
-            api.Logger.Notification("[temporalrebirth] Ghost.Visible WispAndEcho: the echo is not implemented yet; ghosts are wisps.");
-        }
-
         if (Config.LivesCount != LivesCount.Deaths && !DownedCompat.IsInstalled(api))
         {
             api.Logger.Warning("[temporalrebirth] Lives.Count {0} needs the Downed mod; deaths take lives.", Config.LivesCount);
@@ -125,9 +132,11 @@ public sealed class TemporalRebirthModSystem : ModSystem
             sapi.Event.PlayerRespawn -= Rebirth.OnPlayerRespawn;
             zones?.Unregister();
             sapi.Event.UnregisterGameTickListener(returnTickId);
-            sapi.Event.UnregisterGameTickListener(tetherTickId);
+            sapi.Event.UnregisterGameTickListener(limitTickId);
         }
 
+        renderers.ForEach(r => r.Dispose());
+        renderers.Clear();
         timer?.Dispose();
         timer = null;
         zones = null;

@@ -9,11 +9,6 @@ namespace TemporalRebirth;
 /// </summary>
 internal class TimerHud : HudElement
 {
-    internal const string SecondsAttr = "temporalrebirthSecondsLeft";
-
-    /// <summary>The admin's own text; without it players see the mod's in their language.</summary>
-    internal const string TextAttr = "temporalrebirthTimerText";
-
     private const double Width = 700, Height = 25;
 
     /// <summary>Smaller differences are the delay of the network; following them would make the seconds jump.</summary>
@@ -39,7 +34,7 @@ internal class TimerHud : HudElement
     private void Update()
     {
         var attrs = capi.World.Player?.Entity?.WatchedAttributes;
-        int sent = attrs?.GetInt(SecondsAttr, -1) ?? -1;
+        int sent = attrs?.GetInt(ClientState.TimerSeconds, -1) ?? -1;
         if (sent < 0)
         {
             lastSent = -1;
@@ -64,7 +59,7 @@ internal class TimerHud : HudElement
         }
 
         string time = Format(Math.Max(0, (endMs - now + 999) / 1000));
-        string custom = attrs!.GetString(TextAttr, "");
+        string custom = attrs!.GetString(ClientState.TimerText, "");
         string text = custom.Length > 0 ? custom.Replace("{time}", time) : Lang.Get("temporalrebirth:msg-timer", time);
 
         if (SingleComposer == null)

@@ -12,7 +12,7 @@
 | `harness.py` | starts servers and bots, waits for what should happen |
 | `scenarios/v06_baseline.py` | what 0.6.x does; a migrated config must keep passing after the rewrite |
 | `scenarios/races.py` | leaving, rejoining, crashing or acting twice while the mod waits for something |
-| `scenarios/v07.py`, `scenarios/v08.py` | what these versions add |
+| `scenarios/v07.py`, `v08.py`, `v09.py` | what these versions add |
 | `scenarios/review07.py` | faults found by reading 0.7.0 |
 | `scenarios/downed.py` | together with Downed |
 
@@ -20,4 +20,4 @@
 
 - `node test/configurator/ui.mjs file://$PWD/docs/configurator/index.html <out dir>` — drives the page in headless Chrome, screenshots included.
 
-Not covered: anything drawn on a client (timer, wisp, echo, dialogs) and real item input. Bots do not move on their own.
+Not covered: anything drawn on a client (timer, wisp, echo, leash, dialogs) and real item input. Bots do not move on their own.

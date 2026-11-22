@@ -93,6 +93,7 @@ public sealed class HelperModSystem : ModSystem
             look = e.WatchedAttributes.GetString("temporalrebirthGhostLook"),
             seconds = e.WatchedAttributes.GetInt("temporalrebirthSecondsLeft", -1),
             timerText = e.WatchedAttributes.GetString("temporalrebirthTimerText"),
+            leash = e.WatchedAttributes.GetString("temporalrebirthLeash"),
             zoneAccess = e.WatchedAttributes.GetString("temporalrebirthZoneAccess"),
         };
     }

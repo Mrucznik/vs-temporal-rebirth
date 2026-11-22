@@ -16,29 +16,18 @@ namespace TemporalRebirth;
 /// </summary>
 internal class Rebirth(ICoreServerAPI api, RebirthConfig config, Afterlife afterlife, Zones zones, Messages messages)
 {
-    /// <summary>Synced, so clients can show what a player has become.</summary>
-    internal const string FormAttr = "temporalrebirthForm";
-
-    /// <summary>Synced: how other players see a ghost, a <see cref="GhostVisible"/>. Missing when they do not.</summary>
-    internal const string GhostLookAttr = "temporalrebirthGhostLook";
-
-    /// <summary>Everything the mod tells clients about a player out of lives.</summary>
-    private static readonly string[] SyncedAttrs = [FormAttr, GhostLookAttr, TimerHud.SecondsAttr, TimerHud.TextAttr, Zones.GroupAttr, Zones.AccessAttr];
-
     /// <summary>The vanilla death screen opens 2.5 s after death; players are turned into something before that.</summary>
     private const int SettleDelayMs = 1500;
 
     /// <summary>Dying again this soon after being let loose moves a player from where they died to their spawn point.</summary>
     private const int QuickDeathSeconds = 60;
 
+    /// <summary>How long nobody can hurt a walking player who was just let loose.</summary>
+    private const int ProtectedSeconds = 5;
+
     private const string OldReturningKey = "temporalrebirth.returning";
 
-    private readonly Dictionary<string, long> lastTetherMessageMs = new();
-    private readonly Dictionary<string, Vec3d> lastInside = new();
-
-    /// <summary>Groups already reported as having no land claims, so the log says it once.</summary>
-    private readonly HashSet<string> missingZones = new();
-
+    private readonly Leash leash = new(api, config, zones, messages);
     private Downs? downs;
 
     /// <summary>The latest teleport of each player; older ones that finish late are ignored.</summary>
@@ -72,7 +61,7 @@ internal class Rebirth(ICoreServerAPI api, RebirthConfig config, Afterlife after
         LostPlayer? lost = afterlife.Get(player.PlayerUID);
         if (lost == null)
         {
-            ClearSynced(player.Entity);
+            ClientState.Clear(player.Entity);
             if (player.GetModData(OldReturningKey, false))
             {
                 // 0.6.x: left mid-return, so the switch back to survival never happened.
@@ -209,8 +198,8 @@ internal class Rebirth(ICoreServerAPI api, RebirthConfig config, Afterlife after
             return;
         }
 
-        entity.WatchedAttributes.SetString(FormAttr, rules.Form == Form.Zombie && !rules.ZombieGlow ? "Player" : rules.Form.ToString());
-        SyncAttr(entity, GhostLookAttr, rules.Form == Form.Ghost && rules.GhostVisible != GhostVisible.Nobody ? rules.GhostVisible.ToString() : null);
+        ClientState.Set(entity, ClientState.Form, rules.Form == Form.Zombie && !rules.ZombieGlow ? "Player" : rules.Form.ToString());
+        ClientState.Set(entity, ClientState.GhostLook, rules.Form == Form.Ghost && rules.GhostVisible != GhostVisible.Nobody ? rules.GhostVisible.ToString() : null);
         SyncTimer(player, lost);
         if (died && !first && rules.PlaceAt == Place.Body && Walks(rules.Form) && lost.LandedAtUtc is { } landed && DateTime.UtcNow < landed.AddSeconds(QuickDeathSeconds))
         {
@@ -239,6 +228,7 @@ internal class Rebirth(ICoreServerAPI api, RebirthConfig config, Afterlife after
 
         // Travel as a spectator and become mortal only once the chunks are there, so nobody falls into unloaded terrain.
         lost.Travelling = true;
+        ClientState.Set(entity, ClientState.Leash, (string?)null);
         SetGameMode(player, EnumGameMode.Spectator);
         GoTo(player, start, () => Land(player.PlayerUID));
     }
@@ -330,8 +320,7 @@ internal class Rebirth(ICoreServerAPI api, RebirthConfig config, Afterlife after
         List<LandClaim> claims = zones.Claims(rules.PlaceGroup);
         if (claims.Count == 0)
         {
-            api.Logger.Error("[temporalrebirth] No land claim is shared with the group {0}; nobody is held there. {1} may go anywhere.", rules.PlaceGroup, player.PlayerName);
-            missingZones.Add(rules.PlaceGroup);
+            leash.ReportMissingZone(player, rules.PlaceGroup);
             return point;
         }
 
@@ -408,10 +397,10 @@ internal class Rebirth(ICoreServerAPI api, RebirthConfig config, Afterlife after
         }
     }
 
-    // ---------- tether ----------
+    // ---------- staying in place ----------
 
     /// <summary>Called every second.</summary>
-    public void EnforceTethers()
+    public void EnforceLimits()
     {
         foreach (IServerPlayer player in api.World.AllOnlinePlayers.Cast<IServerPlayer>())
         {
@@ -423,118 +412,17 @@ internal class Rebirth(ICoreServerAPI api, RebirthConfig config, Afterlife after
 
             RebirthConfig rules = Rules(lost);
             KeepNoClipSetting(player, rules);
-            if (rules.PlaceAt == Place.Zone)
+            if (!leash.Enforce(player, lost, rules))
             {
-                HoldInZone(player, lost, rules);
-            }
-            else if (rules.Radius > 0 && lost.StartVec is { } anchor && player.Entity.Alive)
-            {
-                Tether(player, anchor, rules.Radius, Walks(rules.Form));
+                lost.Travelling = true;
+                Enter(player, lost);
             }
         }
     }
 
-    private void Tether(IServerPlayer player, Vec3d anchor, double radius, bool walks)
-    {
-        Vec3d pos = player.Entity.Pos.XYZ;
-        double dist = pos.DistanceTo(anchor);
-        if (dist <= radius)
-        {
-            lastInside[player.PlayerUID] = pos;
-            return;
-        }
-
-        Vec3d target;
-        if (walks)
-        {
-            // Back to the last step inside the limit.
-            target = lastInside.TryGetValue(player.PlayerUID, out Vec3d? inside) && inside.DistanceTo(anchor) <= radius ? inside : anchor;
-        }
-        else
-        {
-            // Teleports far away (e.g. an admin /tp) snap straight back; drifting ends on the edge, still facing where it was heading.
-            target = dist > radius * 4
-                ? anchor
-                : anchor.AddCopy((pos.X - anchor.X) / dist * (radius - 1), (pos.Y - anchor.Y) / dist * (radius - 1), (pos.Z - anchor.Z) / dist * (radius - 1));
-            if (!player.WorldData.NoClip && !SafeSpot.IsFree(api.World.BlockAccessor, target))
-            {
-                // The line can cross a hill; a solid ghost must not land inside it.
-                target = SafeSpot.FindAbove(api.World.BlockAccessor, target) ?? SafeSpot.FindAbove(api.World.BlockAccessor, anchor) ?? anchor;
-            }
-        }
-
-        player.Entity.TeleportToDouble(target.X, target.Y, target.Z);
-        TellTooFar(player);
-    }
-
-    private void HoldInZone(IServerPlayer player, LostPlayer lost, RebirthConfig rules)
-    {
-        SyncZone(player.Entity, rules);
-        List<LandClaim> claims = zones.Claims(rules.PlaceGroup);
-        if (claims.Count == 0)
-        {
-            if (missingZones.Add(rules.PlaceGroup))
-            {
-                api.Logger.Error("[temporalrebirth] No land claim is shared with the group {0} any more; nobody is held there.", rules.PlaceGroup);
-            }
-
-            return;
-        }
-
-        missingZones.Remove(rules.PlaceGroup);
-        if (!player.Entity.Alive)
-        {
-            return;
-        }
-
-        Vec3d pos = player.Entity.Pos.XYZ;
-        if (Zones.Contains(claims, pos))
-        {
-            lastInside[player.PlayerUID] = pos;
-            return;
-        }
-
-        if (lastInside.TryGetValue(player.PlayerUID, out Vec3d? inside) && Zones.Contains(claims, inside))
-        {
-            player.Entity.TeleportToDouble(inside.X, inside.Y, inside.Z);
-        }
-        else
-        {
-            // After a restart, or when the claims changed. May be far away, so travel like at the start of the sentence.
-            Vec3d target = lost.StartVec is { } start && Zones.Contains(claims, start) ? start : zones.Nearest(claims, pos);
-            lost.Start = LostPlayer.Pack(target);
-            lost.Travelling = true;
-            Enter(player, lost);
-        }
-
-        TellTooFar(player);
-    }
-
-    private void SyncZone(EntityPlayer entity, RebirthConfig rules)
-    {
-        if (Walks(rules.Form) && zones.GroupId(rules.PlaceGroup) is { } group)
-        {
-            SyncAttr(entity, Zones.AccessAttr, rules.PlaceAccess.ToString());
-            if (entity.WatchedAttributes.GetInt(Zones.GroupAttr, -1) != group)
-            {
-                entity.WatchedAttributes.SetInt(Zones.GroupAttr, group);
-            }
-        }
-        else
-        {
-            SyncAttr(entity, Zones.AccessAttr, null);
-        }
-    }
-
-    private void TellTooFar(IServerPlayer player)
-    {
-        long now = api.World.ElapsedMilliseconds;
-        if (!lastTetherMessageMs.TryGetValue(player.PlayerUID, out long last) || now - last > 15_000)
-        {
-            lastTetherMessageMs[player.PlayerUID] = now;
-            messages.Tell(player, "TooFar");
-        }
-    }
+    /// <summary>Whether a walking player was let loose so recently that nothing may hurt them.</summary>
+    public bool IsProtected(string uid) =>
+        afterlife.Get(uid) is { Phase: Phase.Serving, LandedAtUtc: { } landed } && DateTime.UtcNow < landed.AddSeconds(ProtectedSeconds);
 
     // ---------- coming back ----------
 
@@ -626,7 +514,7 @@ internal class Rebirth(ICoreServerAPI api, RebirthConfig config, Afterlife after
     {
         EntityPlayer entity = player.Entity;
         entity.TryUnmount();
-        ClearSynced(entity);
+        ClientState.Clear(entity);
         if (!entity.Alive)
         {
             entity.Revive();
@@ -698,8 +586,8 @@ internal class Rebirth(ICoreServerAPI api, RebirthConfig config, Afterlife after
         }
 
         afterlife.Remove(uid);
-        lastInside.Remove(uid);
-        ClearSynced(entity);
+        leash.Forget(uid);
+        ClientState.Clear(entity);
         LifeRules.Sync(player);
         SetGameMode(player, EnumGameMode.Survival);
         SetVital(entity, "health", "currenthealth", "maxhealth", rules.HealthPercent, 1f);
@@ -812,49 +700,14 @@ internal class Rebirth(ICoreServerAPI api, RebirthConfig config, Afterlife after
         api.ChatCommands.ExecuteUnparsed(command, args, result => done(result));
     }
 
-    // ---------- what clients know ----------
-
-    private static void SyncAttr(EntityPlayer entity, string key, string? value)
-    {
-        if (value != null)
-        {
-            if (entity.WatchedAttributes.GetString(key) != value)
-            {
-                entity.WatchedAttributes.SetString(key, value);
-            }
-        }
-        else if (entity.WatchedAttributes.HasAttribute(key))
-        {
-            entity.WatchedAttributes.RemoveAttribute(key);
-            entity.WatchedAttributes.MarkPathDirty(key);
-        }
-    }
-
-    private static void ClearSynced(EntityPlayer entity)
-    {
-        foreach (string key in SyncedAttrs)
-        {
-            SyncAttr(entity, key, null);
-        }
-    }
-
     /// <summary>How long until they come back, for the timer on their screen.</summary>
     private void SyncTimer(IServerPlayer player, LostPlayer lost)
     {
-        EntityPlayer entity = player.Entity;
         RebirthConfig rules = Rules(lost);
-        if (!rules.ShowTimer || rules.Form == Form.Ban || ReturnAtUtc(lost) is not { } at)
-        {
-            SyncAttr(entity, TimerHud.SecondsAttr, null);
-            SyncAttr(entity, TimerHud.TextAttr, null);
-            return;
-        }
-
-        SyncAttr(entity, TimerHud.TextAttr, config.Message("Timer"));
-        int seconds = (int)Math.Clamp((at - DateTime.UtcNow).TotalSeconds, 0, int.MaxValue);
-        if (entity.WatchedAttributes.GetInt(TimerHud.SecondsAttr, -1) != seconds)
-        {
-            entity.WatchedAttributes.SetInt(TimerHud.SecondsAttr, seconds);
-        }
+        int? seconds = rules.ShowTimer && rules.Form != Form.Ban && ReturnAtUtc(lost) is { } at
+            ? (int)Math.Clamp((at - DateTime.UtcNow).TotalSeconds, 0, int.MaxValue)
+            : null;
+        ClientState.Set(player.Entity, ClientState.TimerSeconds, seconds);
+        ClientState.Set(player.Entity, ClientState.TimerText, seconds == null ? null : config.Message("Timer"));
     }
 }

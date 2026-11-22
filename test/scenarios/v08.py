@@ -181,7 +181,7 @@ def claims_made_and_removed_while_serving(w):
     ala.go(40, 0, 0)
     time.sleep(2.5)
     check(not inside(ala, middle), "free while there are no claims")
-    check(w.server.wait("any more; nobody is held", since, 2), "the log says so")
+    check(w.server.wait("nobody is held", since, 2), "the log says so")
     w.trt("claim CmrA afterlife 10 false")
     wait_inside(ala, middle, "held again")
     ala.until(mode="Survival", alive=True)
@@ -459,7 +459,8 @@ def downed_while_out_of_lives(w):
     w.trt("hurt Dwo 500")
     ala.until(mode="Survival", alive=True, downed=False, lives=0, timeout=15)
     wait_phase(w, ala, "Serving")
-    time.sleep(1)
+    # Nothing can hurt them right after they rise.
+    time.sleep(6)
     down(w, ala)
     time.sleep(1)
     check(phase(w, ala) == "Serving" and ala.state()["downed"], "only downed")

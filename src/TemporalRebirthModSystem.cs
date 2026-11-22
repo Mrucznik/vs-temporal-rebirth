@@ -37,14 +37,16 @@ public sealed class TemporalRebirthModSystem : ModSystem
         // Without it only the server holds players, with jerks.
         TryPatch(api, typeof(LeashStepPatch));
         new ZombieLook(api).Start();
-        new WispLook(api).Start();
+        var ghosts = new Ghosts(api);
+        ghosts.Start();
+        new WispLook(api, ghosts).Start();
         new ZonePrediction(api).Start();
         timer = new TimerHud(api);
         // After the assets: shaders are among them.
         api.Event.BlockTexturesLoaded += () =>
         {
             renderers.Add(new LeashLook(api, guard));
-            renderers.Add(new EchoLook(api));
+            renderers.Add(new EchoLook(api, ghosts));
         };
     }
 

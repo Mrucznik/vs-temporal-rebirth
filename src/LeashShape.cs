@@ -80,7 +80,27 @@ internal sealed class LeashZone(List<LandClaim> claims) : LeashShape
     internal const string Name = "zone";
 
     public override double DistanceOutside(Vec3d pos) =>
-        claims.Any(c => c.PositionInside(pos)) ? 0 : Math.Sqrt(claims.SelectMany(c => c.Areas).Min(a => DistanceSq(a, pos)));
+        Math.Sqrt(NearestSq(pos));
+
+    private double NearestSq(Vec3d pos)
+    {
+        double best = double.MaxValue;
+        foreach (LandClaim claim in claims)
+        {
+            foreach (Cuboidi area in claim.Areas)
+            {
+                double distance = DistanceSq(area, pos);
+                if (distance == 0)
+                {
+                    return 0;
+                }
+
+                best = Math.Min(best, distance);
+            }
+        }
+
+        return best;
+    }
 
     public override Vec3d Stop(Vec3d from, Vec3d to, bool level)
     {

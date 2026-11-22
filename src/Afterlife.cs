@@ -55,6 +55,10 @@ internal sealed class LostPlayer
     /// <summary>Entries written by 0.6.x have no phase; those players are ghosts already.</summary>
     public Phase Phase { get; set; } = Phase.Serving;
 
+    private RebirthConfig? rules;
+    private object? rulesFrom;
+    private string? rulesSettings;
+
     /// <summary>The settings at the time of death, see <see cref="RebirthConfig.Snapshot"/>. Null for 0.6.x entries.</summary>
     public string? Settings { get; set; }
 
@@ -79,8 +83,19 @@ internal sealed class LostPlayer
     [JsonIgnore]
     public Vec3d? DeathVec => Unpack(DeathPos);
 
-    /// <summary>The settings this time out of lives is bound to; the rest as they are now.</summary>
-    public RebirthConfig RulesIn(RebirthConfig config) => config.With(Settings);
+    /// <summary>
+    /// The settings this time out of lives is bound to; the rest as they are now. Asked every second and on every use of a
+    /// block, so they are only put together again after a change.
+    /// </summary>
+    public RebirthConfig RulesIn(RebirthConfig config)
+    {
+        if (rules == null || !ReferenceEquals(rulesFrom, config.Values) || rulesSettings != Settings)
+        {
+            (rules, rulesFrom, rulesSettings) = (config.With(Settings), config.Values, Settings);
+        }
+
+        return rules;
+    }
 
     /// <summary>When it ends by itself, or null when it never does.</summary>
     public DateTime? EndUtc(RebirthConfig config) => RulesIn(config).Duration.EndUtc(DiedAtUtc);

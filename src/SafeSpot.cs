@@ -75,28 +75,33 @@ internal static class SafeSpot
 
     private static Vec3d? FindInColumn(IBlockAccessor blocks, Vec3d pos, int maxDrop, bool allowWater)
     {
-        Vec3d? spot = FindAbove(blocks, pos);
-        for (int dy = 0; spot != null && dy <= maxDrop; dy++)
+        if (FindAbove(blocks, pos) is not { } top)
         {
-            BlockPos feet = Feet(spot);
-            BlockPos below = feet.DownCopy();
-            if (blocks.GetChunkAtBlockPos(below) == null)
+            return null;
+        }
+
+        // Up to 1000 columns are searched at once, so one position is moved along instead of making new ones.
+        BlockPos at = Feet(top);
+        for (int dy = 0; dy <= maxDrop; dy++)
+        {
+            // At or under the surface of a liquid there is only more of it below.
+            if (IsLiquid(blocks, at))
             {
                 return null;
             }
 
-            bool dry = !IsLiquid(blocks, feet) && !IsLiquid(blocks, feet.UpCopy());
-            if (dry && allowWater && IsLiquid(blocks, below) && !IsLava(blocks, below))
+            at.Down();
+            if (blocks.GetChunkAtBlockPos(at) == null)
             {
-                return spot;
+                return null;
             }
 
-            if (!IsPassable(blocks, below))
+            bool ground = !IsPassable(blocks, at), water = allowWater && IsLiquid(blocks, at) && !IsLava(blocks, at);
+            if (ground || water)
             {
-                return dry ? spot : null;
+                at.Up(2);
+                return IsLiquid(blocks, at) ? null : top.AddCopy(0, -dy, 0);
             }
-
-            spot = spot.AddCopy(0, -1, 0);
         }
 
         return null;

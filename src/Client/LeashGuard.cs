@@ -17,6 +17,7 @@ internal class LeashGuard(ICoreClientAPI api)
     private const long ZoneRefreshMs = 1000;
 
     private readonly CollisionTester collisions = new();
+    private readonly Vec3d to = new(), start = new();
     private string? known;
     private long knownAtMs, lastHitMs = -HitIntervalMs, lastMessageMs = -MessageIntervalMs;
 
@@ -60,6 +61,7 @@ internal class LeashGuard(ICoreClientAPI api)
     /// <summary>After each step of the player's own movement, before it is sent to the server.</summary>
     public void AfterStep(EntityPlayer entity, EntityPos pos, Vec3d from)
     {
+        // Runs 60 times a second; everything below is only for players near the edge.
         if (Shape is not { } shape || entity != api.World.Player?.Entity || entity.World.Side != EnumAppSide.Client || !entity.Alive || entity.MountedOn != null)
         {
             return;
@@ -67,9 +69,14 @@ internal class LeashGuard(ICoreClientAPI api)
 
         // Places are in the coordinates of the server, where dimensions are stacked.
         double dimension = pos.InternalY - pos.Y;
-        Vec3d to = pos.XYZ;
-        Vec3d start = from.AddCopy(0, dimension, 0);
-        if (shape.DistanceOutside(start) > LeashShape.Slack || shape.DistanceOutside(to) == 0)
+        to.Set(pos.X, pos.InternalY, pos.Z);
+        if (shape.DistanceOutside(to) == 0)
+        {
+            return;
+        }
+
+        start.Set(from.X, from.Y + dimension, from.Z);
+        if (shape.DistanceOutside(start) > LeashShape.Slack)
         {
             return;
         }
@@ -84,7 +91,7 @@ internal class LeashGuard(ICoreClientAPI api)
         // Sliding along the edge must not end inside a hill.
         if (!player.WorldData.NoClip && collisions.IsColliding(api.World.BlockAccessor, entity.CollisionBox, stopped, false))
         {
-            stopped = start;
+            stopped = start.Clone();
         }
 
         Vec3d outward = to - stopped;
@@ -126,11 +133,12 @@ internal class LeashGuard(ICoreClientAPI api)
 [HarmonyPatch(typeof(EntityBehaviorPlayerPhysics), nameof(EntityBehaviorPlayerPhysics.SimPhysics))]
 internal static class LeashStepPatch
 {
-    private static void Prefix(EntityPos pos, out Vec3d __state) => __state = new Vec3d(pos.X, pos.Y, pos.Z);
+    private static void Prefix(EntityPos pos, out Vec3d? __state) =>
+        __state = TemporalRebirthModSystem.ClientLeash?.Shape == null ? null : new Vec3d(pos.X, pos.Y, pos.Z);
 
-    private static void Postfix(EntityBehaviorPlayerPhysics __instance, EntityPos pos, Vec3d __state)
+    private static void Postfix(EntityBehaviorPlayerPhysics __instance, EntityPos pos, Vec3d? __state)
     {
-        if (__instance.entity is EntityPlayer player)
+        if (__state != null && __instance.entity is EntityPlayer player)
         {
             TemporalRebirthModSystem.ClientLeash?.AfterStep(player, pos, __state);
         }

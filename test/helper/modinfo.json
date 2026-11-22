@@ -1,0 +1,9 @@
+{
+  "type": "code",
+  "modid": "trt",
+  "name": "Temporal Rebirth test helper",
+  "description": "Test servers only: lets scenarios do what a headless bot cannot.",
+  "version": "1.0.0",
+  "side": "Server",
+  "requiredOnClient": false
+}

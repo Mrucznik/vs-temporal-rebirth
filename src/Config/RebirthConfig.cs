@@ -28,6 +28,10 @@ internal class RebirthConfig(IReadOnlyDictionary<string, JToken> values)
     public LivesCount LivesCount => Choice<LivesCount>("Lives.Count");
 
     public Form Form => Choice<Form>("OutOfLives");
+
+    /// <summary>Zombies and normal players; ghosts and spectators fly.</summary>
+    public bool Walks => Form is Form.Zombie or Form.Player;
+
     public GhostVisible GhostVisible => Choice<GhostVisible>("Ghost.Visible");
     public bool ZombieCanUseItems => Flag("Zombie.CanUseItems");
     public bool ZombieGlow => Flag("Zombie.Glow");

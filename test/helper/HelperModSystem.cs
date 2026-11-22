@@ -172,8 +172,7 @@ public sealed class HelperModSystem : ModSystem
     /// <summary>Who the mod thinks is out of lives: uid -> name and phase.</summary>
     private object Registry()
     {
-        object rebirth = Rebirth();
-        object afterlife = rebirth.GetType().GetProperty("Afterlife")!.GetValue(rebirth)!;
+        object afterlife = Part("Afterlife");
         var players = (System.Collections.IEnumerable)afterlife.GetType().GetProperty("Players")!.GetValue(afterlife)!;
         var answer = new Dictionary<string, object>();
         foreach (object pair in players)
@@ -238,8 +237,7 @@ public sealed class HelperModSystem : ModSystem
     /// <summary>Marks a place in land nobody visited.</summary>
     private object PointFar(IServerPlayer p, string name, int distance)
     {
-        object rebirth = Rebirth();
-        object afterlife = rebirth.GetType().GetProperty("Afterlife")!.GetValue(rebirth)!;
+        object afterlife = Part("Afterlife");
         Vec3d pos = new(p.Entity.Pos.X + distance, 160, p.Entity.Pos.Z);
         afterlife.GetType().GetMethod("SetPoint")!.Invoke(afterlife, [name, pos]);
         return new { x = pos.X, y = pos.Y, z = pos.Z };
@@ -259,8 +257,7 @@ public sealed class HelperModSystem : ModSystem
     /// <summary>Makes an entry look as if 0.6.x had written it.</summary>
     private object OldEntry(string name)
     {
-        object rebirth = Rebirth();
-        object afterlife = rebirth.GetType().GetProperty("Afterlife")!.GetValue(rebirth)!;
+        object afterlife = Part("Afterlife");
         object lost = afterlife.GetType().GetMethod("Get")!.Invoke(afterlife, ["bot-" + name])!;
         lost.GetType().GetProperty("Settings")!.SetValue(lost, null);
         afterlife.GetType().GetMethod("Save")!.Invoke(afterlife, null);
@@ -294,17 +291,18 @@ public sealed class HelperModSystem : ModSystem
         return new { tracked = client.TrackedEntities.Contains(other.Entity.EntityId) };
     }
 
-    private object Rebirth()
+    /// <summary>One of the mod's ServerParts.</summary>
+    private object Part(string name)
     {
         ModSystem mod = api.ModLoader.GetModSystem("TemporalRebirth.TemporalRebirthModSystem");
-        return mod.GetType().GetProperty("Rebirth", BindingFlags.Static | BindingFlags.NonPublic)!.GetValue(null)!;
+        object server = mod.GetType().GetProperty("Server", BindingFlags.Static | BindingFlags.NonPublic)!.GetValue(null)!;
+        return server.GetType().GetProperty(name)!.GetValue(server)!;
     }
 
     /// <summary>Makes a ghost look as if it died that many hours earlier.</summary>
     private object Age(string name, int hours)
     {
-        object rebirth = Rebirth();
-        object afterlife = rebirth.GetType().GetProperty("Afterlife")!.GetValue(rebirth)!;
+        object afterlife = Part("Afterlife");
         object ghost = afterlife.GetType().GetMethod("Get")!.Invoke(afterlife, ["bot-" + name]) ?? throw new InvalidOperationException("not a ghost: " + name);
         PropertyInfo died = ghost.GetType().GetProperty("DiedAtUtc")!;
         died.SetValue(ghost, ((DateTime)died.GetValue(ghost)!).AddHours(-hours));
@@ -313,7 +311,7 @@ public sealed class HelperModSystem : ModSystem
 
     private object CheckReturns()
     {
-        object rebirth = Rebirth();
+        object rebirth = Part("Rebirth");
         rebirth.GetType().GetMethod("CheckReturns")!.Invoke(rebirth, null);
         return new { ok = true };
     }

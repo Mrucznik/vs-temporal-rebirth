@@ -22,6 +22,27 @@ internal enum Phase
 [JsonConverter(typeof(JsonStringEnumConverter))]
 internal enum ReturnReason { Time, Ritual, Admin, Released }
 
+/// <summary>How and where a player comes back.</summary>
+internal sealed class Return
+{
+    public ReturnReason Reason { get; set; }
+
+    /// <summary>Who helped, for the message.</summary>
+    public string? Helper { get; set; }
+
+    /// <summary>Where a ritual brings them; null means wherever they are.</summary>
+    public double[]? Destination { get; set; }
+
+    /// <summary>To their spawn point instead, which is only known while they are online.</summary>
+    public bool ToSpawn { get; set; }
+
+    /// <summary>Lives to come back with, when an admin chose a number.</summary>
+    public int? Lives { get; set; }
+
+    [JsonIgnore]
+    public Vec3d? DestinationVec => LostPlayer.Unpack(Destination);
+}
+
 /// <summary>A player who ran out of lives.</summary>
 internal sealed class LostPlayer
 {
@@ -49,30 +70,24 @@ internal sealed class LostPlayer
     /// <summary>Moved to their spawn point, because where they died is no place to be.</summary>
     public bool AtSpawn { get; set; }
 
-    public ReturnReason Reason { get; set; }
-
-    /// <summary>Who helped, for the message.</summary>
-    public string? Helper { get; set; }
-
-    /// <summary>Where to; null means wherever the player is.</summary>
-    public double[]? Destination { get; set; }
-
-    /// <summary>To their spawn point instead, which is only known while they are online.</summary>
-    public bool ToSpawn { get; set; }
-
-    /// <summary>Lives to come back with, when an admin chose a number.</summary>
-    public int? Lives { get; set; }
+    /// <summary>How they come back, from <see cref="Phase.Returning"/> on.</summary>
+    public Return? Return { get; set; }
 
     [JsonIgnore]
-    public Vec3d? StartVec => Start is { Length: 3 } p ? new Vec3d(p[0], p[1], p[2]) : null;
+    public Vec3d? StartVec => Unpack(Start);
 
     [JsonIgnore]
-    public Vec3d? DeathVec => DeathPos is { Length: 3 } p ? new Vec3d(p[0], p[1], p[2]) : null;
+    public Vec3d? DeathVec => Unpack(DeathPos);
 
-    [JsonIgnore]
-    public Vec3d? DestinationVec => Destination is { Length: 3 } p ? new Vec3d(p[0], p[1], p[2]) : null;
+    /// <summary>The settings this time out of lives is bound to; the rest as they are now.</summary>
+    public RebirthConfig RulesIn(RebirthConfig config) => config.With(Settings);
+
+    /// <summary>When it ends by itself, or null when it never does.</summary>
+    public DateTime? EndUtc(RebirthConfig config) => RulesIn(config).Duration.EndUtc(DiedAtUtc);
 
     public static double[] Pack(Vec3d p) => [p.X, p.Y, p.Z];
+
+    public static Vec3d? Unpack(double[]? p) => p is { Length: 3 } ? new Vec3d(p[0], p[1], p[2]) : null;
 }
 
 /// <summary>What the mod keeps in the savegame: players out of lives, marked places, ritual cooldowns.</summary>
@@ -151,7 +166,7 @@ internal class Afterlife(ICoreServerAPI api)
         }
     }
 
-    public Vec3d? Point(string name) => points.TryGetValue(name, out double[]? p) && p.Length == 3 ? new Vec3d(p[0], p[1], p[2]) : null;
+    public Vec3d? Point(string name) => LostPlayer.Unpack(points.GetValueOrDefault(name));
 
     public void SetPoint(string name, Vec3d? pos)
     {

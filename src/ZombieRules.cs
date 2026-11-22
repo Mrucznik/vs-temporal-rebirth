@@ -11,14 +11,10 @@ namespace TemporalRebirth;
 /// A zombie that may not use items: no held items, no picking up, no blocks such as containers or doors,
 /// no mounts or other creatures. Bare hands may fight.
 /// </summary>
-internal class ZombieRules(ICoreServerAPI api, Afterlife afterlife, Rebirth rebirth)
+internal class ZombieRules(ICoreServerAPI api, RebirthConfig config, Afterlife afterlife)
 {
-    /// <summary>The Harmony patch is static; it reaches the server state through this.</summary>
-    internal static ZombieRules? Current { get; set; }
-
     public void Register()
     {
-        Current = this;
         api.Event.CanUseBlock += (player, _) => !IsBound(player.PlayerUID);
         api.Event.CanPlaceOrBreakBlock += CanPlaceOrBreak;
         api.Event.HandInteract += OnHandInteract;
@@ -26,7 +22,7 @@ internal class ZombieRules(ICoreServerAPI api, Afterlife afterlife, Rebirth rebi
     }
 
     public bool IsBound(string uid) =>
-        afterlife.Get(uid) is { Phase: Phase.Serving } lost && rebirth.Rules(lost) is { Form: Form.Zombie, ZombieCanUseItems: false };
+        afterlife.Get(uid) is { Phase: Phase.Serving } lost && lost.RulesIn(config) is { Form: Form.Zombie, ZombieCanUseItems: false };
 
     private bool CanPlaceOrBreak(IServerPlayer player, BlockSelection selection, out string? claimant)
     {
@@ -57,7 +53,7 @@ internal static class ZombiePickupPatch
 {
     private static bool Prefix(EntityBehaviorCollectEntities __instance, ref bool __result)
     {
-        if (__instance.entity is not EntityPlayer player || ZombieRules.Current?.IsBound(player.PlayerUID) != true)
+        if (__instance.entity is not EntityPlayer player || TemporalRebirthModSystem.Server?.Zombies.IsBound(player.PlayerUID) != true)
         {
             return true;
         }

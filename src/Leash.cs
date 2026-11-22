@@ -15,9 +15,6 @@ internal class Leash(ICoreServerAPI api, RebirthConfig config, Zones zones, Mess
     /// <summary>The last position of each player inside their limit.</summary>
     private readonly Dictionary<string, Vec3d> lastInside = new();
 
-    /// <summary>Groups already reported as having no land claims, so the log says it once.</summary>
-    private readonly HashSet<string> missingZones = new();
-
     public void Forget(string uid) => lastInside.Remove(uid);
 
     /// <summary>Called every second, and when a player arrives. False when they have to travel back to <see cref="LostPlayer.Start"/>.</summary>
@@ -57,20 +54,11 @@ internal class Leash(ICoreServerAPI api, RebirthConfig config, Zones zones, Mess
         List<LandClaim> claims = zones.Claims(rules.PlaceGroup);
         if (claims.Count > 0)
         {
-            missingZones.Remove(rules.PlaceGroup);
             return new LeashZone(claims);
         }
 
-        ReportMissingZone(player, rules.PlaceGroup);
+        zones.ReportMissing(player, rules.PlaceGroup);
         return null;
-    }
-
-    public void ReportMissingZone(IServerPlayer player, string group)
-    {
-        if (missingZones.Add(group))
-        {
-            api.Logger.Error("[temporalrebirth] No land claim is shared with the group {0}; nobody is held there. {1} may go anywhere.", group, player.PlayerName);
-        }
     }
 
     private void Tell(EntityPlayer entity, LeashShape? shape, RebirthConfig rules)
@@ -79,12 +67,12 @@ internal class Leash(ICoreServerAPI api, RebirthConfig config, Zones zones, Mess
         ClientState.Set(entity, ClientState.TooFarText, shape == null ? null : config.Message("TooFar"));
         int? group = rules.PlaceAt == Place.Zone ? zones.GroupId(rules.PlaceGroup) : null;
         ClientState.Set(entity, ClientState.ZoneGroup, group);
-        ClientState.Set(entity, ClientState.ZoneAccess, group != null && Rebirth.Walks(rules.Form) ? rules.PlaceAccess.ToString() : null);
+        ClientState.Set(entity, ClientState.ZoneAccess, group != null && rules.Walks ? rules.PlaceAccess.ToString() : null);
     }
 
     private bool PullBack(IServerPlayer player, LostPlayer lost, RebirthConfig rules, LeashShape shape, Vec3d pos)
     {
-        bool walks = Rebirth.Walks(rules.Form);
+        bool walks = rules.Walks;
         if ((walks || shape is LeashZone) && lastInside.TryGetValue(player.PlayerUID, out Vec3d? inside) && shape.DistanceOutside(inside) == 0)
         {
             player.Entity.TeleportToDouble(inside.X, inside.Y, inside.Z);

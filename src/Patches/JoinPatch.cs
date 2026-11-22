@@ -9,7 +9,7 @@ internal static class JoinPatch
 {
     private static bool Prefix(ServerMain __instance, Packet_Client p, ConnectedClient client)
     {
-        if (TemporalRebirthModSystem.Rebirth?.RefuseJoin(p.Identification?.PlayerUID) is not { } text)
+        if (TemporalRebirthModSystem.Server?.Bans.RefuseJoin(p.Identification?.PlayerUID) is not { } text)
         {
             return true;
         }

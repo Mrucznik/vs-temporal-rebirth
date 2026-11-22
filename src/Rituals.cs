@@ -5,7 +5,7 @@ using Vintagestory.API.Server;
 namespace TemporalRebirth;
 
 /// <summary>A normal, living player offers a temporal gear to bring back someone who is out of lives.</summary>
-internal class Rituals(ICoreServerAPI api, RebirthConfig config, Afterlife afterlife, Rebirth rebirth, Messages messages)
+internal class Rituals(ICoreServerAPI api, RebirthConfig config, Afterlife afterlife, Returns returns, Messages messages)
 {
     /// <summary>
     /// Caster uid -> who was chosen with /rebirth target: the uid and that time out of lives, so a choice does not outlive
@@ -55,7 +55,7 @@ internal class Rituals(ICoreServerAPI api, RebirthConfig config, Afterlife after
 
         targets.Remove(caster.PlayerUID);
         afterlife.RitualDone(target.Uid);
-        rebirth.ReturnByRitual(target.Uid, target.Lost, caster, config.RitualReviveAt);
+        returns.ByRitual(target.Uid, target.Lost, caster, config.RitualReviveAt);
 
         messages.Tell(caster, "RitualDone", ("player", target.Lost.Name));
         messages.TellEveryone("AnnounceRitual", ("caster", caster.PlayerName), ("player", target.Lost.Name));
@@ -75,7 +75,7 @@ internal class Rituals(ICoreServerAPI api, RebirthConfig config, Afterlife after
                 continue;
             }
 
-            if (rebirth.FormOf(lost) == Form.Ban)
+            if (lost.RulesIn(config).Form == Form.Ban)
             {
                 // Also those who left before they were banned: they cannot join until then.
                 if (config.RitualLiftsBan)

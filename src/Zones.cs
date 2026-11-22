@@ -11,10 +11,10 @@ internal enum ZoneAccess { Traverse, Use, All }
 /// Place.At Zone: the land claims shared with one player group. Claims only give the shape; what players out of lives may
 /// do inside comes from Place.Access, whatever the claims say, and everyone else keeps the claims' own rules.
 /// </summary>
-internal class Zones(ICoreServerAPI api, Afterlife afterlife)
+internal class Zones(ICoreServerAPI api, RebirthConfig config, Afterlife afterlife)
 {
-    /// <summary>Set after construction; the two need each other.</summary>
-    public Rebirth Rebirth { get; set; } = null!;
+    /// <summary>Groups already reported as having no land claims, so the log says it once.</summary>
+    private readonly HashSet<string> reported = new();
 
     public void Register() => api.Event.OnTestBlockAccessClaim += TestAccess;
 
@@ -22,8 +22,24 @@ internal class Zones(ICoreServerAPI api, Afterlife afterlife)
 
     public int? GroupId(string group) => api.Groups.GetPlayerGroupByName(group)?.Uid;
 
-    public List<LandClaim> Claims(string group) =>
-        GroupId(group) is { } id ? api.World.Claims.All.Where(c => IsPart(c, id)).ToList() : [];
+    public List<LandClaim> Claims(string group)
+    {
+        List<LandClaim> claims = GroupId(group) is { } id ? api.World.Claims.All.Where(c => IsPart(c, id)).ToList() : [];
+        if (claims.Count > 0)
+        {
+            reported.Remove(group);
+        }
+
+        return claims;
+    }
+
+    public void ReportMissing(IServerPlayer player, string group)
+    {
+        if (reported.Add(group))
+        {
+            api.Logger.Error("[temporalrebirth] No land claim is shared with the group {0}; nobody is held there. {1} may go anywhere.", group, player.PlayerName);
+        }
+    }
 
     public static bool Contains(List<LandClaim> claims, Vec3d pos) => claims.Any(c => c.PositionInside(pos));
 
@@ -54,8 +70,8 @@ internal class Zones(ICoreServerAPI api, Afterlife afterlife)
             return response;
         }
 
-        RebirthConfig rules = Rebirth.Rules(lost);
-        if (rules.PlaceAt != Place.Zone || !Rebirth.Walks(rules.Form) || GroupId(rules.PlaceGroup) is not { } group)
+        RebirthConfig rules = lost.RulesIn(config);
+        if (rules.PlaceAt != Place.Zone || !rules.Walks || GroupId(rules.PlaceGroup) is not { } group)
         {
             return response;
         }

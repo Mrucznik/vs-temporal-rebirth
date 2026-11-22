@@ -20,9 +20,6 @@ internal class LeashGuard(ICoreClientAPI api)
     private string? known;
     private long knownAtMs, lastHitMs = -HitIntervalMs, lastMessageMs = -MessageIntervalMs;
 
-    /// <summary>The Harmony patch is static; it reaches this through here.</summary>
-    internal static LeashGuard? Current { get; private set; }
-
     /// <summary>What limits the player now.</summary>
     public LeashShape? Shape { get; private set; }
 
@@ -31,8 +28,6 @@ internal class LeashGuard(ICoreClientAPI api)
 
     public void Start()
     {
-        Current = this;
-        api.Event.LeaveWorld += () => Current = null;
         api.Event.RegisterGameTickListener(_ => Refresh(), 100);
     }
 
@@ -137,7 +132,7 @@ internal static class LeashStepPatch
     {
         if (__instance.entity is EntityPlayer player)
         {
-            LeashGuard.Current?.AfterStep(player, pos, __state);
+            TemporalRebirthModSystem.ClientLeash?.AfterStep(player, pos, __state);
         }
     }
 }

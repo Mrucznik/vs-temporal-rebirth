@@ -28,21 +28,20 @@ internal static class TemporalGearPatch
             || byEntity is not EntityPlayer playerEntity
             || playerEntity.World.PlayerByUid(playerEntity.PlayerUID) is not IServerPlayer player
             || LifeRules.UnlimitedLives(playerEntity.World)
-            || TemporalRebirthModSystem.Rituals is not { } rituals
+            || TemporalRebirthModSystem.Server is not { } server
         )
         {
             return true;
         }
 
-        Afterlife afterlife = TemporalRebirthModSystem.Rebirth!.Afterlife;
-        bool lost = afterlife.Contains(player.PlayerUID);
-        if (!lost && !rituals.IsRitualSite(player))
+        bool lost = server.Afterlife.Contains(player.PlayerUID);
+        if (!lost && !server.Rituals.IsRitualSite(player))
         {
             return true;
         }
 
         __state = true;
-        if (!lost && Rituals.CanPerform(player, afterlife) && rituals.Perform(player, blockSel.Position))
+        if (!lost && Rituals.CanPerform(player, server.Afterlife) && server.Rituals.Perform(player, blockSel.Position))
         {
             slot.TakeOut(1);
         }
@@ -61,7 +60,7 @@ internal static class TemporalGearPatch
             || byEntity is not EntityPlayer playerEntity
             || playerEntity.World.PlayerByUid(playerEntity.PlayerUID) is not IServerPlayer player
             || LifeRules.UnlimitedLives(playerEntity.World)
-            || TemporalRebirthModSystem.Messages is not { } messages
+            || TemporalRebirthModSystem.Server is not { } server
         )
         {
             return;
@@ -80,7 +79,7 @@ internal static class TemporalGearPatch
             return;
         }
 
-        RebirthConfig config = TemporalRebirthModSystem.Config;
+        RebirthConfig config = server.Config;
         int lives = config.LivesPerGear < 0 ? Math.Max(respawnUses, 1) : config.LivesPerGear;
         int left = LifeRules.GetLivesLeft(player);
         if (config.LivesMax > 0)
@@ -88,14 +87,14 @@ internal static class TemporalGearPatch
             lives = Math.Min(lives, config.LivesMax - left);
             if (lives <= 0 && config.LivesPerGear != 0)
             {
-                messages.Tell(player, "LivesFull", ("lives", left));
+                server.Messages.Tell(player, "LivesFull", ("lives", left));
             }
         }
 
         if (lives > 0)
         {
             LifeRules.AddLives(player, lives);
-            messages.Tell(player, "GearLives", ("count", lives), ("lives", LifeRules.GetLivesLeft(player)));
+            server.Messages.Tell(player, "GearLives", ("count", lives), ("lives", LifeRules.GetLivesLeft(player)));
         }
     }
 }

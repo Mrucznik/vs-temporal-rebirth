@@ -11,7 +11,7 @@ internal static class ProtectionPatch
     private static void Postfix(EntityPlayer __instance, DamageSource? damageSource, ref bool __result)
     {
         if (__result && damageSource?.Type != EnumDamageType.Heal && __instance.World?.Side == EnumAppSide.Server
-            && TemporalRebirthModSystem.Rebirth?.IsProtected(__instance.PlayerUID) == true)
+            && TemporalRebirthModSystem.Server?.Rebirth.IsProtected(__instance.PlayerUID) == true)
         {
             __result = false;
         }

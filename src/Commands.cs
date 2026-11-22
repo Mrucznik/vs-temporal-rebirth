@@ -8,11 +8,9 @@ using Vintagestory.API.Server;
 
 namespace TemporalRebirth;
 
-internal class Commands(ICoreServerAPI api, RebirthConfig config, ConfigFile file, Rebirth rebirth, Rituals rituals, Zones zones)
+internal class Commands(ICoreServerAPI api, RebirthConfig config, ConfigFile file, Afterlife afterlife, Returns returns, Rituals rituals, Zones zones)
 {
     private static readonly string[] PointNames = ["start", "return", "ritual"];
-
-    private Afterlife Afterlife => rebirth.Afterlife;
 
     public void Register()
     {
@@ -56,17 +54,17 @@ internal class Commands(ICoreServerAPI api, RebirthConfig config, ConfigFile fil
 
     private TextCommandResult Waiting(TextCommandCallingArgs args)
     {
-        if (Afterlife.Players.Count == 0)
+        if (afterlife.Players.Count == 0)
         {
             return Ok(args, "cmd-ghosts-none");
         }
 
         var text = new StringBuilder();
-        foreach (LostPlayer lost in Afterlife.Players.Values.OrderBy(p => p.DiedAtUtc))
+        foreach (LostPlayer lost in afterlife.Players.Values.OrderBy(p => p.DiedAtUtc))
         {
             string died = Messages.Time(lost.DiedAtUtc);
             text.AppendLine(lost.Phase == Phase.Returning ? T(args, "cmd-ghosts-returning", lost.Name)
-                : rebirth.ReturnAtUtc(lost) is { } at ? T(args, "cmd-ghosts-entry", lost.Name, died, Messages.Time(at))
+                : lost.EndUtc(config) is { } at ? T(args, "cmd-ghosts-entry", lost.Name, died, Messages.Time(at))
                 : T(args, "cmd-ghosts-ritual-only", lost.Name, died));
         }
 
@@ -76,7 +74,7 @@ internal class Commands(ICoreServerAPI api, RebirthConfig config, ConfigFile fil
     private TextCommandResult Target(TextCommandCallingArgs args)
     {
         var caster = (IServerPlayer)args.Caller.Player;
-        if (Afterlife.FindByName((string)args[0]) is not { } found || found.Key == caster.PlayerUID)
+        if (afterlife.FindByName((string)args[0]) is not { } found || found.Key == caster.PlayerUID)
         {
             return Error(args, "cmd-not-ghost", args[0]);
         }
@@ -90,9 +88,9 @@ internal class Commands(ICoreServerAPI api, RebirthConfig config, ConfigFile fil
     private TextCommandResult Revive(TextCommandCallingArgs args)
     {
         string name = (string)args[0];
-        if (Afterlife.FindByName(name) is { } found)
+        if (afterlife.FindByName(name) is { } found)
         {
-            rebirth.ReturnByAdmin(found.Key, found.Value);
+            returns.ByAdmin(found.Key, found.Value);
             return Ok(args, "cmd-revived", found.Value.Name);
         }
 
@@ -116,16 +114,16 @@ internal class Commands(ICoreServerAPI api, RebirthConfig config, ConfigFile fil
             return Error(args, "cmd-lives-unlimited");
         }
 
-        if (lives > 0 && Afterlife.Get(target.PlayerUID) is { } lost)
+        if (lives > 0 && afterlife.Get(target.PlayerUID) is { } lost)
         {
             if (lost.Phase == Phase.Dying)
             {
                 // Not turned into anything yet: the death becomes an ordinary one.
-                Afterlife.Remove(target.PlayerUID);
+                afterlife.Remove(target.PlayerUID);
             }
             else
             {
-                rebirth.ReturnByAdmin(target.PlayerUID, lost, lives);
+                returns.ByAdmin(target.PlayerUID, lost, lives);
                 return Ok(args, "cmd-lives-set", target.PlayerName, lives);
             }
         }
@@ -242,17 +240,17 @@ internal class Commands(ICoreServerAPI api, RebirthConfig config, ConfigFile fil
     private string Reminders(TextCommandCallingArgs args)
     {
         var missing = new List<string>();
-        if (config.Form != Form.Ban && config.PlaceAt is Place.Fixed or Place.Zone && Afterlife.Point("start") == null)
+        if (config.Form != Form.Ban && config.PlaceAt is Place.Fixed or Place.Zone && afterlife.Point("start") == null)
         {
             missing.Add("start");
         }
 
-        if (config.ReturnAt == Place.Fixed && Afterlife.Point("return") == null)
+        if (config.ReturnAt == Place.Fixed && afterlife.Point("return") == null)
         {
             missing.Add("return");
         }
 
-        if (config.RitualWhere == RitualPlace.FixedPlace && Afterlife.Point("ritual") == null)
+        if (config.RitualWhere == RitualPlace.FixedPlace && afterlife.Point("ritual") == null)
         {
             missing.Add("ritual");
         }
@@ -262,7 +260,7 @@ internal class Commands(ICoreServerAPI api, RebirthConfig config, ConfigFile fil
         {
             List<LandClaim> claims = zones.Claims(config.PlaceGroup);
             text += claims.Count == 0 ? "\n" + T(args, "cmd-zone-missing", config.PlaceGroup)
-                : Afterlife.Point("start") is { } start && !Zones.Contains(claims, start) ? "\n" + T(args, "cmd-zone-start-outside")
+                : afterlife.Point("start") is { } start && !Zones.Contains(claims, start) ? "\n" + T(args, "cmd-zone-start-outside")
                 : "";
         }
 
@@ -274,18 +272,18 @@ internal class Commands(ICoreServerAPI api, RebirthConfig config, ConfigFile fil
     private TextCommandResult SetPoint(TextCommandCallingArgs args)
     {
         Vec3d pos = args.Caller.Player.Entity.Pos.XYZ;
-        Afterlife.SetPoint((string)args[0], pos);
+        afterlife.SetPoint((string)args[0], pos);
         return Ok(args, "cmd-point-set", args[0], Local(pos));
     }
 
     private TextCommandResult ClearPoint(TextCommandCallingArgs args)
     {
-        Afterlife.SetPoint((string)args[0], null);
+        afterlife.SetPoint((string)args[0], null);
         return Ok(args, "cmd-point-cleared", args[0]);
     }
 
     private TextCommandResult ShowPoints(TextCommandCallingArgs args) =>
-        Success(args, string.Join("\n", PointNames.Select(n => n + ": " + (Afterlife.Point(n) is { } p ? Local(p) : T(args, "cmd-point-none")))));
+        Success(args, string.Join("\n", PointNames.Select(n => n + ": " + (afterlife.Point(n) is { } p ? Local(p) : T(args, "cmd-point-none")))));
 
     /// <summary>The coordinates players see in game.</summary>
     private string Local(Vec3d pos) => pos.AsBlockPos.ToLocalPosition(api).ToString();

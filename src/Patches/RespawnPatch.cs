@@ -13,7 +13,7 @@ namespace TemporalRebirth.Patches;
 internal static class RespawnPatch
 {
     private static bool IsAllowed(IServerPlayer player) =>
-        TemporalRebirthModSystem.Rebirth?.Afterlife.Contains(player.PlayerUID) != true
+        TemporalRebirthModSystem.Server?.Afterlife.Contains(player.PlayerUID) != true
         && (LifeRules.GetLivesLeft(player) != 0 || LifeRules.MayRespawn(player.Entity));
 
     private static bool Prefix(ServerMain ___server, ConnectedClient client)

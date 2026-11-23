@@ -20,9 +20,9 @@ and turns the loss of the last one into a penalty with an end, not a dead end. V
    - **form:** a ghost, a spectator, a zombie, a normal player, or a banned player
      ([Afterlife Forms](https://github.com/Mrucznik/vs-temporal-rebirth/wiki/Afterlife-Forms));
    - **place:** where they died, the spawn point, a marked place (an exile), or a zone made of land claims
-     ([Place and Exile](https://github.com/Mrucznik/vs-temporal-rebirth/wiki/Place-and-Exile));
+     ([Place and Exile](https://github.com/Mrucznik/vs-temporal-rebirth/wiki/Settings-Guide#place-and-zones));
    - **time:** real time, such as 24 hours or until 06:00 the next day, or until someone brings them back
-     ([Time and Return](https://github.com/Mrucznik/vs-temporal-rebirth/wiki/Time-and-Return)).
+     ([Time and Return](https://github.com/Mrucznik/vs-temporal-rebirth/wiki/Settings-Guide#time-and-return)).
 4. **Come back.** When the time is up, or sooner when a living player holds a temporal gear for 3.5 s in the right
    place (by a rift, next to the player, in a marked place or anywhere, as you choose). The gear is used up
    ([Rituals](https://github.com/Mrucznik/vs-temporal-rebirth/wiki/Rituals)).

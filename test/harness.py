@@ -269,6 +269,14 @@ class Bot:
     def gear(self):
         return self.world.trt("gear " + self.name)["consumed"]
 
+    def gear_keep(self):
+        """Like gear, but an unused gear stays in hand for a chooser. Returns {consumed, offered}."""
+        return self.world.trt("gearkeep " + self.name)
+
+    def choose(self, target):
+        """What a click in the chooser would send: a bot name, "bind" or "cancel". Returns whether the gear was used."""
+        return self.world.trt(f"choose {self.name} {target}")["used"]
+
 
 def distance(a, b, axes="xyz"):
     return sum((a[k] - b[k]) ** 2 for k in axes) ** 0.5

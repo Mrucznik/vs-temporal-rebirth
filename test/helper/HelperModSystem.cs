@@ -43,6 +43,9 @@ public sealed class HelperModSystem : ModSystem
 
         Add("state", a => State(Player(a)), parsers.Word("player"));
         Add("gear", a => UseGear(Player(a)), parsers.Word("player"));
+        Add("gearkeep", a => UseGear(Player(a), keep: true), parsers.Word("player"));
+        Add("hint", a => Hint(Player(a)), parsers.Word("player"));
+        Add("choose", a => Choose(Player(a), (string)a[1]), parsers.Word("player"), parsers.Word("target, bind or cancel"));
         Add("rift", a => AddRift(Player(a), (int)a[1]), parsers.Word("player"), parsers.Int("distance"));
         Add("riftnear", a => RiftNear(Find((string)a[0]), (int)a[1], (int)a[2], (int)a[3], (int)a[4]), parsers.Word("player"), parsers.Int("dx"), parsers.Int("dy"), parsers.Int("dz"), parsers.Int("size"));
         Add("clearrifts", _ => ClearRifts());
@@ -123,8 +126,11 @@ public sealed class HelperModSystem : ModSystem
         return count;
     }
 
-    /// <summary>Puts one gear in the active slot and finishes holding it for 4 seconds on the block below.</summary>
-    private object UseGear(IServerPlayer p)
+    /// <summary>
+    /// Puts one gear in the active slot and finishes holding it for 4 seconds on the block below. With keep the gear stays
+    /// in the slot if it was not used, for a chooser that takes it later.
+    /// </summary>
+    private object UseGear(IServerPlayer p, bool keep = false)
     {
         ItemSlot slot = p.InventoryManager.ActiveHotbarSlot;
         Item item = api.World.SearchItems(new AssetLocation("game:gear-temporal")).First();
@@ -132,9 +138,43 @@ public sealed class HelperModSystem : ModSystem
         var selection = new BlockSelection { Position = p.Entity.Pos.AsBlockPos.DownCopy(), Face = BlockFacing.UP, HitPosition = new Vec3d(0.5, 1, 0.5) };
         item.OnHeldInteractStop(4f, slot, p.Entity, selection, null);
         int left = slot.StackSize;
-        slot.Itemstack = null;
-        slot.MarkDirty();
-        return new { consumed = left == 0 };
+        if (!keep)
+        {
+            slot.Itemstack = null;
+            slot.MarkDirty();
+        }
+
+        return new { consumed = left == 0, offered = Offered(p) };
+    }
+
+    /// <summary>Who the chooser this player has open offers; empty without one.</summary>
+    private string[] Offered(IServerPlayer p)
+    {
+        object rituals = Part("Rituals");
+        return (string[])rituals.GetType().GetMethod("Offered")!.Invoke(rituals, [p.PlayerUID])!;
+    }
+
+    /// <summary>What the player's client is told a gear would do here.</summary>
+    private object Hint(IServerPlayer p)
+    {
+        object rituals = Part("Rituals");
+        object hint = rituals.GetType().GetMethod("Hint")!.Invoke(rituals, [p])!;
+        object Get(string name) => hint.GetType().GetProperty(name)!.GetValue(hint)!;
+        return new { state = Get("State").ToString(), atSite = Get("AtSite"), count = Get("Count"), secondsLeft = Get("SecondsLeft") };
+    }
+
+    /// <summary>What a click in the chooser sends: a bot name, "bind" or "cancel". Bots cannot click.</summary>
+    private object Choose(IServerPlayer p, string target)
+    {
+        object rituals = Part("Rituals");
+        if (target == "cancel")
+        {
+            rituals.GetType().GetMethod("Cancel")!.Invoke(rituals, [p]);
+            return new { used = false, gears = CountGears(p) };
+        }
+
+        bool used = (bool)rituals.GetType().GetMethod("Pick")!.Invoke(rituals, [p, target == "bind" ? null : "bot-" + target])!;
+        return new { used, gears = CountGears(p) };
     }
 
     private object AddRift(IServerPlayer p, int distance)

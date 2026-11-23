@@ -195,7 +195,7 @@ window.TR_SCHEMA = {
       "text": "Duch czeka, aż ktoś go wskrzesi. Rytuał działa wszędzie." },
     { "id": "Undead", "icon": "Zombie", "tag": "Zostajesz w grze", "set": { "OutOfLives": "Zombie", "Place.Radius": 0, "Return.At": "Spawn", "Ritual.Where": "NearPlayer", "Ritual.ReviveAt": "InPlace" },
       "text": "Zombie bez przedmiotów do jutra rana. Rytuał przy nim przywraca go na miejscu." },
-    { "id": "Exile", "icon": "Exile", "tag": "Przetrwaj daleko", "set": { "OutOfLives": "Player", "Place.At": "Fixed", "Place.Radius": 0, "Time.Duration": "24h", "Return.Lives": -1, "Return.DieAtEnd": true, "Ritual.Where": "Disabled" },
+    { "id": "Exile", "icon": "Exile", "tag": "Przetrwaj daleko", "set": { "OutOfLives": "Player", "Place.At": "Fixed", "Place.Radius": 128, "Time.Duration": "24h", "Return.Lives": -1, "Return.DieAtEnd": true, "Ritual.Where": "Disabled" },
       "text": "24 godziny w odległym miejscu. Na koniec ginie i wraca z pełną pulą żyć." },
     { "id": "Timeout", "icon": "Ban", "tag": "Przerwa", "set": { "OutOfLives": "Ban", "Time.Duration": "24h" },
       "text": "Ban na 24 godziny. Rytuał przy wyrwie go zdejmuje." },

@@ -112,9 +112,7 @@
     const steps = L.how.steps, stage = $("stage");
     const fig = clip(steps[0].video, steps[0].caption);
     const title = el("h3"), text = el("p"), more = el("p", { class: "more" }), count = el("span", { class: "count" });
-    const prev = el("button", { type: "button", class: "btn small", textContent: "←", "aria-label": L.how.prev });
-    const next = el("button", { type: "button", class: "btn small", textContent: "→", "aria-label": L.how.next });
-    stage.replaceChildren(fig, el("div", { class: "stage-text" }, count, title, text, more, el("div", { class: "row" }, prev, next)));
+    stage.replaceChildren(fig, el("div", { class: "stage-text" }, count, title, text, more));
     let at = 0;
     const buttons = steps.map((s, i) => {
       const b = el("button", { type: "button", id: "step-" + i, "aria-controls": "stage" },
@@ -134,12 +132,8 @@
       text.innerHTML = s.text;
       more.innerHTML = s.more;
       stage.setAttribute("aria-labelledby", "step-" + i);
-      prev.disabled = i === 0;
-      next.disabled = i === steps.length - 1;
       buttons.forEach((b, j) => b.parentElement.classList.toggle("done", j < i));
     };
-    prev.addEventListener("click", () => pick(Math.max(0, at - 1)));
-    next.addEventListener("click", () => pick(Math.min(steps.length - 1, at + 1)));
     tablist($("path"), buttons, pick);
     pick(0);
   }

@@ -32,7 +32,7 @@
     how: {
       title: "Co się dzieje, gdy umierasz",
       lead: "Cała droga od pierwszego życia do powrotu. Kliknij krok, żeby go zobaczyć. Tak wygląda domyślne ustawienie; serwer może zmienić szczegóły.",
-      prev: "Poprzedni krok", next: "Następny krok", or: "albo",
+      or: "albo",
       steps: [
         { short: "Życia z zębatek", title: "Zbierasz życia", video: "M3",
           caption: "Zębatka daje życie, a ekran śmierci pokazuje, ile zostało.",

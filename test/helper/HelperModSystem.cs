@@ -59,7 +59,6 @@ public sealed class HelperModSystem : ModSystem
         Add("pointfar", a => PointFar(Player(a), (string)a[1], (int)a[2]), parsers.Word("player"), parsers.Word("place"), parsers.Int("distance"));
         Add("interact", a => Interact(Player(a), Find((string)a[1]), (string)a[2], (int)a[3]), parsers.Word("player"), parsers.Word("other"), parsers.Word("item or none"), parsers.Int("mouse button"));
         Add("oldentry", a => OldEntry((string)a[0]), parsers.Word("player"));
-        Add("privileges", a => Player(a).Privileges, parsers.Word("player"));
     }
 
     private IServerPlayer Find(string name) =>

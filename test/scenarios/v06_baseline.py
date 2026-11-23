@@ -1,6 +1,6 @@
 """What mod 0.6.x does today. These must keep passing after the 0.7.0 rewrite for a migrated 0.6.x config."""
 import json, re, time
-from harness import Failed, check, distance
+from harness import check, distance
 
 
 def slow(seconds):

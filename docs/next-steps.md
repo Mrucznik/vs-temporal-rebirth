@@ -32,7 +32,7 @@ As of 2026-11-23, branch `presets` (not pushed). Released: 0.6.1.
 - Timer: always visible on screen, top centre to start with; off switch `Time.ShowTimer`.
 - Zones: land claims shared with the group `Place.Group`. The mod grants `Place.Access` itself; claims only give the shape.
   Others may enter. No claims = nobody is held, and the log says so.
-- Languages at the end: en, pl, ru, de. Custom messages replace the text for everyone.
+- Languages at the end: en, pl, ru, de. German and Russian are a nice-to-have, nobody will proofread them. Custom messages replace the text for everyone.
 - Zombies without items: no weapons, no interacting with creatures; attacking bare-handed is allowed.
 - `/rebirth import` sets everything (what is not in the code is at its default), lists what changed and names the `.bak`.
 - Leash: a sphere around the place, for everyone whose movement is limited. Nearly invisible from afar, its wall shows only up
@@ -45,7 +45,7 @@ As of 2026-11-23, branch `presets` (not pushed). Released: 0.6.1.
 
 1. The user looks at what 0.8.0 and 0.9.0 draw (they are logged in): GIFs of the timer, wisp, echo and leash. Frame rate with the
    leash in view.
-2. German and Russian read by someone who speaks them (terms follow the game's own translations); publish the configurator; new ModDB text and README.
+2. Publish the configurator; new ModDB text and README.
 
 ## Not verified
 

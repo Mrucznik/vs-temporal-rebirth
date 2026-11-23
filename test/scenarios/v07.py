@@ -1,5 +1,5 @@
 """What 0.7.0 adds: config file, presets and commands, bans, normal players and zombies, places, rituals."""
-import base64, json, subprocess, time
+import json, subprocess, time
 from harness import REPO, Failed, check, distance
 from races import consistent, ghost, last_life
 from v06_baseline import read_config, slow

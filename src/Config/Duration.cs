@@ -17,8 +17,6 @@ internal readonly struct Duration
         this.clock = clock;
     }
 
-    public bool IsForever => hours == null && clock == null;
-
     public static bool TryParse(string input, out Duration duration)
     {
         string t = input.Trim().ToLowerInvariant();

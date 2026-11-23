@@ -86,15 +86,6 @@ internal static class LifeRules
         AddLives(player, lives - RawLivesLeft(player));
     }
 
-    /// <summary>Gives a player out of lives exactly one life back.</summary>
-    internal static void GrantSecondChance(IServerPlayer player)
-    {
-        if (!UnlimitedLives(player.Entity.World) && RawLivesLeft(player) < 1)
-        {
-            SetLivesLeft(player, 1);
-        }
-    }
-
     internal static bool MayRespawn(EntityPlayer entity) => entity.WatchedAttributes.GetBool(MayRespawnAttr);
 
     internal static void SetMayRespawn(EntityPlayer entity, bool may)

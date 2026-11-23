@@ -1,6 +1,6 @@
 """Faults found by reading 0.7.0, each with the test that shows it."""
-import base64, json, time
-from harness import Failed, check, distance
+import time
+from harness import check, distance
 from races import consistent, ghost, last_life
 from v06_baseline import read_config, slow
 from v07 import node, phase, point, refused, settings, wait_phase

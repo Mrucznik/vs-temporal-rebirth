@@ -1,6 +1,6 @@
 """Leaving, rejoining, crashing or acting twice while the mod is waiting for something."""
 import time
-from harness import Failed, check, distance
+from harness import Failed, check
 from v06_baseline import slow
 
 

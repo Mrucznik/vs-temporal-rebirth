@@ -1,5 +1,5 @@
 """Starts a local test server with headless bots and lets scenarios drive them. Standard library only."""
-import json, os, queue, re, shutil, socket, subprocess, sys, threading, time
+import json, os, re, shutil, socket, subprocess, sys, threading, time
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
@@ -218,11 +218,6 @@ class Bot:
         if not m:
             raise Failed(f"{self.name} did not hear /{pattern}/")
         return m.group(0)
-
-    def silent(self, pattern, since, seconds=2):
-        m = self.world.bots.wait(rf"^\[{self.name}\] chat: .*{pattern}", since, seconds)
-        if m:
-            raise Failed(f"{self.name} heard {m.group(0)!r}")
 
     def respawn(self):
         self.world.bots.send(self.name + " respawn")

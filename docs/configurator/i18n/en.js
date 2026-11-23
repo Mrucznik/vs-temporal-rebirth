@@ -11,6 +11,7 @@
       lead: "Configurator for the Vintage Story mod Temporal Rebirth. Set what costs a life, what a player becomes after the last one, where and for how long, how they come back and whether others can revive them. At the end you download a file for your server.",
       downedLabel: "The server has the Downed mod", downedHelp: "Unlocks settings where being downed costs a life.", downedLink: "Downed mod page", downedNeeded: "Needs the Downed mod. Turn it on at the top of the page.",
       tabSettings: "Settings", tabMessages: (n) => n ? "Messages (custom: " + n + ")" : "Messages", vars: "You can use: ", builtin: "the mod's text",
+      wiki: "Wiki", wikiTitle: "Opens the page in the wiki",
       pick: "Pick a style", tune: "Adjust the details", story: "What awaits the player", install: "Put it on the server",
       importOpen: "Load my settings", importLabel: "Paste a temporalrebirth.json file (also from mod 0.6.x), an import command or a link.",
       importGo: "Load", importFile: "Choose a file", showFile: "Show the file", withComments: "With explanations",

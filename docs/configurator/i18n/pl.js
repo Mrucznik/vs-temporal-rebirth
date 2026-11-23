@@ -13,6 +13,7 @@
       lead: "Konfigurator moda Temporal Rebirth do Vintage Story. Ustawisz tu, co zabiera życia, kim staje się gracz po stracie ostatniego, gdzie i jak długo wtedy przebywa, jak wraca i czy inni mogą go wskrzesić. Na końcu pobierzesz gotowy plik na serwer.",
       downedLabel: "Na serwerze jest mod Downed", downedHelp: "Odblokowuje ustawienia, w których życia zabiera powalenie.", downedLink: "Strona moda Downed", downedNeeded: "Potrzebny mod Downed. Włącz go u góry strony.",
       tabSettings: "Ustawienia", tabMessages: (n) => n ? "Komunikaty (własne: " + n + ")" : "Komunikaty", vars: "Można użyć: ", builtin: "tekst moda",
+      wiki: "Wiki", wikiTitle: "Otwiera stronę w wiki (po angielsku)",
       pick: "Wybierz styl", tune: "Dopasuj szczegóły", story: "Co czeka gracza", install: "Wgraj na serwer",
       importOpen: "Wczytaj moje ustawienia", importLabel: "Wklej plik temporalrebirth.json (także z moda 0.6.x), komendę importu albo link.",
       importGo: "Wczytaj", importFile: "Wybierz plik", showFile: "Pokaż plik", withComments: "Z objaśnieniami",

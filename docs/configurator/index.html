@@ -38,6 +38,7 @@
   .seg button:hover { border-color: var(--muted); }
   .seg button[aria-disabled="true"] { opacity: .45; cursor: not-allowed; border-color: var(--line); }
   a { color: var(--teal); }
+  a.wiki { font-size: 13.5px; font-weight: 400; white-space: nowrap; margin-left: 10px;  }
   .server { display: grid; gap: 4px; justify-items: start; }
   .server .hint { padding-left: 54px; max-width: none; }
   .seg button[aria-pressed="true"] { background: #17332f; border-color: var(--teal); color: #d9fff8; }
@@ -184,11 +185,11 @@
 
   <section>
     <div class="row" style="justify-content: space-between">
-      <h2 data-t="pick"></h2>
+      <h2><span data-t="pick"></span><span data-wiki="presets"></span></h2>
       <button class="btn" id="importToggle" aria-expanded="false" aria-controls="importBox" data-t="importOpen"></button>
     </div>
     <div id="importBox" hidden style="margin-top:14px">
-      <label for="importText" data-t="importLabel"></label>
+      <label for="importText"><span data-t="importLabel"></span><span data-wiki="config"></span></label>
       <textarea id="importText" spellcheck="false" style="min-height:120px;font-family:var(--mono);font-size:14px"></textarea>
       <div class="row">
         <button class="btn primary" id="importGo" data-t="importGo"></button>
@@ -283,6 +284,8 @@ const el = (tag, props = {}, ...kids) => {
   n.append(...kids.filter((x) => x != null));
   return n;
 };
+/** Small link to a page of the English wiki; the page names live in the schema. */
+const wikiLink = (page, label) => el("a", { class: "wiki", href: schema.wikiBase + page, target: "_blank", rel: "noopener", title: T.wikiTitle, textContent: "? " + (label ?? T.wiki) });
 const icon = (id) => {
   const s = document.createElementNS("http://www.w3.org/2000/svg", "svg");
   s.setAttribute("viewBox", "0 0 130 130");
@@ -393,6 +396,7 @@ function control(f) {
   if (f.type === "enum") {
     const group = el("div", { class: "seg", id, role: "group", "aria-label": f.label });
     const help = el("p", { class: "help" });
+    const more = el("p", { class: "help" });
     for (const o of f.options) {
       group.append(el("button", { type: "button", id: id + "-" + o.value, "data-v": o.value, textContent: o.label, onclick: () => locked(o) ? toast(T.downedNeeded) : setValue(f.key, o.value) }));
     }
@@ -405,12 +409,14 @@ function control(f) {
         b.title = off ? T.downedNeeded : "";
       }
       const chosen = f.options.find((o) => o.value === state[f.key]);
+      more.replaceChildren(...(chosen.wiki ? [wikiLink(chosen.wiki, T.wiki + ": " + chosen.wiki)] : []));
+      more.hidden = !chosen.wiki;
       const skip = Object.entries(chosen.helpUnless || {}).some(([key, values]) => values.includes(state[key]));
       help.textContent = skip ? "" : chosen.help || "";
       help.classList.toggle("warning", Boolean(chosen.warn));
       help.hidden = !help.textContent;
     };
-    return [group, help];
+    return f.options.some((o) => o.wiki) ? [group, help, more] : [group, help];
   }
   if (f.type === "duration") return durationControl(f, id);
   const error = el("p", { class: "error", hidden: true });
@@ -516,6 +522,7 @@ function build() {
     return b;
   }));
   for (const n of document.querySelectorAll("[data-t]")) n.textContent = T[n.dataset.t];
+  for (const n of document.querySelectorAll("[data-wiki]")) n.replaceChildren(wikiLink(schema.wikiPages[n.dataset.wiki]));
 
   $("presets").replaceChildren(...schema.presets.map((p) =>
     el("button", { type: "button", class: "preset", id: "preset-" + p.id, onclick: () => choosePreset(p.id) },
@@ -530,7 +537,7 @@ function build() {
     const list = fields.filter((f) => f.section === s.id);
     // Choices first, then the options of the chosen mode, in schema order.
     return el("details", { class: "section", id: "sec-" + s.id, open: open["sec-" + s.id] ?? Boolean(s.open) },
-      el("summary", {}, el("h3", {}, s.label, ...list.filter((f) => f.main).map((f) => el("span", { class: "key", textContent: f.key }))), el("span", { class: "now" })),
+      el("summary", {}, el("h3", {}, s.label, ...list.filter((f) => f.main).map((f) => el("span", { class: "key", textContent: f.key })), s.wiki ? wikiLink(s.wiki) : ""), el("span", { class: "now" })),
       el("div", { class: "fields" }, s.help ? el("p", { class: "help sec", textContent: s.help }) : "", s.id === "lives" ? startLives() : "", ...list.flatMap((f, i) => [f.group && f.group !== list[i - 1]?.group ? el("h4", { textContent: f.group }) : "",
         el("div", { class: f.type === "bool" ? "field bool" : "field", "data-key": f.key },
           el("div", { class: "top" },
@@ -539,6 +546,7 @@ function build() {
               ? el("span", { class: "label", textContent: f.label })
               : el("label", { class: "label", htmlFor: domId(f.key), textContent: f.label }),
             f.main ? "" : el("span", { class: "key", textContent: f.key }),
+            f.wiki ? wikiLink(f.wiki) : "",
             el("button", { type: "button", class: "reset", hidden: true, onclick: () => setValue(f.key, TR.presetValue(preset, f.key)) })),
           ...control(f),
           f.help ? el("p", { class: "help own", textContent: f.help }) : "")]),

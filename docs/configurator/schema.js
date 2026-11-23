@@ -2,16 +2,18 @@
 // Polish only for now; localization comes last.
 window.TR_SCHEMA = {
   "version": 1,
+  "wikiBase": "https://github.com/Mrucznik/vs-temporal-rebirth/wiki/",
+  "wikiPages": { "presets": "Presets", "config": "Configuration" },
   "sections": [
-    { "id": "lives", "label": "Życia", "keep": true, "open": true },
-    { "id": "form", "label": "Kim się staje", "open": true },
-    { "id": "place", "label": "Gdzie przebywa", "open": true },
-    { "id": "time", "label": "Na jak długo", "open": true },
-    { "id": "return", "label": "Powrót" },
-    { "id": "ritual", "label": "Rytuał wskrzeszenia" },
-    { "id": "admin", "label": "Administracja", "keep": true, "fileOnly": true,
+    { "id": "lives", "label": "Życia", "wiki": "Lives", "keep": true, "open": true },
+    { "id": "form", "label": "Kim się staje", "wiki": "Afterlife-Forms", "open": true },
+    { "id": "place", "label": "Gdzie przebywa", "wiki": "Place-and-Exile", "open": true },
+    { "id": "time", "label": "Na jak długo", "wiki": "Time-and-Return", "open": true },
+    { "id": "return", "label": "Powrót", "wiki": "Time-and-Return" },
+    { "id": "ritual", "label": "Rytuał wskrzeszenia", "wiki": "Rituals" },
+    { "id": "admin", "label": "Administracja", "wiki": "Commands-and-Permissions", "keep": true, "fileOnly": true,
       "help": "Co wolno robić komendami w grze. Wyłączonej akcji nie wykona nawet admin, tylko konsola serwera. Te przełączniki zmienisz wyłącznie w pliku." },
-    { "id": "messages", "label": "Komunikaty", "tab": "messages", "keep": true, "open": true,
+    { "id": "messages", "label": "Komunikaty", "wiki": "Messages-and-Translations", "tab": "messages", "keep": true, "open": true,
       "help": "Mod pokazuje teksty w języku gracza: angielskim, polskim, rosyjskim albo niemieckim, a reszcie po angielsku. Własny tekst zobaczą wszyscy, niezależnie od języka. Puste pole = tekst moda." }
   ],
   "fields": [
@@ -33,23 +35,23 @@ window.TR_SCHEMA = {
     { "key": "OutOfLives", "section": "form", "type": "enum", "default": "Ghost", "main": true,
       "label": "Kim staje się gracz po stracie ostatniego życia",
       "options": [
-        { "value": "Ghost", "label": "Duch", "help": "Lata i patrzy, ale niczego nie dotknie. Nie przechodzi przez ściany." },
-        { "value": "Spectator", "label": "Obserwator", "help": "Jak duch, ale przechodzi przez ściany (tryb spectator z gry)." },
-        { "value": "Zombie", "label": "Zombie", "help": "Chodzi po świecie, ale z ograniczeniami." },
-        { "value": "Player", "label": "Zwykły gracz", "help": "Gra dalej normalnie. Ogranicza go tylko miejsce i czas." },
-        { "value": "Ban", "label": "Ban", "help": "Nie wejdzie na serwer." }
+        { "value": "Ghost", "wiki": "Ghost", "label": "Duch", "help": "Lata i patrzy, ale niczego nie dotknie. Nie przechodzi przez ściany." },
+        { "value": "Spectator", "wiki": "Spectator", "label": "Obserwator", "help": "Jak duch, ale przechodzi przez ściany (tryb spectator z gry)." },
+        { "value": "Zombie", "wiki": "Zombie", "label": "Zombie", "help": "Chodzi po świecie, ale z ograniczeniami." },
+        { "value": "Player", "wiki": "Player", "label": "Zwykły gracz", "help": "Gra dalej normalnie. Ogranicza go tylko miejsce i czas." },
+        { "value": "Ban", "wiki": "Ban", "label": "Ban", "help": "Nie wejdzie na serwer." }
       ] },
-    { "key": "Ghost.Visible", "section": "form", "type": "enum", "default": "WispAndEcho", "when": { "OutOfLives": ["Ghost"] },
+    { "key": "Ghost.Visible", "wiki": "Ghost", "section": "form", "type": "enum", "default": "WispAndEcho", "when": { "OutOfLives": ["Ghost"] },
       "label": "Jak widzą go inni",
       "options": [
         { "value": "Nobody", "label": "Wcale" },
         { "value": "Wisp", "label": "Ognik", "help": "Unosząca się kula światła. Nie widać, kto to." },
         { "value": "WispAndEcho", "label": "Ognik i echo", "help": "Ognik, a dla gracza z zębatką temporalną w ręce: falująca sylwetka z nickiem." }
       ] },
-    { "key": "Zombie.CanUseItems", "section": "form", "type": "bool", "default": false, "when": { "OutOfLives": ["Zombie"] },
+    { "key": "Zombie.CanUseItems", "wiki": "Zombie", "section": "form", "type": "bool", "default": false, "when": { "OutOfLives": ["Zombie"] },
       "label": "Może używać przedmiotów",
       "help": "Bez tego nie użyje niczego z ręki, nic nie podniesie i nie otworzy skrzyni. Bić może tylko gołą ręką." },
-    { "key": "Zombie.Glow", "section": "form", "type": "bool", "default": true, "when": { "OutOfLives": ["Zombie"] },
+    { "key": "Zombie.Glow", "wiki": "Zombie", "section": "form", "type": "bool", "default": true, "when": { "OutOfLives": ["Zombie"] },
       "label": "Wygląda jak zombie",
       "help": "Zabarwione ciało i poświata, widoczne dla wszystkich." },
 

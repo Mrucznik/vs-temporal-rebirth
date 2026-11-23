@@ -657,6 +657,90 @@ def w17(c):
     d.key("2")
 
 
+def ritual_stage(c, ghosts, rift_ahead=3):
+    """0.10 rituals: `ghosts` waiting (Funia first, then Mira aside), a gear in the slot 1, a rift beside the view."""
+    s = c.s
+    funia = c.base(dist=7, **{"Ritual.Where": "Rift", "Ritual.ReviveAt": "Caster"})
+    c.gears(1)
+    c.make_ghost(funia)
+    waiting = [funia]
+    if ghosts > 1:
+        mira = s.bot("Mira")
+        c.make_ghost(mira)
+        c.place(mira, 9, -3)
+        waiting.append(mira)
+    (fx, fz), (sx, sz) = c.vectors()
+    away(c, "Finn")
+    return waiting, lambda: s.w.trt(f"riftnear {c.cam.name} {round(sx * 4 + fx * rift_ahead)} 1 {round(sz * 4 + fz * rift_ahead)} 3")
+
+
+@scene("R1", "test")
+def r1(c):
+    """The gear's hint: away from any rift it says why there is no ritual; when a rift opens beside, 'Perform the ritual'."""
+    s, d = c.s, c.d
+    waiting, open_rift = ritual_stage(c, 2)
+    # The intro dialog sometimes opens late and would swallow the keys.
+    dismiss_intro(d, 3)
+    aim(s, d, GROUND, 0.04)
+    with c.recording("R1", "test"):
+        time.sleep(0.8)
+        # The hint comes with the gear in hand and shows again when it changes (the server sends it at most each second).
+        d.key("1")
+        time.sleep(3)
+        open_rift()
+        time.sleep(3.5)
+    d.key("2")
+    s.w.trt("clearrifts")
+    s.back(*waiting)
+
+
+@scene("R2", "test")
+def r2(c):
+    """The hold at a rift with one ghost: rising sound, rust motes pulled into the spot, the bar under the crosshair."""
+    s, d = c.s, c.d
+    waiting, open_rift = ritual_stage(c, 1)
+    open_rift()
+    dismiss_intro(d, 3)
+    d.key("1")
+    time.sleep(1.5)
+    funia = waiting[0]
+    with c.recording("R2", "test", trim=(0.4, 1.0)):
+        time.sleep(0.6)
+        c.hold_gear(lambda: funia.state()["mode"] == "Survival", 6)
+        # A still from the middle of the hold is taken from the video; the revival follows.
+        funia.until(mode="Survival", alive=True, timeout=20)
+        time.sleep(2.5)
+    log(f"R2: gears after the ritual {c.cam.state()['gears']} (0 expected)")
+    d.key("2")
+    s.w.trt("clearrifts")
+    s.back(*waiting)
+
+
+@scene("R3", "test")
+def r3(c):
+    """Two ghosts at a rift: the hold ends in the chooser. It stays open a while, then Escape closes it and the gear stays."""
+    s, d = c.s, c.d
+    waiting, open_rift = ritual_stage(c, 2)
+    open_rift()
+    dismiss_intro(d, 3)
+    d.key("1")
+    time.sleep(1.5)
+    with c.recording("R3", "test"):
+        time.sleep(0.6)
+        # Released a little after the hold is complete: the chooser opens when the server answers.
+        c.hold_gear(lambda: False, 4.2)
+        time.sleep(1.2)
+        (VIDEOS / "test").mkdir(parents=True, exist_ok=True)
+        d.grab(VIDEOS / "test" / "R3-chooser.png")
+        time.sleep(3)
+        d.key("Escape")
+        time.sleep(1.5)
+    log(f"R3: gears after closing the chooser {c.cam.state()['gears']} (1 expected)")
+    d.key("2")
+    s.w.trt("clearrifts")
+    s.back(*waiting)
+
+
 def import_code(preset, **values):
     data = {"v": 1, "p": preset, "s": values}
     return base64.urlsafe_b64encode(json.dumps(data, separators=(",", ":")).encode()).decode().rstrip("=")

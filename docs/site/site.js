@@ -102,7 +102,7 @@
     for (const n of document.querySelectorAll("[data-t]")) n.textContent = get(n.dataset.t);
     for (const n of document.querySelectorAll("[data-h]")) n.innerHTML = get(n.dataset.h);
     $("toc").setAttribute("aria-label", L.nav.menu);
-    const ids = { how: "jak-to-dziala", presets: "presety", forms: "formy", rituals: "rytualy", demo: "zobacz", server: "serwer", faq: "faq" };
+    const ids = { how: "jak-to-dziala", presets: "presety", forms: "formy", rituals: "rytualy", faq: "faq" };
     $("toc").replaceChildren(...Object.entries(L.nav.sections).map(([k, label]) => el("a", { href: "#" + ids[k], textContent: label })));
     $("facts").replaceChildren(...L.hero.facts.map((f) => el("li", { textContent: f })));
     $("heroMedia").replaceChildren(clip("M1", L.hero.video, "hero-clip"));
@@ -206,18 +206,6 @@
     }));
   }
 
-  function server() {
-    const S = L.server;
-    $("install").replaceChildren(...S.install.map((s) => el("li", {},
-      el("b", { textContent: s.title }), el("p", { html: s.text }), s.cmd ? cmd(s.cmd) : null)));
-    $("configMedia").replaceChildren(clip("M5", S.configCaption));
-    $("commands").replaceChildren(...S.commands.flatMap((c) => [el("dt", {}, cmd(c.cmd)), el("dd", { html: c.text })]));
-    $("cmdMedia").replaceChildren(clip("W18", S.importCaption), clip("W13", S.zoneCaption));
-    $("compat").replaceChildren(...S.compat.map((c) => el("li", { class: c.ok ? "ok" : "no", html: c.text })));
-    $("wikiLinks").replaceChildren(...S.wikiLinks.map(([page, label]) => el("li", {}, el("a", { href: WIKI + page, target: "_blank", rel: "noopener", textContent: label + " ↗" }))));
-  }
-
-  /** A command with a copy button. */
   function cmd(text) {
     const b = el("button", { type: "button", class: "copy", "aria-label": "Copy", textContent: "⧉" });
     b.addEventListener("click", async () => {
@@ -253,7 +241,7 @@
   function render(code) {
     lang = code;
     L = window.TR_SITE[lang];
-    texts(); journey(); presets(); forms(); rituals(); server(); faq(); footer(); languages();
+    texts(); journey(); presets(); forms(); rituals(); faq(); footer(); languages();
     document.dispatchEvent(new CustomEvent("tr:lang", { detail: L }));
   }
 

@@ -53,8 +53,7 @@ have throws; a shader that does not compile only makes its effect invisible.
 ## Site
 
 `docs/index.html` is the mod's page (GitHub Pages root), Polish for now: texts in `docs/site/i18n/<lang>.js`, presets read
-from `schema.js`. Its live demo runs the real shaders from `docs/site/shaders.js`: run `docs/site/build.py` after changing
-anything in `assets/temporalrebirth/shaders/`. Videos: `docs/site/media.py` turns the recordings into `docs/media/`.
+from `schema.js`. Server setup (install, commands) belongs in the configurator, not on this page. Videos: `docs/site/media.py` turns the recordings into `docs/media/`.
 
 ## Config
 

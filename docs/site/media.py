@@ -11,11 +11,11 @@ OUT = Path(__file__).resolve().parent.parent / "media"
 # name: (start second, longest length in seconds or None, second of the poster)
 CLIPS = {
     "M1": (0, None, 9.5), "M2-zombie": (0, None, 1.5), "M2-exile": (0, None, 1.5),
-    "M2-ban": (0, None, 2), "M3": (0, None, 9), "M4": (0, None, 6), "M5": (0, None, 4),
+    "M2-ban": (0, None, 2), "M3": (0, None, 9), "M4": (0, None, 6),
     "W1": (0, 16, 10), "W2": (0, None, 5), "W4": (0, None, 6), "W5": (0, None, 6), "W6": (0, None, 5),
     "W7": (0, None, 4), "W8": (0, None, 4), "W9": (0, None, 5), "W10": (0, None, 8), "W11": (0, 18, 12),
-    "W12": (0, None, 6), "W13": (0, None, 4), "W14": (8, None, 6), "W15": (0, None, 9), "W16": (0, None, 9),
-    "W17": (0, None, 9), "W18": (0, None, 12),
+    "W12": (0, None, 6), "W14": (8, None, 6), "W15": (0, None, 9), "W16": (0, None, 9),
+    "W17": (0, None, 9),
 }
 
 

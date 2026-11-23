@@ -55,13 +55,40 @@ internal class Rituals(ICoreServerAPI api, RebirthConfig config, Afterlife after
 
         targets.Remove(caster.PlayerUID);
         afterlife.RitualDone(target.Uid);
-        returns.ByRitual(target.Uid, target.Lost, caster, config.RitualReviveAt);
+        returns.ByRitual(target.Uid, target.Lost, caster, BesideCaster(caster, ritualPos), config.RitualReviveAt);
 
         messages.Tell(caster, "RitualDone", ("player", target.Lost.Name));
         messages.TellEveryone("AnnounceRitual", ("caster", caster.PlayerName), ("player", target.Lost.Name));
         api.World.PlaySoundAt(new AssetLocation("sounds/effect/portal.ogg"), ritualPos.X + 0.5, ritualPos.Y + 0.5, ritualPos.Z + 0.5, null, false, 48f);
         api.Logger.Audit("[temporalrebirth] {0} revived {1} with a ritual near {2}", caster.PlayerName, target.Lost.Name, ritualPos);
         return true;
+    }
+
+    private const double ReviveAside = 2;
+
+    /// <summary>
+    /// Where a player revived "at the caster" stands up: two blocks from the caster towards the block the gear was used on,
+    /// on free ground. Right at the caster's feet the two would be stuck in each other, the camera inside the revived one.
+    /// Falls back to the caster's own spot when there is no free ground around.
+    /// </summary>
+    private Vec3d BesideCaster(IServerPlayer caster, BlockPos aimed)
+    {
+        Vec3d at = caster.Entity.Pos.XYZ;
+        double dx = aimed.X + 0.5 - at.X, dz = aimed.Z + 0.5 - at.Z;
+        // The gear used on the block underfoot gives no direction: start from where the caster looks.
+        double first = (dx * dx) + (dz * dz) < 0.25 ? caster.Entity.Pos.Yaw : Math.Atan2(dx, dz);
+        // Towards the aimed block first, then turning round until there is free ground two blocks away.
+        for (int turn = 0; turn < 8; turn++)
+        {
+            double angle = first + (Math.PI / 4 * ((turn + 1) / 2) * (turn % 2 == 0 ? 1 : -1));
+            var aside = new Vec3d(at.X + (Math.Sin(angle) * ReviveAside), at.Y, at.Z + (Math.Cos(angle) * ReviveAside));
+            if (SafeSpot.FindGround(api.World.BlockAccessor, aside) is { } ground && Math.Abs(ground.Y - at.Y) <= 3)
+            {
+                return ground;
+            }
+        }
+
+        return at;
     }
 
     /// <summary>Players a ritual can bring back now: online ones, and banned ones if it lifts bans.</summary>

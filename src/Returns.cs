@@ -26,14 +26,14 @@ internal class Returns(ICoreServerAPI api, RebirthConfig config, Afterlife after
     /// <summary>Back by the settings' "where they come back", now or at the next login.</summary>
     public void ByAdmin(string uid, LostPlayer lost, int? lives = null) => Begin(uid, lost, new Return { Reason = ReturnReason.Admin, Lives = lives });
 
-    public void ByRitual(string uid, LostPlayer lost, IServerPlayer caster, ReviveAt at) =>
+    public void ByRitual(string uid, LostPlayer lost, IServerPlayer caster, Vec3d besideCaster, ReviveAt at) =>
         Begin(uid, lost, new Return
         {
             Reason = ReturnReason.Ritual,
             Helper = caster.PlayerName,
             Destination = at switch
             {
-                ReviveAt.Caster => LostPlayer.Pack(caster.Entity.Pos.XYZ),
+                ReviveAt.Caster => LostPlayer.Pack(besideCaster),
                 ReviveAt.Body => lost.DeathPos,
                 _ => null,
             },

@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Temporal Rebirth</title>
+<meta name="description" content="">
+<meta name="theme-color" content="#15120f">
+<meta property="og:title" content="Temporal Rebirth">
+<meta property="og:image" content="logo-wide.png">
+<link rel="icon" href="logo-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alegreya+SC:wght@500;700&family=Alegreya+Sans:ital,wght@0,400;0,500;0,700;1,400&display=swap">
+<link rel="stylesheet" href="site/nav.css">
+<link rel="stylesheet" href="site/site.css">
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="gear" viewBox="-50 -50 100 100"><g id="gear-teeth"><rect x="-7" y="-46" width="14" height="16" rx="2"/><rect x="-7" y="30" width="14" height="16" rx="2"/><rect x="-46" y="-7" width="16" height="14" rx="2"/><rect x="30" y="-7" width="16" height="14" rx="2"/></g><use href="#gear-teeth" transform="rotate(45)"/><path fill-rule="evenodd" d="M0-34a34 34 0 1 1 0 68a34 34 0 1 1 0-68ZM0-20a20 20 0 1 0 0 40a20 20 0 1 0 0-40Z"/><circle r="8"/></symbol>
+    <symbol id="i-Ghost" viewBox="-65 -65 130 130"><circle r="62" fill="#221d18" stroke="#43382e" stroke-width="2"/><circle r="48" fill="none" stroke="#b9c7d6" stroke-opacity=".45" stroke-width="2" stroke-dasharray="5 7"/><g transform="translate(0,8)"><path d="M-30,30 L-30,-8 C-30,-32 -15,-46 0,-46 C15,-46 30,-32 30,-8 L30,30 L20,22 L10,30 L0,22 L-10,30 L-20,22 Z" fill="#cdd8e3"/><circle cx="-10" cy="-14" r="5" fill="#15120f"/><circle cx="10" cy="-14" r="5" fill="#15120f"/></g></symbol>
+    <symbol id="i-Spectator" viewBox="-65 -65 130 130"><circle r="62" fill="#221d18" stroke="#43382e" stroke-width="2"/><path d="M-44,0Q0,-46 44,0Q0,46 -44,0Z" fill="none" stroke="#b9c7d6" stroke-width="5"/><circle r="15" fill="#b9c7d6"/><circle r="6" fill="#15120f"/></symbol>
+    <symbol id="i-Zombie" viewBox="-65 -65 130 130"><circle r="62" fill="#221d18" stroke="#43382e" stroke-width="2"/><path d="M-28,-34H28V14H18V34H-18V14H-28Z" fill="#8fae7c"/><path d="M-28,-34H28V-24H8L2,-18L-6,-24H-28Z" fill="#3a3129"/><rect x="-19" y="-12" width="13" height="11" fill="#15120f"/><rect x="7" y="-9" width="11" height="8" fill="#15120f"/><path d="M-14,20H14M-8,15V25M0,15V25M8,15V25" stroke="#15120f" stroke-width="3" fill="none"/><path d="M12,-34L20,-20" stroke="#e0824c" stroke-width="3" fill="none"/></symbol>
+    <symbol id="i-Exile" viewBox="-65 -65 130 130"><circle r="62" fill="#221d18" stroke="#43382e" stroke-width="2"/><circle cx="20" cy="-24" r="11" fill="#d8cbb2"/><path d="M-50,30L-18,-22L2,10L14,-6L46,30Z" fill="#5a4a3c" stroke="#b3a48d" stroke-width="3"/><path d="M-18,-22L-28,-6L-18,-2L-9,-7Z" fill="#eadfcc"/><path d="M-52,30H52" stroke="#6b5c4c" stroke-width="4" fill="none"/></symbol>
+    <symbol id="i-Ban" viewBox="-65 -65 130 130"><circle r="62" fill="#221d18" stroke="#43382e" stroke-width="2"/><path d="M-18,-4V-16C-18,-42 18,-42 18,-16V-4" fill="none" stroke="#b3a48d" stroke-width="7"/><rect x="-30" y="-6" width="60" height="44" rx="4" fill="#5a3a26" stroke="#e0824c" stroke-width="3"/><circle cy="12" r="6" fill="#15120f"/><rect x="-3" y="13" width="6" height="14" fill="#15120f"/></symbol>
+  </defs>
+</svg>
+
+<a class="skip" href="#main" data-t="nav.skip"></a>
+<header class="tr-top">
+  <a class="tr-brand" href="./" aria-current="page"><img src="logo-icon.png" alt="" width="32" height="32"><span>Temporal <b>Rebirth</b></span></a>
+  <nav class="tr-links" aria-label="Temporal Rebirth">
+    <a href="./" aria-current="page" data-t="nav.home"></a>
+    <a href="configurator/" data-t="nav.config"></a>
+    <a href="https://github.com/Mrucznik/vs-temporal-rebirth/wiki" target="_blank" rel="noopener"><span data-t="nav.wiki"></span><span aria-hidden="true"> ↗</span></a>
+  </nav>
+  <div class="tr-lang" id="lang" hidden></div>
+</header>
+<nav class="toc" id="toc" aria-label=""></nav>
+
+<main id="main">
+  <svg class="hero-gear" aria-hidden="true"><use href="#gear"/></svg>
+  <section class="hero" id="top">
+    <div class="hero-text">
+      <p class="kicker" data-t="hero.kicker"></p>
+      <h1>Temporal <span>Rebirth</span></h1>
+      <p class="pitch" data-h="hero.pitch"></p>
+      <p class="lead" data-t="hero.lead"></p>
+      <div class="actions">
+        <a class="btn primary" href="https://mods.vintagestory.at/show/mod/73648" target="_blank" rel="noopener" data-t="hero.download"></a>
+        <a class="btn" href="https://github.com/Mrucznik/vs-temporal-rebirth/releases" target="_blank" rel="noopener" data-t="hero.github"></a>
+        <a class="btn" href="configurator/" data-t="hero.config"></a>
+        <a class="btn ghost" href="#jak-to-dziala" data-t="hero.how"></a>
+      </div>
+      <ul class="facts" id="facts"></ul>
+    </div>
+    <div class="hero-media" id="heroMedia"></div>
+  </section>
+
+  <section class="band" id="jak-to-dziala" aria-labelledby="how-title">
+    <div class="head"><h2 id="how-title" data-t="how.title"></h2><p data-t="how.lead"></p></div>
+    <div class="journey">
+      <ol class="path" id="path" role="tablist"></ol>
+      <div class="stage" id="stage" role="tabpanel"></div>
+    </div>
+  </section>
+
+  <section class="band" id="presety" aria-labelledby="presets-title">
+    <div class="head"><h2 id="presets-title" data-t="presets.title"></h2><p data-t="presets.lead"></p></div>
+    <div class="presets" id="presetList" role="tablist"></div>
+    <div class="preset-view" id="presetView" role="tabpanel"></div>
+  </section>
+
+  <section class="band" id="formy" aria-labelledby="forms-title">
+    <div class="head"><h2 id="forms-title" data-t="forms.title"></h2><p data-t="forms.lead"></p></div>
+    <div class="forms" id="forms"></div>
+  </section>
+
+  <section class="band" id="rytualy" aria-labelledby="rituals-title">
+    <div class="head"><h2 id="rituals-title" data-t="rituals.title"></h2><p data-t="rituals.lead"></p></div>
+    <div class="ritual">
+      <ol class="steps" id="ritualSteps"></ol>
+      <div class="ritual-media" id="ritualMedia"></div>
+    </div>
+    <p class="note" data-t="rituals.fail"></p>
+    <h3 data-t="rituals.whereTitle"></h3>
+    <p class="sub" data-t="rituals.whereLead"></p>
+    <div class="places" id="places"></div>
+    <h3 data-t="rituals.appearTitle"></h3>
+    <p class="prose" data-t="rituals.appear"></p>
+  </section>
+
+  <section class="band demo-band" id="zobacz" aria-labelledby="demo-title">
+    <div class="head"><h2 id="demo-title" data-t="demo.title"></h2><p data-t="demo.lead"></p></div>
+    <div class="demo">
+      <div class="seg" id="demoTabs" role="tablist"></div>
+      <div class="screen">
+        <canvas id="demoCanvas" width="960" height="540" aria-label=""></canvas>
+        <span class="echo-name" id="echoName" hidden></span>
+        <div class="demo-fallback" id="demoFallback" hidden><img src="media/W5.jpg" alt=""><p data-t="demo.fallback"></p></div>
+      </div>
+      <div class="controls" id="ghostControls">
+        <label class="slider"><span data-t="demo.distance"></span> <output id="distOut"></output><input id="dist" type="range" min="2" max="60" step="0.5" value="6"></label>
+        <label class="slider"><span data-t="demo.light"></span><input id="light" type="range" min="0.05" max="1" step="0.01" value="0.35"></label>
+        <label class="switch"><input type="checkbox" id="gearOn" role="switch" checked><span data-t="demo.gear"></span></label>
+        <p class="hint" data-t="demo.gearHelp"></p>
+      </div>
+      <div class="controls" id="leashControls" hidden>
+        <label class="slider wide"><span data-t="demo.wall"></span> <output id="wallOut"></output><input id="wall" type="range" min="0" max="1" step="0.005" value="0.35"></label>
+        <label class="slider"><span data-t="demo.light"></span><input id="light2" type="range" min="0.05" max="1" step="0.01" value="0.35"></label>
+        <button class="btn" id="bump" type="button" data-t="demo.bump"></button>
+        <p class="hint" data-t="demo.leashHelp"></p>
+      </div>
+      <div class="row"><button class="btn small" id="pause" type="button" aria-pressed="false" data-t="demo.pause"></button><p class="hint" data-t="demo.note"></p></div>
+    </div>
+  </section>
+
+  <section class="band" id="serwer" aria-labelledby="server-title">
+    <div class="head"><h2 id="server-title" data-t="server.title"></h2><p data-t="server.lead"></p></div>
+    <h3 data-t="server.installTitle"></h3>
+    <ol class="install" id="install"></ol>
+
+    <div class="config-block">
+      <div>
+        <h3 data-t="server.configTitle"></h3>
+        <p class="prose" data-h="server.configText"></p>
+        <a class="btn primary" href="configurator/" data-t="server.configButton"></a>
+      </div>
+      <div id="configMedia"></div>
+    </div>
+
+    <h3 data-t="server.cmdTitle"></h3>
+    <p class="sub" data-t="server.cmdLead"></p>
+    <div class="cmd-grid">
+      <dl class="commands" id="commands"></dl>
+      <div class="cmd-media" id="cmdMedia"></div>
+    </div>
+    <p class="note" data-h="server.cmdPlayers"></p>
+
+    <div class="two">
+      <div>
+        <h3 data-t="server.compatTitle"></h3>
+        <ul class="compat" id="compat"></ul>
+      </div>
+      <div>
+        <h3 data-t="server.wikiTitle"></h3>
+        <p class="sub" data-t="server.wikiLead"></p>
+        <ul class="wiki-links" id="wikiLinks"></ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="band" id="faq" aria-labelledby="faq-title">
+    <div class="head"><h2 id="faq-title" data-t="faq.title"></h2></div>
+    <div class="faq">
+      <div><h3 data-t="faq.players"></h3><div id="faqPlayers"></div></div>
+      <div><h3 data-t="faq.owners"></h3><div id="faqOwners"></div></div>
+    </div>
+  </section>
+</main>
+
+<footer class="foot">
+  <svg class="foot-gear" aria-hidden="true"><use href="#gear"/></svg>
+  <nav class="foot-links" id="footLinks"></nav>
+  <p data-t="footer.version"></p>
+  <p data-t="footer.tagline"></p>
+</footer>
+
+<dialog id="lightbox" aria-label="">
+  <video id="lightboxVideo" controls muted loop playsinline></video>
+  <div class="lb-bar"><p id="lightboxCaption"></p><button class="btn small" id="lightboxClose" type="button" data-t="video.close"></button></div>
+</dialog>
+
+<noscript><p class="noscript">Ta strona potrzebuje JavaScriptu. Wszystko znajdziesz też w <a href="https://github.com/Mrucznik/vs-temporal-rebirth/wiki">wiki moda</a>.</p></noscript>
+
+<script src="configurator/schema.js"></script>
+<script src="configurator/logic.js"></script>
+<script src="site/i18n/pl.js"></script>
+<script src="site/shaders.js"></script>
+<script src="site/site.js"></script>
+<script src="site/demo.js"></script>
+</body>
+</html>

@@ -50,6 +50,12 @@ Players are stopped at the edge of their place by their own client (`LeashShape`
 pulls back who is more than `LeashShape.Slack` outside. Client code is in `src/Client`. Setting a uniform a shader does not
 have throws; a shader that does not compile only makes its effect invisible.
 
+## Site
+
+`docs/index.html` is the mod's page (GitHub Pages root), Polish for now: texts in `docs/site/i18n/<lang>.js`, presets read
+from `schema.js`. Its live demo runs the real shaders from `docs/site/shaders.js`: run `docs/site/build.py` after changing
+anything in `assets/temporalrebirth/shaders/`. Videos: `docs/site/media.py` turns the recordings into `docs/media/`.
+
 ## Config
 
 `docs/configurator/schema.js` is the single source of keys, ranges, presets and texts. It is embedded in the mod and

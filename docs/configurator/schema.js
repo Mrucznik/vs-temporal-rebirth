@@ -114,7 +114,7 @@ window.TR_SCHEMA = {
         { "value": "Rift", "label": "Przy wyrwach", "help": "Wyrwy muszą być włączone w świecie (domyślnie są)." },
         { "value": "NearPlayer", "label": "Przy graczu", "help": "Trzeba stanąć obok tego, kogo się wskrzesza, a on musi być online. Wskrzeszony zostanie najbliższy." },
         { "value": "FixedPlace", "label": "W wyznaczonym miejscu", "help": "Zaznaczonym w grze." },
-        { "value": "Anywhere", "label": "Wszędzie", "help": "Najpierw /rebirth target <gracz>. Bez tego zębatka działa jak zwykle." }
+        { "value": "Anywhere", "label": "Wszędzie", "help": "Zębatka otwiera listę czekających, a w niej można też jak zwykle związać się z miejscem. /rebirth target <gracz> wybiera z góry." }
       ] },
     { "key": "Ritual.Range", "section": "ritual", "type": "int", "min": 1, "max": 256, "default": 8, "when": { "Ritual.Where": ["Rift", "NearPlayer", "FixedPlace"] },
       "label": "Jak blisko trzeba stać (bloki)", "file": "Dla Rift, NearPlayer i FixedPlace." },

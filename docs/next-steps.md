@@ -1,6 +1,6 @@
 # State and next steps
 
-As of 2026-11-23, branch `presets` (not pushed). Released: 0.6.1.
+As of 2026-11-23, branch `gifs` (not pushed). Released: 0.6.1.
 
 ## Done
 
@@ -11,6 +11,14 @@ As of 2026-11-23, branch `presets` (not pushed). Released: 0.6.1.
   Player, Ban), places, time, return, rituals, lives limit, custom messages (en, pl).
 - **0.8.0** (`0.8.0-dev.1`): zones, `Lives.Count` Downs and DownsFinalDeath, timer, wisp.
 - **0.9.0** (`0.9.0-dev.1`): protection after rising, leash on the client, echo.
+- **0.10.0** (`0.10.0-dev.1`): rituals you can see. The gear's held help says "Perform the ritual (N waiting)" or why not (too
+  far, cooldown, nobody to bring back, caster cannot); with nobody waiting it stays vanilla. The server sends this state to
+  whoever holds a gear (each second when it changes, at once on switching to the gear) and decides everything again. Only a hold
+  that will be a ritual looks like one: rising sound, rust motes, a bar under the crosshair (others nearby see motes sent by
+  the server). With several players to bring back a chooser lists them (name, form, time left, online); the gear is taken
+  only when the server accepts the click. One candidate, `/rebirth target` or NearPlayer (nearest) need no chooser. Anywhere
+  always opens it while someone waits, because it also offers the vanilla "bind me here". Scenes R1–R3 in `test/scenes/shoot.py`
+  (hint, hold, chooser) are written but not recorded. `Messages.RitualChoose` is no longer used.
 - **Review of 0.7.0**: 11 faults, each with a test (`test/scenarios/review07.py`) and fixed.
 - **Structure and performance**: `Rebirth.cs` split up, Harmony patches reach the server side through
   `TemporalRebirthModSystem.Server`, how a player comes back is one saved object, less work per frame and tick (not measured).
@@ -49,6 +57,8 @@ As of 2026-11-23, branch `presets` (not pushed). Released: 0.6.1.
 
 ## Not verified
 
+- 0.10 on a client: the hint and its refresh, the hold's sound, motes and bar, the chooser dialog (bots get the server side
+  only: hint state, chooser offer, pick, cancel, re-checks).
 - Anything drawn on a client: timer, wisp, echo, leash (both shaders compile and look right in WebGL, not seen in the game), zombie look, death screen (with a respawn button at 0 lives for Downs),
   client prediction in zones. Being stopped at the edge (bots do not move on their own).
 - Zombie item limits with real input (bots do not use items; attacks and clicks on creatures are tested as events). Loading of privileges after a restart (saving is verified).

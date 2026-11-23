@@ -8,7 +8,7 @@ Hardcore lives you can earn, and a way back when they run out. A Vintage Story m
 · **[Web configurator](https://mrucznik.github.io/vs-temporal-rebirth/configurator/)** · **[Wiki](https://github.com/Mrucznik/vs-temporal-rebirth/wiki)**
 
 In the base game, limited lives (`playerlives`) end a character for good. This mod lets players earn more lives
-and turns the loss of the last one into a penalty with an end, not a dead end. Version 0.9.
+and turns the loss of the last one into a penalty with an end, not a dead end. Version 0.10.
 
 ## How it works
 
@@ -24,7 +24,8 @@ and turns the loss of the last one into a penalty with an end, not a dead end. V
    - **time:** real time, such as 24 hours or until 06:00 the next day, or until someone brings them back
      ([Time and Return](https://github.com/Mrucznik/vs-temporal-rebirth/wiki/Settings-Guide#time-and-return)).
 4. **Come back.** When the time is up, or sooner when a living player holds a temporal gear for 3.5 s in the right
-   place (by a rift, next to the player, in a marked place or anywhere, as you choose). The gear is used up
+   place (by a rift, next to the player, in a marked place or anywhere, as you choose). The gear's hint says whether a
+   ritual works where you stand; with several players waiting a list asks whom to bring back. The gear is used up
    ([Rituals](https://github.com/Mrucznik/vs-temporal-rebirth/wiki/Rituals)).
 
 Everything is configurable, and all texts come in English, Polish, German and Russian

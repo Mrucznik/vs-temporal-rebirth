@@ -36,7 +36,7 @@ class Camera(Bot):
 class Stage:
     def __init__(self, check, mods=()):
         self.check, self.mods, self.number = check, mods, 0
-        self.w = World("scene", lives=3, mods=mods, flat=False, files={"ModConfig/downed.json": {"DurationSeconds": 15}} if "downed" in mods else None)
+        self.w = World("scene", lives=3, mods=mods, flat=False, files={"ModConfig/downed.json": {"DurationSeconds": int(os.environ.get("TRT_DOWNED_SECONDS", "15"))}} if "downed" in mods else None)
         self.bots, self.camera = {}, None
         # The server only listens on this computer.
         self.w.console("/serverconfig whitelistmode off")

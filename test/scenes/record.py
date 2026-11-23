@@ -117,18 +117,18 @@ def take(s, name, gnome):
         tell_in_game(s, "STOP: stop the recording now.")
         say("\r   Koniec, zatrzymaj nagrywanie.")
     else:
-        step("Ustaw kamerę: patrz prosto przed siebie na otwartą przestrzeń. Tam stanie Ava.")
+        step("Ustaw kamerę: patrz prosto przed siebie na otwartą przestrzeń. Tam stanie Funia.")
         say("   Wciśnij 2 (pusta ręka) i nie ruszaj się z miejsca.")
         enter(s.check)
         pilot_place(s)
         if s.check:
             say(f"   {s.w.trt('view ' + s.camera.name)}")
-        step("Ava stoi 5 bloków przed tobą, a w pierwszym slocie masz zębatkę temporalną. Przeczytaj całość, potem zrób:")
+        step("Funia stoi 5 bloków przed tobą, a w pierwszym slocie masz zębatkę temporalną. Przeczytaj całość, potem zrób:")
         recorder_steps(gnome)
-        say("   3. Wciśnij 3: to znak startu. Po 2 s Ava ginie.")
+        say("   3. Wciśnij 3: to znak startu. Po 2 s Funia ginie.")
         say("   4. Po chwili jest ognikiem. Patrz na niego 2 s.")
         say("   5. Wciśnij 1: zębatka w ręce, widać echo z imieniem. Patrz 2 s.")
-        say("   6. Spójrz na ziemię tuż przed echem i TRZYMAJ prawy przycisk myszy około 4 s, aż Ava wróci.")
+        say("   6. Spójrz na ziemię tuż przed echem i TRZYMAJ prawy przycisk myszy około 4 s, aż Funia wróci.")
         say("   7. Popatrz na nią 2 s. Gdy na czacie pojawi się napis STOP, zatrzymaj nagrywanie:")
         stop_steps(gnome)
         in_game(s)
@@ -163,11 +163,11 @@ def take(s, name, gnome):
 
 
 def back(s):
-    """Ava alive again after a failed scene."""
-    ava = s.bots["Ava"]
-    s.w.console("/rebirth revive Ava")
-    s.w.console("/rebirth setlives Ava 3")
-    ava.until(mode="Survival", alive=True, timeout=30)
+    """Funia alive again after a failed scene."""
+    funia = s.bots["Funia"]
+    s.w.console("/rebirth revive Funia")
+    s.w.console("/rebirth setlives Funia 3")
+    funia.until(mode="Survival", alive=True, timeout=30)
 
 
 def interrupt(*_):

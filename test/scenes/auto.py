@@ -7,7 +7,7 @@ Software rendering only gives a frame or two per second, so the game's own recor
 (.vrec tickfps 30): every drawn frame is 1/30 s of the client's time. The server keeps real time, so waits are counted in
 drawn frames. Screenshots of each step go next to the video. Never touches any display but its own.
 """
-import argparse, math, os, re, signal, subprocess, sys, time
+import argparse, math, os, re, signal, subprocess, sys, threading, time
 from pathlib import Path
 
 import clip
@@ -87,6 +87,19 @@ class Display:
         out = subprocess.run(["convert", str(tmp), "-crop", f"{w}x{h}+{x}+{y}", "-scale", "1x1!", "-depth", "8", "txt:-"], capture_output=True, text=True).stdout
         m = re.search(r"\((\d+),(\d+),(\d+)", out.splitlines()[-1] if out else "")
         return tuple(map(int, m.groups())) if m else None
+
+    def chat_open(self):
+        """The chat box: its tab bar and scroll bar have the colour of the game's overlay (seen on recordings)."""
+        tmp = clip.OUT / "chat.png"
+        self.grab(tmp)
+
+        def mean(x, y, w, h):
+            out = subprocess.run(["convert", str(tmp), "-crop", f"{w}x{h}+{x}+{y}", "-scale", "1x1!", "-depth", "8", "txt:-"], capture_output=True, text=True).stdout
+            m = re.search(r"\((\d+),(\d+),(\d+)", out.splitlines()[-1] if out else "")
+            return tuple(map(int, m.groups())) if m else None
+
+        a, b = mean(14, 366, 6, 16), mean(726, 390, 2, 200)
+        return all(x is not None and all(abs(u - v) <= 12 for u, v in zip(x, (57, 48, 33))) for x in (a, b))
 
     def intro_open(self):
         """The intro dialog (opened by holding K) is a brown box in the middle; its texture averages to about this."""
@@ -220,6 +233,78 @@ def dismiss_intro(d, seconds=0.0):
         time.sleep(0.5)
 
 
+class Pixels:
+    """Reads single pixels of the display through Xlib directly: a few milliseconds, where a screenshot takes half a second."""
+
+    def __init__(self, name):
+        import ctypes, ctypes.util
+        self.x = ctypes.CDLL(ctypes.util.find_library("X11"))
+        self.x.XOpenDisplay.restype = ctypes.c_void_p
+        self.x.XOpenDisplay.argtypes = [ctypes.c_char_p]
+        self.x.XDefaultRootWindow.restype = ctypes.c_ulong
+        self.x.XDefaultRootWindow.argtypes = [ctypes.c_void_p]
+        self.x.XGetImage.restype = ctypes.c_void_p
+        self.x.XGetImage.argtypes = [ctypes.c_void_p, ctypes.c_ulong, ctypes.c_int, ctypes.c_int, ctypes.c_uint, ctypes.c_uint, ctypes.c_ulong, ctypes.c_int]
+        self.x.XGetPixel.restype = ctypes.c_ulong
+        self.x.XGetPixel.argtypes = [ctypes.c_void_p, ctypes.c_int, ctypes.c_int]
+        self.display = self.x.XOpenDisplay(name.encode())
+        if not self.display:
+            raise Failed("cannot open " + name)
+        self.root = self.x.XDefaultRootWindow(self.display)
+
+    def mean(self, x, y, w, h):
+        image = self.x.XGetImage(self.display, self.root, x, y, w, h, 0xFFFFFFFF, 2)
+        total = [0, 0, 0]
+        for i in range(w):
+            for j in range(h):
+                v = self.x.XGetPixel(image, i, j)
+                total[0] += (v >> 16) & 255
+                total[1] += (v >> 8) & 255
+                total[2] += v & 255
+        # The image is small; freeing it needs the struct's own function pointer, which is not worth it here.
+        return tuple(t // (w * h) for t in total)
+
+    def chat_open(self):
+        near = lambda c: all(abs(u - v) <= 12 for u, v in zip(c, (57, 48, 33)))
+        return near(self.mean(14, 366, 6, 16)) and near(self.mean(726, 420, 2, 40))
+
+
+class ChatCloser:
+    """Closes the chat each time a message opens it, while a shot is recorded. The client opens the chat on every new
+    line; the bots hear the same lines at the same moment, so a line in the bots' output means: the chat is open now,
+    press Tab (once per burst of lines). Watching pixels instead failed in brighter light, where the chat's overlay
+    takes the colour of the sky behind it.
+    Tab stores 'chat hidden' as a setting of the player; stop() presses it once more, which stores 'chat shown' back,
+    the state any chat typing (T) leaves it in. The reopened chat closes by itself after 15 s, as usual."""
+
+    def __init__(self, d, world, listener):
+        self.d, self.world, self.listener = d, world, listener
+        self.closed, self.running = 0, True
+        self.since = world.bots.mark()
+        self.thread = threading.Thread(target=self.run, daemon=True)
+        self.thread.start()
+
+    def run(self):
+        pattern = rf"^\[{re.escape(self.listener)}\] chat:"
+        while self.running:
+            m = self.world.bots.wait(pattern, self.since, 0.2)
+            if not m:
+                continue
+            # Let the burst arrive and the client draw the chat once, then close it.
+            time.sleep(0.12)
+            self.since = self.world.bots.mark()
+            self.d.key("Tab")
+            self.closed += 1
+
+    def stop(self):
+        self.running = False
+        self.thread.join(5)
+        if self.closed:
+            self.d.key("Tab")
+            time.sleep(0.5)
+        return self.closed
+
+
 def restore_screen(d, changed):
     if changed.get("minimap") and not d.minimap_visible():
         d.key("F6")
@@ -268,17 +353,19 @@ def pilot_realtime(s, d):
     time.sleep(3)
     close_dialogs(d)
     pilot_place(s)
-    ava = s.bots["Ava"]
-    # Closer than in the slow version: the camera looks down at the ground within reach (about 4.5 blocks), and Ava
+    funia = s.bots["Funia"]
+    # Closer than in the slow version: the camera looks down at the ground within reach (about 4.5 blocks), and Funia
     # must still be in the picture.
-    s.arrive(ava, f"front Ava {s.camera.name} 4")
+    # Six blocks: far enough that she stays in the picture when she flies up; the gear only needs ground within reach
+    # in front of the camera, the ritual (NearPlayer) works up to 8 blocks from her.
+    s.arrive(funia, f"front Funia {s.camera.name} 6")
     # On a hilly spot "front" can stand her on a wall of the mown meadow; the meadow itself is level with the camera.
-    a, c = ava.state(), s.camera.state()
+    a, c = funia.state(), s.camera.state()
     if abs(a["y"] - c["y"]) > 0.5:
-        s.beside(ava, s.camera, round(a["x"] - c["x"]), 0, round(a["z"] - c["z"]))
-    a = ava.state()
-    log(f"Ava at {a['x'] - c['x']:.0f} {a['y'] - c['y']:.0f} {a['z'] - c['z']:.0f} from the camera")
-    # Level while Ava is shown, so her name and head are in the picture; down only for the gear.
+        s.beside(funia, s.camera, round(a["x"] - c["x"]), 0, round(a["z"] - c["z"]))
+    a = funia.state()
+    log(f"Funia at {a['x'] - c['x']:.0f} {a['y'] - c['y']:.0f} {a['z'] - c['z']:.0f} from the camera")
+    # Level while Funia is shown, so her name and head are in the picture; down only for the gear.
     log("pitch " + str(aim(s, d, LEVEL)))
     changed = clean_screen(d)
     d.chat(".clearchat")
@@ -286,27 +373,38 @@ def pilot_realtime(s, d):
     dismiss_intro(d)
     d.shot("pilot-ready")
     file = clip.OUT / f"PILOT-{time.strftime('%Y%m%d-%H%M%S')}.mkv"
+    a, c = funia.state(), s.camera.state()
+    vx, vz = a["x"] - c["x"], a["z"] - c["z"]
+    norm = math.hypot(vx, vz) or 1
+    side = (-vz / norm, vx / norm)
     recorder = grab(d, file)
+    # The chat stays: its lines (died, last life, ritual) tell what happens. TRT_HIDE_CHAT=1 closes it instead.
+    chat = ChatCloser(d, s.w, "Funia") if os.environ.get("TRT_HIDE_CHAT") == "1" else None
     marks = {}
     try:
         time.sleep(1.5)
         marks["death"] = time.time()
-        s.w.console("/rebirth setlives Ava 1")
-        ava.until(lives=1)
-        ava.kill()
-        ava.until(mode="Spectator", alive=True, lives=0, timeout=20)
-        time.sleep(2.0)
+        s.w.console("/rebirth setlives Funia 1")
+        funia.until(lives=1)
+        funia.kill()
+        funia.until(mode="Spectator", alive=True, lives=0, timeout=20)
+        time.sleep(1.2)
+        # A ghost flies: drift aside and up, hover, then (with the gear in hand, as an echo) come back down to the spot.
+        glide(s, funia, side[0] * 2.5, 2.5, side[1] * 2.5, 2.4)
+        time.sleep(0.8)
         d.key("1")
-        time.sleep(2.0)
+        time.sleep(1.2)
+        glide(s, funia, -side[0] * 2.5, -2.5, -side[1] * 2.5, 2.2)
+        time.sleep(0.6)
         aim(s, d, GROUND, 0.04)
         d.x("mousedown", "3")
         try:
-            ava.until(mode="Survival", alive=True, timeout=8)
+            funia.until(mode="Survival", alive=True, timeout=8)
             log("the held gear performed the ritual")
         except Failed:
             log("the held gear did nothing; the helper does the ritual")
             s.w.trt("gear " + s.camera.name)
-            ava.until(mode="Survival", alive=True, timeout=30)
+            funia.until(mode="Survival", alive=True, timeout=30)
         finally:
             d.x("mouseup", "3")
         marks["back"] = time.time()
@@ -314,12 +412,22 @@ def pilot_realtime(s, d):
         time.sleep(2.5)
     finally:
         recorder.communicate(b"q", timeout=30)
+        if chat:
+            log(f"chat closed {chat.stop()} times during the shot")
         restore_screen(d, changed)
     return file
 
 
+def glide(s, who, dx, dy, dz, seconds):
+    """Smooth flight by an offset in whole blocks (helper /trt glide, 50 ms steps with easing); waits until done."""
+    since = s.w.server.mark()
+    s.w.trt(f"glide {who.name} {round(dx)} {round(dy)} {round(dz)} {int(seconds * 1000)}")
+    if not s.w.server.wait("GLIDED " + who.name + "$", since, seconds + 10):
+        raise Failed(who.name + " did not finish gliding")
+
+
 def ghost_scene(s, d):
-    """Ava as a ghost 5 blocks ahead, level camera, gear in hand: the echo, ready to be looked at."""
+    """Funia as a ghost 5 blocks ahead, level camera, gear in hand: the echo, ready to be looked at."""
     meadow(s)
     pilot_people(s)
     s.box(s.camera, GRASS, -12, -3, -12, 12, -1, 12)
@@ -328,28 +436,28 @@ def ghost_scene(s, d):
     time.sleep(3)
     close_dialogs(d)
     pilot_place(s)
-    ava = s.bots["Ava"]
-    a, c = ava.state(), s.camera.state()
+    funia = s.bots["Funia"]
+    a, c = funia.state(), s.camera.state()
     if abs(a["y"] - c["y"]) > 0.5:
-        s.beside(ava, s.camera, round(a["x"] - c["x"]), 0, round(a["z"] - c["z"]))
+        s.beside(funia, s.camera, round(a["x"] - c["x"]), 0, round(a["z"] - c["z"]))
     aim(s, d, LEVEL)
-    s.w.console("/rebirth setlives Ava 1")
-    ava.until(lives=1)
-    ava.kill()
-    ava.until(mode="Spectator", alive=True, lives=0, timeout=20)
+    s.w.console("/rebirth setlives Funia 1")
+    funia.until(lives=1)
+    funia.kill()
+    funia.until(mode="Spectator", alive=True, lives=0, timeout=20)
     d.key("1")
-    return ava
+    return funia
 
 
 def rift_compare(s, d):
     """A real rift of the game beside the echo, at the pilot's hour: a still of both, then the echo close up, moving."""
-    ava = ghost_scene(s, d)
-    a, c = ava.state(), s.camera.state()
-    # Beside her, across the view: the view runs from the camera to Ava.
+    funia = ghost_scene(s, d)
+    a, c = funia.state(), s.camera.state()
+    # Beside her, across the view: the view runs from the camera to Funia.
     vx, vz = a["x"] - c["x"], a["z"] - c["z"]
     norm = math.hypot(vx, vz) or 1
     sx, sz = -vz / norm, vx / norm
-    s.w.trt(f"riftnear Ava {round(sx * 2.5)} 1 {round(sz * 2.5)} 3")
+    s.w.trt(f"riftnear Funia {round(sx * 2.5)} 1 {round(sz * 2.5)} 3")
     changed = clean_screen(d)
     d.chat(".clearchat")
     time.sleep(16)
@@ -358,7 +466,7 @@ def rift_compare(s, d):
         shots = [d.shot(f"rift-compare-{i}") for i in range(2)]
         # Close up: three blocks from her, still looking at her; without the rift, whose nearness tints the picture.
         s.w.trt("clearrifts")
-        s.beside(s.camera, ava, -round(vx / norm * 3), 0, -round(vz / norm * 3))
+        s.beside(s.camera, funia, -round(vx / norm * 3), 0, -round(vz / norm * 3))
         aim(s, d, LEVEL)
         time.sleep(2)
         dismiss_intro(d)
@@ -366,6 +474,17 @@ def rift_compare(s, d):
         recorder = grab(d, file)
         time.sleep(4)
         recorder.communicate(b"q", timeout=30)
+        # The wisp alone (no gear in hand) at the distance of the scene, at the pilot's hour and at night.
+        d.key("2")
+        s.beside(s.camera, funia, -round(vx / norm * 6), 0, -round(vz / norm * 6))
+        aim(s, d, LEVEL)
+        time.sleep(2)
+        dismiss_intro(d)
+        subprocess.run(["cp", str(d.shot("wisp-dusk")), str(clip.OUT / "wisp-dusk.png")])
+        s.time("23:30")
+        time.sleep(6)
+        log(f"night: {s.w.trt('view ' + s.camera.name)}")
+        subprocess.run(["cp", str(d.shot("wisp-night")), str(clip.OUT / "wisp-night.png")])
     finally:
         restore_screen(d, changed)
     still = clip.OUT / "rift-vs-echo.png"
@@ -427,13 +546,13 @@ def trial(s, d, fps):
 def pilot(s, d, fps):
     meadow(s)
     pilot_people(s)
-    # Tall grass would hide Ava: a mown meadow around.
+    # Tall grass would hide Funia: a mown meadow around.
     s.box(s.camera, GRASS, -12, -3, -12, 12, -1, 12)
     s.box(s.camera, AIR, -12, 0, -12, 12, 5, 12)
     d.key("2")
     time.sleep(4)
     pilot_place(s)
-    ava = s.bots["Ava"]
+    funia = s.bots["Funia"]
     time.sleep(8)
     dismiss_intro(d)
     d.shot("pilot-ready")
@@ -443,10 +562,10 @@ def pilot(s, d, fps):
         # The chat closes 15 s after the last line, counted in real time.
         time.sleep(16)
         wait(1.5)
-        s.w.console("/rebirth setlives Ava 1")
-        ava.until(lives=1)
-        ava.kill()
-        ava.until(mode="Spectator", alive=True, lives=0, timeout=20)
+        s.w.console("/rebirth setlives Funia 1")
+        funia.until(lives=1)
+        funia.kill()
+        funia.until(mode="Spectator", alive=True, lives=0, timeout=20)
         d.shot("pilot-wisp")
         wait(2)
         d.key("1")
@@ -457,7 +576,7 @@ def pilot(s, d, fps):
         wait(1)
         d.shot("pilot-aim")
         s.w.trt("gear " + s.camera.name)
-        ava.until(mode="Survival", alive=True, timeout=30)
+        funia.until(mode="Survival", alive=True, timeout=30)
         d.shot("pilot-back")
         wait(2.5)
 
@@ -508,15 +627,6 @@ def main():
         return 130
     finally:
         signal.signal(signal.SIGINT, signal.SIG_IGN)
-        if client and display:
-            # The minimap is a setting of the player; it was on before any of this (see the report of the first runs).
-            try:
-                if not display.minimap_visible():
-                    display.key("F6")
-                    time.sleep(1.5)
-                    log("minimap on again: " + str(display.minimap_visible()))
-            except Exception as e:
-                log("could not check the minimap: " + str(e))
         if client:
             client.stop()
         if stage:

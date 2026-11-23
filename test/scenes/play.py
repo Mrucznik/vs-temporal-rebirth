@@ -18,7 +18,7 @@ def scene(name, about, mods=()):
     return add
 
 
-def ghost_of(s, name="Ava", dx=8, dz=0, above=1, **config):
+def ghost_of(s, name="Funia", dx=8, dz=0, above=1, **config):
     """A ghost a few blocks east of the camera. Returns its bot."""
     ghost = s.bot(name)
     use(s.w, "Classic", **{"Ghost.Visible": "WispAndEcho", "Time.Duration": "24h", "Place.Radius": 0, **config})
@@ -32,7 +32,7 @@ def ghost_of(s, name="Ava", dx=8, dz=0, above=1, **config):
     return ghost
 
 
-def zombie_of(s, name="Ava", dx=5, dz=0, **config):
+def zombie_of(s, name="Funia", dx=5, dz=0, **config):
     zombie = s.bot(name)
     use(s.w, "Undead", **{"Time.Duration": "24h", "Zombie.Glow": "true", **config})
     s.put(zombie, dx, dz)
@@ -70,22 +70,22 @@ def meadow(s):
 
 
 def pilot_people(s):
-    """Settings, weather and Ava, before the camera player looks around."""
-    s.bot("Ava")
+    """Settings, weather and Funia, before the camera player looks around."""
+    s.bot("Funia")
     use(s.w, "Classic", **{"Time.Duration": "24h", "Ghost.Visible": "WispAndEcho", "Ritual.Where": "NearPlayer", "Ritual.ReviveAt": "InPlace"})
     s.weather("clearsky")
 
 
 # The pilot's hour: late dusk with sky light. None: the first half hour from 18:00 whose daylight falls below PILOT_DAYLIGHT
 # (on a real client 19:30 gave 0.79, which looked too dark at night-adapted brightness).
-PILOT_TIME = "19:15"
+PILOT_TIME = "18:45"
 PILOT_DAYLIGHT = 0.95
 
 
 def pilot_place(s):
-    """Ava where the camera player looks now, dusk, a gear in the first slot."""
-    cam, ava = s.camera, s.bots["Ava"]
-    s.arrive(ava, f"front Ava {cam.name} 5")
+    """Funia where the camera player looks now, dusk, a gear in the first slot."""
+    cam, funia = s.camera, s.bots["Funia"]
+    s.arrive(funia, f"front Funia {cam.name} 5")
     s.age_revive()
     if PILOT_TIME:
         s.time(PILOT_TIME)
@@ -102,42 +102,42 @@ def pilot_place(s):
 
 
 def pilot_action(s, at_death=lambda: None):
-    cam, ava = s.camera, s.bots["Ava"]
-    s.w.console("/rebirth setlives Ava 1")
-    ava.until(lives=1)
+    cam, funia = s.camera, s.bots["Funia"]
+    s.w.console("/rebirth setlives Funia 1")
+    funia.until(lives=1)
     at_death()
-    home = ava.state()
-    ava.kill()
-    ava.until(mode="Spectator", alive=True, lives=0, timeout=10)
-    if ava.state()["look"] != "WispAndEcho":
+    home = funia.state()
+    funia.kill()
+    funia.until(mode="Spectator", alive=True, lives=0, timeout=10)
+    if funia.state()["look"] != "WispAndEcho":
         raise Failed("no echo")
     if s.check:
         time.sleep(1)
         if not cam.gear():
             raise Failed("the ritual did not work")
-    ava.until(mode="Survival", alive=True, timeout=90)
-    if harness.distance(ava.state(), home) > 3:
-        raise Failed("Ava came back somewhere else")
+    funia.until(mode="Survival", alive=True, timeout=90)
+    if harness.distance(funia.state(), home) > 3:
+        raise Failed("Funia came back somewhere else")
 
 
 @scene("PILOT", "M1 in short: last death, wisp, gear, echo, ritual, back (about 13 s); recorded with record.py")
 def pilot(s):
     meadow(s)
     pilot_people(s)
-    s.do("Look where Ava shall stand; nothing in hand.", "key 2")
+    s.do("Look where Funia shall stand; nothing in hand.", "key 2")
     pilot_place(s)
     s.note("Wisp for 2 s, key 1 (gear, echo) for 2 s, then hold the right mouse button on the ground in front of her for 4 s.")
     s.cue("the pilot", 8)
     pilot_action(s)
     time.sleep(2)
-    s.note("Ava is back. Stop recording.")
+    s.note("Funia is back. Stop recording.")
 
 
 # ---------- to judge ----------
 
 @scene("T1", "the wisp by day, at night, in a cave, in fog and from afar")
 def t1(s):
-    ava = ghost_of(s)
+    funia = ghost_of(s)
     s.weather("clearsky")
     s.do("Face east (+x): the wisp is 8 blocks away. No gear in hand.", "turn with the mouse")
     s.shot("wisp by day")
@@ -151,23 +151,23 @@ def t1(s):
     s.shot("wisp in fog")
     s.weather("clearsky")
     for far in (30, 60, 90):
-        s.put(ava, far, 0, 2)
-        s.expect(ava, far, 0)
+        s.put(funia, far, 0, 2)
+        s.expect(funia, far, 0)
         s.shot(f"wisp {far} blocks away, day")
         s.time("23:30")
         s.shot(f"wisp {far} blocks away, night")
         s.time("12:00")
     room(s, s.camera)
     since = s.camera.state()
-    bx = ava.state()
-    ava.go(round(since["x"] - bx["x"]) + 5, round(since["y"] - bx["y"]) + 1, round(since["z"] - bx["z"]))
-    s.expect(ava, 5, 0, 1)
+    bx = funia.state()
+    funia.go(round(since["x"] - bx["x"]) + 5, round(since["y"] - bx["y"]) + 1, round(since["z"] - bx["z"]))
+    s.expect(funia, 5, 0, 1)
     s.shot("wisp in a cave, the only light")
 
 
 @scene("T2", "the echo near water, glass and leaves, close and from behind, taking and putting away the gear")
 def t2(s):
-    ava = ghost_of(s, dx=6)
+    funia = ghost_of(s, dx=6)
     s.weather("clearsky")
     s.w.trt(f"wear {s.camera.name} game:gear-temporal")
     s.note("A temporal gear is in the active hotbar slot.")
@@ -177,7 +177,7 @@ def t2(s):
     s.shot("echo close up")
     s.do("Walk around it to the other side.", "W/A/D")
     s.shot("echo from behind")
-    s.put(ava, 6, 0, 1)
+    s.put(funia, 6, 0, 1)
     s.box(s.camera, GLASS, 3, 0, -2, 3, 2, 2)
     s.shot("echo behind glass")
     s.box(s.camera, LEAVES, 3, 0, -2, 3, 2, 2)
@@ -271,24 +271,24 @@ def t5(s):
 @scene("T6", "a zombie by day and night, in armour, with a torch")
 def t6(s):
     s.weather("clearsky")
-    ava = zombie_of(s)
+    funia = zombie_of(s)
     s.do("Face east: the zombie is 5 blocks away.")
     s.time("12:00")
     s.shot("zombie by day")
     s.time("23:30")
     s.shot("zombie at night")
-    s.wear(ava, "game:armor-body-plate-iron", "game:armor-head-plate-iron", "game:armor-legs-plate-iron")
+    s.wear(funia, "game:armor-body-plate-iron", "game:armor-head-plate-iron", "game:armor-legs-plate-iron")
     s.shot("in armour at night")
     s.time("12:00")
     s.shot("in armour by day")
-    s.wear(ava, "game:torch-basic-lit-up")
+    s.wear(funia, "game:torch-basic-lit-up")
     s.time("23:30")
     s.shot("with a torch at night")
     finn = s.bot("Finn")
     s.put(finn, 5, 3)
     s.time("12:00")
     s.shot("next to a normal player")
-    s.back(ava)
+    s.back(funia)
     s.age_revive()
     s.time("12:00")
     s.shot("back to normal: no tint, no glow")
@@ -331,26 +331,26 @@ def t7(s):
 def t8(s):
     for liquid, name in ((WATER, "water"), (LAVA, "lava")):
         # Not at the spawn point: that is where the zombie is moved.
-        ava = zombie_of(s, dx=0, dz=-40)
-        before = ava.state()
+        funia = zombie_of(s, dx=0, dz=-40)
+        before = funia.state()
         s.cue(f"zombie dies in {name}, 40 blocks north (-z); watch for 40 s")
-        s.box(ava, STONE, -5, -4, -5, 5, 0, 5)
-        s.box(ava, liquid, -4, -2, -4, 4, 0, 4)
+        s.box(funia, STONE, -5, -4, -5, 5, 0, 5)
+        s.box(funia, liquid, -4, -2, -4, 4, 0, 4)
         for _ in range(3):
-            if not ava.state()["liquid"]:
-                s.note(f"moved to safe ground at {ava.state()['x']:.0f} {ava.state()['z']:.0f}")
+            if not funia.state()["liquid"]:
+                s.note(f"moved to safe ground at {funia.state()['x']:.0f} {funia.state()['z']:.0f}")
             time.sleep(6)
-            ava.kill()
-            ava.until(alive=False)
-            ava.until(alive=True, timeout=20)
+            funia.kill()
+            funia.until(alive=False)
+            funia.until(alive=True, timeout=20)
             time.sleep(2)
-        after = ava.state()
+        after = funia.state()
         time.sleep(15)
-        deaths = ava.state()["deaths"]
-        s.note(f"{name}: {after['deaths'] - before['deaths']} deaths asked for or caused, {deaths - after['deaths']} more in the next 15 s, now in liquid: {ava.state()['liquid']}")
-        if deaths != after["deaths"] or ava.state()["liquid"]:
+        deaths = funia.state()["deaths"]
+        s.note(f"{name}: {after['deaths'] - before['deaths']} deaths asked for or caused, {deaths - after['deaths']} more in the next 15 s, now in liquid: {funia.state()['liquid']}")
+        if deaths != after["deaths"] or funia.state()["liquid"]:
             raise Failed("keeps dying or was left in the liquid")
-        s.back(ava)
+        s.back(funia)
 
 
 @scene("T9", "relog while becoming a ghost, while returning, in exile")
@@ -402,7 +402,7 @@ def t11(s):
     use(s.w, "Classic")
     s.weather("clearsky")
     s.do("Show the frame rate and note it.", "Ctrl+F3 or .debug fps")
-    for name, dx, dz in (("Ava", 5, -3), ("Finn", 6, 0), ("Mira", 5, 3)):
+    for name, dx, dz in (("Funia", 5, -3), ("Finn", 6, 0), ("Mira", 5, 3)):
         ghost_of(s, name, dx, dz)
     s.wear(s.camera, "game:gear-temporal")
     s.do("Face east. Frame rate with three wisps (other slot), then three echoes (gear in hand).", "keys 2 and 1")
@@ -414,38 +414,38 @@ def t11(s):
 
 @scene("M1", "last death, wisp, a friend with a gear, the echo, ritual, back")
 def m1(s):
-    ava = s.bot("Ava")
+    funia = s.bot("Funia")
     use(s.w, "Classic", **{"Ghost.Visible": "WispAndEcho", "Time.Duration": "24h", "Ritual.Where": "NearPlayer", "Ritual.ReviveAt": "InPlace"})
     s.weather("clearsky")
     s.time("19:00")
-    s.put(ava, 5, 0)
+    s.put(funia, 5, 0)
     s.wear(s.camera, "game:gear-temporal")
-    s.do("Face east, Ava in the middle of the picture; empty slot 2 in hand.", "key 2")
-    s.cue("recording: Ava dies, becomes a wisp")
-    s.last_death(ava)
-    ava.until(mode="Spectator", alive=True, timeout=10)
-    s.do("Take the gear: the echo with the name Ava.", "key 1")
+    s.do("Face east, Funia in the middle of the picture; empty slot 2 in hand.", "key 2")
+    s.cue("recording: Funia dies, becomes a wisp")
+    s.last_death(funia)
+    funia.until(mode="Spectator", alive=True, timeout=10)
+    s.do("Take the gear: the echo with the name Funia.", "key 1")
     s.do("The ritual, looking at the ground in front of the echo.", GEAR_USE)
     if s.check and not s.camera.gear():
         raise Failed("the ritual did not work")
-    ava.until(mode="Survival", alive=True, timeout=60)
-    s.note("Ava is back on the spot. Stop after 2 s.")
+    funia.until(mode="Survival", alive=True, timeout=60)
+    s.note("Funia is back on the spot. Stop after 2 s.")
 
 
 @scene("M2", "four shots of 2 s: Ghost, Zombie, Exile, Ban")
 def m2(s):
     s.weather("clearsky")
-    ava = ghost_of(s, dx=4)
+    funia = ghost_of(s, dx=4)
     s.time("19:00")
     s.wear(s.camera, "game:gear-temporal")
     s.do("Face east, gear in hand.", "key 1")
     s.shot("Ghost, 2 s")
-    s.back(ava)
-    ava = zombie_of(s, dx=3)
+    s.back(funia)
+    funia = zombie_of(s, dx=3)
     s.time("19:00")
     s.do("Empty hand, face east.", "key 2")
     s.shot("Zombie, 2 s")
-    s.back(ava)
+    s.back(funia)
     exile(s, radius=24)
     s.time("12:00")
     s.do("Walk to the edge.", "hold W")

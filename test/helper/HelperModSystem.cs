@@ -68,6 +68,7 @@ public sealed class HelperModSystem : ModSystem
         Add("front", a => Front(Player(a), Find((string)a[1]), (int)a[2]), parsers.Word("player"), parsers.Word("other"), parsers.Int("distance"));
         Add("turn", a => Turn(Player(a), (int)a[1]), parsers.Word("player"), parsers.Int("degrees"));
         Add("meadow", a => Meadow(Player(a)), parsers.Word("player"));
+        Add("glide", a => Glide(Player(a), (int)a[1], (int)a[2], (int)a[3], (int)a[4]), parsers.Word("player"), parsers.Int("dx"), parsers.Int("dy"), parsers.Int("dz"), parsers.Int("milliseconds"));
         Add("dress", a => Dress(Player(a), (int)a[1]), parsers.Word("player"), parsers.Int("look"));
         Add("wear", a => Wear(Player(a), (string)a[1]), parsers.Word("player"), parsers.Word("item"));
     }
@@ -321,6 +322,33 @@ public sealed class HelperModSystem : ModSystem
         }
 
         return new { ok = true };
+    }
+
+    /// <summary>
+    /// Scenes: moves a player smoothly by an offset over a time, in steps of 50 ms with easing; "GLIDED name" in the log
+    /// when done. A ghost (spectator) floats where it is put, no gravity.
+    /// </summary>
+    private object Glide(IServerPlayer p, int dx, int dy, int dz, int ms)
+    {
+        EntityPlayer e = p.Entity;
+        Vec3d from = e.ServerPos.XYZ, to = from.AddCopy(dx, dy, dz);
+        string name = p.PlayerName;
+        long started = api.World.ElapsedMilliseconds, id = 0;
+        id = api.Event.RegisterGameTickListener(_ =>
+        {
+            double t = Math.Min(1.0, (api.World.ElapsedMilliseconds - started) / (double)Math.Max(1, ms));
+            double k = t * t * (3 - 2 * t);
+            double x = from.X + ((to.X - from.X) * k), y = from.Y + ((to.Y - from.Y) * k), z = from.Z + ((to.Z - from.Z) * k);
+            // Setting the server's position is not enough: the server relays a player's position from that player's own
+            // client, and a bot sends none. Small teleports reach every client.
+            e.TeleportToDouble(x, y, z);
+            if (t >= 1)
+            {
+                api.Event.UnregisterGameTickListener(id);
+                api.Logger.Notification("GLIDED {0}", name);
+            }
+        }, 50);
+        return new { x = to.X, y = to.Y, z = to.Z };
     }
 
     /// <summary>

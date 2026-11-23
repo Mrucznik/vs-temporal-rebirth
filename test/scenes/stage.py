@@ -56,7 +56,7 @@ class Stage:
         return self.camera
 
     def bot(self, name):
-        """Ava, Finn, Mira: joins once and stays for all scenes."""
+        """Funia, Finn, Mira: joins once and stays for all scenes."""
         if name not in self.bots:
             self.bots[name] = self.w.join(name)[0]
             # Without a character a bot has no body on a real client.

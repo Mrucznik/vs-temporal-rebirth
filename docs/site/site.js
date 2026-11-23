@@ -153,7 +153,7 @@
       head.replaceChildren(el("h3", { textContent: p.id }), el("p", { class: "sub", textContent: p.text }));
       const rows = [["form", P.form(s)], ["where", P.where(s)], ["time", P.time(d)], ["back", P.back(s, d.kind === "forever")], ["ritual", P.ritual(s)]];
       dl.replaceChildren(...rows.flatMap(([k, v]) => [el("dt", { textContent: P.rows[k] }), el("dd", { html: v })]));
-      link.href = "configurator/#c=" + window.TR.encode(p.id, s);
+      link.href = "configurator/index.html#c=" + window.TR.encode(p.id, s);
       fig.set(P.videos[p.id], P.captions[p.id]);
       $("presetView").setAttribute("aria-labelledby", "preset-" + p.id);
     };
@@ -218,7 +218,7 @@
   function footer() {
     const F = L.footer.links;
     const links = [["https://mods.vintagestory.at/show/mod/73648", F.moddb], ["https://github.com/Mrucznik/vs-temporal-rebirth", F.github],
-      ["https://github.com/Mrucznik/vs-temporal-rebirth/issues", F.issues], [WIKI.replace(/\/$/, ""), F.wiki], ["configurator/", F.config]];
+      ["https://github.com/Mrucznik/vs-temporal-rebirth/issues", F.issues], [WIKI.replace(/\/$/, ""), F.wiki], ["configurator/index.html", F.config]];
     $("footLinks").replaceChildren(...links.map(([href, label]) => el("a", href.startsWith("http") ? { href, target: "_blank", rel: "noopener", textContent: label } : { href, textContent: label })));
   }
 

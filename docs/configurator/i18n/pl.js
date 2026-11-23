@@ -10,6 +10,7 @@
   (window.TR_I18N ??= {}).pl = {
     name: "Polski",
     ui: {
+      navHome: "Strona", navConfig: "Konfigurator", navWiki: "Wiki",
       lead: "Konfigurator moda Temporal Rebirth do Vintage Story. Ustawisz tu, co zabiera życia, kim staje się gracz po stracie ostatniego, gdzie i jak długo wtedy przebywa, jak wraca i czy inni mogą go wskrzesić. Na końcu pobierzesz gotowy plik na serwer.",
       downedLabel: "Na serwerze jest mod Downed", downedHelp: "Odblokowuje ustawienia, w których życia zabiera powalenie.", downedLink: "Strona moda Downed", downedNeeded: "Potrzebny mod Downed. Włącz go u góry strony.",
       tabSettings: "Ustawienia", tabMessages: (n) => n ? "Komunikaty (własne: " + n + ")" : "Komunikaty", vars: "Można użyć: ", builtin: "tekst moda",

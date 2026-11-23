@@ -8,6 +8,7 @@
   (window.TR_I18N ??= {}).de = {
     name: "Deutsch",
     ui: {
+      navHome: "Mod-Seite", navConfig: "Konfigurator", navWiki: "Wiki",
       lead: "Konfigurator für die Vintage-Story-Mod Temporal Rebirth. Hier stellst du ein, was ein Leben kostet, was aus Spielern nach dem letzten Leben wird, wo und wie lange sie dann bleiben, wie sie zurückkehren und ob andere sie wiederbeleben können. Am Ende lädst du eine Datei für deinen Server herunter.",
       downedLabel: "Auf dem Server läuft die Mod Downed", downedHelp: "Schaltet Einstellungen frei, bei denen es ein Leben kostet, zu Boden zu gehen.", downedLink: "Seite der Mod Downed", downedNeeded: "Benötigt die Mod Downed. Schalte sie oben auf der Seite ein.",
       tabSettings: "Einstellungen", tabMessages: (n) => n ? "Meldungen (eigene: " + n + ")" : "Meldungen", vars: "Verfügbar: ", builtin: "Text der Mod",

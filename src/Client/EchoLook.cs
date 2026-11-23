@@ -117,7 +117,7 @@ internal class EchoLook : IRenderer
     {
         if (!names.TryGetValue(name, out LoadedTexture? texture))
         {
-            CairoFont font = CairoFont.WhiteMediumText().WithColor([0.62, 0.97, 0.92, 0.95]).WithStroke([0, 0, 0, 0.7], 2);
+            CairoFont font = CairoFont.WhiteMediumText().WithColor([0.95, 0.55, 0.42, 0.95]).WithStroke([0, 0, 0, 0.7], 2);
             names[name] = texture = api.Gui.TextTexture.GenUnscaledTextTexture(name, font);
         }
 

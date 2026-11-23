@@ -20,8 +20,8 @@ internal class WispLook(ICoreClientAPI api, Ghosts ghosts)
     private const double DetailDistance = 32;
     private const float Glow = 7f;
 
-    private static readonly int CoreColor = ColorUtil.ToRgba(150, 120, 255, 230);
-    private static readonly int SparkColor = ColorUtil.ToRgba(220, 90, 235, 215);
+    private static readonly int CoreColor = ColorUtil.ToRgba(150, 150, 40, 20);
+    private static readonly int SparkColor = ColorUtil.ToRgba(220, 230, 90, 30);
 
     private readonly Dictionary<long, WispLight> lights = new();
     private readonly HashSet<long> seen = new();
@@ -126,7 +126,7 @@ internal class WispLook(ICoreClientAPI api, Ghosts ghosts)
 
         float flicker = Glow * (0.9f + (0.1f * (float)Math.Sin(phase * 5.3)));
         light.Pos.Set(pos);
-        light.Color.Set(0.82f * flicker, 0.9f * flicker, 0.3f * flicker);
+        light.Color.Set(0.1f * flicker, 0.22f * flicker, 0.85f * flicker);
     }
 
     private void Clear()

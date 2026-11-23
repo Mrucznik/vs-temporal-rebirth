@@ -13,6 +13,10 @@ internal class Messages(ICoreServerAPI api, RebirthConfig config)
     public void Tell(IServerPlayer player, string key, params (string Name, object Value)[] args) =>
         player.SendMessage(GlobalConstants.GeneralChatGroup, Text(player.LanguageCode, key, args), EnumChatType.Notification);
 
+    /// <summary>A text admins cannot replace (short feedback to one player), straight from the lang files.</summary>
+    public void TellText(IServerPlayer player, string langKey, params object[] args) =>
+        player.SendMessage(GlobalConstants.GeneralChatGroup, Lang.GetL(player.LanguageCode, "temporalrebirth:" + langKey, args), EnumChatType.Notification);
+
     public void TellEveryone(string key, params (string Name, object Value)[] args)
     {
         foreach (IServerPlayer player in api.World.AllOnlinePlayers.Cast<IServerPlayer>())

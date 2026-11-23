@@ -15,6 +15,7 @@ public sealed class TemporalRebirthModSystem : ModSystem
     // Harmony patches are static; these are all they can reach. One process runs both sides in singleplayer.
     internal static ServerParts? Server { get; private set; }
     internal static LeashGuard? ClientLeash { get; private set; }
+    internal static RitualClient? ClientRitual { get; private set; }
 
     private Harmony? harmony;
     private ICoreServerAPI? sapi;
@@ -42,6 +43,13 @@ public sealed class TemporalRebirthModSystem : ModSystem
         new WispLook(api, ghosts).Start();
         new ZonePrediction(api).Start();
         timer = new TimerHud(api);
+        ClientRitual = new RitualClient(api);
+        // Without these a ritual looks like vanilla's "set spawn point" and the hint says "use on ground".
+        foreach (Type patch in new[] { typeof(GearClientStartPatch), typeof(GearClientStepPatch), typeof(GearClientStopPatch), typeof(GearClientCancelPatch), typeof(GearClientHelpPatch) })
+        {
+            TryPatch(api, patch);
+        }
+
         // After the assets: shaders are among them.
         api.Event.BlockTexturesLoaded += () =>
         {
@@ -85,6 +93,11 @@ public sealed class TemporalRebirthModSystem : ModSystem
         zones.Register();
         zombies.Register();
         new Commands(api, config, file, afterlife, returns, rituals, zones).Register();
+        rituals.Register(api.Network.RegisterChannel(RitualNet.Channel)
+            .RegisterMessageType<RitualHintPacket>()
+            .RegisterMessageType<ChooserOpenPacket>()
+            .RegisterMessageType<ChooserClosePacket>()
+            .RegisterMessageType<ChooserPickPacket>());
 
         harmony = new Harmony(HarmonyId + ".server");
         // Without the respawn patch, extra lives would be shown but vanilla would still refuse the respawn.
@@ -95,6 +108,10 @@ public sealed class TemporalRebirthModSystem : ModSystem
         }
 
         TryPatch(api, typeof(TemporalGearPatch));
+        // Without them a ritual still happens, but only in worlds where gears may set the spawn point, and unseen by others.
+        TryPatch(api, typeof(GearHoldStartPatch));
+        TryPatch(api, typeof(GearHoldStepPatch));
+        TryPatch(api, typeof(GearHoldCancelPatch));
         TryPatch(api, typeof(ZombiePickupPatch));
         TryPatch(api, typeof(ProtectionPatch));
         if (!TryPatch(api, typeof(JoinPatch)))
@@ -149,6 +166,8 @@ public sealed class TemporalRebirthModSystem : ModSystem
         if (capi != null)
         {
             ClientLeash = null;
+            ClientRitual?.Dispose();
+            ClientRitual = null;
             renderers.ForEach(r => r.Dispose());
             renderers.Clear();
             timer?.Dispose();

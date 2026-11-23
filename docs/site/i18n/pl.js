@@ -35,7 +35,7 @@
       lead: "W Vintage Story można ustawić limit żyć. Kto straci ostatnie życie, zwykle nie gra już w tym świecie. Z tym modem zębatki temporalne dają dodatkowe życia. Po ostatniej śmierci przez jakiś czas jesteś duchem, zombie albo wygnańcem, zależnie od serwera. Wracasz, gdy minie czas albo gdy przyjaciel odprawi rytuał.",
       download: "Pobierz z Mod DB", github: "Wydania na GitHubie", config: "Konfigurator", how: "Jak to działa",
       video: "Przyjaciel widzi ognik, bierze zębatkę do ręki i widzi echo. Odprawia rytuał, a gracz wraca do gry.",
-      facts: ["Działa na serwerze i w grze jednoosobowej", "6 gotowych presetów", "Obsługuje mod Downed"],
+      facts: ["6 gotowych presetów", "Obsługuje mod Downed"],
     },
     video: { enlarge: "Powiększ film", close: "Zamknij", play: "Odtwórz", unsupported: "Twoja przeglądarka nie odtworzy tego filmu." },
 

@@ -2,60 +2,52 @@
 
 ![How Temporal Rebirth works](docs/infographic.png)
 
+Hardcore lives you can earn, and a way back when they run out. A Vintage Story mod for servers and single-player worlds.
+
 **Download:** [Vintage Story Mod DB](https://mods.vintagestory.at/show/mod/73648) · [GitHub releases](https://github.com/Mrucznik/vs-temporal-rebirth/releases)
+· **[Web configurator](https://mrucznik.github.io/vs-temporal-rebirth/configurator/)** · **[Wiki](https://github.com/Mrucznik/vs-temporal-rebirth/wiki)**
 
-Vintage Story 1.22.7 mod for hardcore worlds (`playerlives` set to a number). Lives you can earn,
-and a way back for players who run out of them.
+In the base game, limited lives (`playerlives`) end a character for good. This mod lets players earn more lives
+and turns the loss of the last one into a penalty with an end, not a dead end. Version 0.9.
 
-1. **Earn lives with temporal gears.** Using a gear the vanilla way (hold right click on the
-   ground to set your respawn point) also grants extra lives. One per gear by default.
-2. **Out of lives → ghost.** Instead of being stuck on the death screen, a player with no lives
-   left becomes a spectator and can watch the world.
-   The ghost is tethered to where it died: it cannot drift more than `GhostTetherRadius`
-   blocks away and is pulled back onto that edge.
-3. **Come back the next day.** A ghost returns to survival at their respawn point once the server's
-   local clock passes `NextDayResetHour` on the following day. Can be switched to a fixed number
-   of hours, or disabled so only a ritual works.
-4. **Revival ritual at a rift.** A living player holds a temporal gear (the same 3.5 s use) within
-   a few blocks of an active rift. The gear is consumed and a ghost comes back to life next to the
-   caster. Only ghosts who are online can be revived. With one online ghost it is them; with more,
-   the caster picks one first with `/rebirth target <name>` — otherwise the ritual lists the
-   ghosts and keeps the gear.
+## How it works
 
-The death screen shows your real lives left, including those earned from gears.
+1. **Earn lives.** Using a temporal gear (the vanilla "set respawn point" action) gives extra lives, one per gear by
+   default, with an optional cap. See [Lives](https://github.com/Mrucznik/vs-temporal-rebirth/wiki/Lives).
+2. **Pick a preset.** `Classic`, `Rescue`, `Undead`, `Exile`, `Timeout` or `Hardcore` set everything below at once;
+   `/rebirth preset <name>` or the configurator. See [Presets](https://github.com/Mrucznik/vs-temporal-rebirth/wiki/Presets).
+3. **Lose the last life.** The player becomes something else, for a set time and in a set place:
+   - **form:** a ghost, a spectator, a zombie, a normal player, or a banned player
+     ([Afterlife Forms](https://github.com/Mrucznik/vs-temporal-rebirth/wiki/Afterlife-Forms));
+   - **place:** where they died, the spawn point, a marked place (an exile), or a zone made of land claims
+     ([Place and Exile](https://github.com/Mrucznik/vs-temporal-rebirth/wiki/Place-and-Exile));
+   - **time:** real time, such as 24 hours or until 06:00 the next day, or until someone brings them back
+     ([Time and Return](https://github.com/Mrucznik/vs-temporal-rebirth/wiki/Time-and-Return)).
+4. **Come back.** When the time is up, or sooner when a living player holds a temporal gear for 3.5 s in the right
+   place (by a rift, next to the player, in a marked place or anywhere, as you choose). The gear is used up
+   ([Rituals](https://github.com/Mrucznik/vs-temporal-rebirth/wiki/Rituals)).
 
-Works with [Downed](https://mods.vintagestory.at/downed): a downed player is not dead; only the
-final death (bleed out, give up, execution) costs a life. Do **not** install together with
-Temporal Lives — both patch the same vanilla code; this mod replaces it.
+Everything is configurable, and all texts come in English, Polish, German and Russian
+([Configuration](https://github.com/Mrucznik/vs-temporal-rebirth/wiki/Configuration),
+[Commands](https://github.com/Mrucznik/vs-temporal-rebirth/wiki/Commands-and-Permissions),
+[Messages](https://github.com/Mrucznik/vs-temporal-rebirth/wiki/Messages-and-Translations)).
+Config from 0.6.x is converted automatically and behaves as before.
 
-## Config
+## Quick start
 
-`ModConfig/temporalrebirth.json` on the server:
+1. Put the mod in the server's `Mods` folder (clients get it when they join) and turn on limited lives:
+   `/worldconfig playerlives 3`, then restart. Without a limit the mod does nothing.
+2. Choose settings in the [configurator](https://mrucznik.github.io/vs-temporal-rebirth/configurator/) and paste its
+   `/rebirth import ...` command in game, or use `/rebirth preset` and `/rebirth config <setting> <value>`.
+3. Check with `/rebirth config show`. More in [Installation](https://github.com/Mrucznik/vs-temporal-rebirth/wiki/Installation).
 
-| key | default | meaning |
-|---|---|---|
-| `LivesPerGear` | `1` | lives per gear; `-1` follows the world's `temporalGearRespawnUses` |
-| `ReturnMode` | `NextDay` | `NextDay`, `Hours` or `Disabled` |
-| `ReturnAfterHours` | `24` | used by `Hours` |
-| `NextDayResetHour` | `6` | used by `NextDay`, server local time |
-| `GhostNoClip` | `false` | `false`: ghosts fly but collide with blocks; `true`: they pass through walls |
-| `GhostTetherRadius` | `24` | how far a ghost may drift from its death spot; `0` = no limit |
-| `RitualRiftRange` | `8` | how close to a rift the caster must stand, in blocks |
-| `RitualReviveAt` | `Caster` | where a ritual brings the ghost back: `Caster` (next to the friend — can be used as a teleport), `DeathSpot` or `Spawn` |
-| `RitualCooldownHours` | `0` | hours before the same player can be revived by a ritual again; `0` = no limit |
-| `ReturnHealthPercent` | `100` | caps health after coming back (ritual or next day), % of max; `100` = vanilla (full) |
-| `ReturnSatietyPercent` | `100` | caps satiety after coming back, % of max; `100` = vanilla (50% satiety, halved nutrition) |
+## Compatibility
 
-Lives left = world `playerlives` + extra lives − vanilla death counter. With unlimited lives
-(`playerlives = -1`) the mod does nothing.
+- Vintage Story **1.22.7**, required on the server and on every client.
+- Works with [Downed](https://mods.vintagestory.at/downed) (soft, no assembly reference): being downed can cost a life.
+- Do **not** install it together with Temporal Lives: both patch the same vanilla code, and this mod replaces it.
 
-## Commands
-
-- `/rebirth lives` — your lives left
-- `/rebirth ghosts` — who is waiting and when they come back
-- `/rebirth target <ghost>` — choose whom your next ritual brings back
-- `/rebirth revive <player>` — admin (`controlserver`): bring a ghost back where they stand
-- `/rebirth setlives <player> <n>` — admin: set how many lives a player has left
+Details: [Compatibility](https://github.com/Mrucznik/vs-temporal-rebirth/wiki/Compatibility), [FAQ](https://github.com/Mrucznik/vs-temporal-rebirth/wiki/FAQ).
 
 ## Build
 

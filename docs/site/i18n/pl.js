@@ -207,8 +207,6 @@
           a: "Prawie na pewno świat ma nieograniczoną liczbę żyć. Wpisz <code>/worldconfig playerlives 3</code> i zrestartuj serwer. Jeśli w logu jest „Lives, ghosts and rituals are DISABLED”, mod nie obsługuje jeszcze twojej wersji gry. Trzeba poczekać na aktualizację." },
         { who: "owners", q: "Zmieniłem preset, a gracz dalej jest duchem.",
           a: "Forma, miejsce, czas i powrót zapisują się w chwili śmierci. Nowe ustawienia dotyczą dopiero kolejnych śmierci. Żeby skończyć czyjąś karę, użyj <code>/rebirth revive &lt;gracz&gt;</code>." },
-        { who: "owners", q: "Jak przetestować mod bez tracenia postaci?",
-          a: "Użyj zapasowego konta. Po komendzie <code>/rebirth setlives &lt;gracz&gt; 0</code> następna śmierć tego gracza będzie ostatnia." },
         { who: "owners", q: "Czy rytuału da się użyć jako teleportu do znajomego?",
           a: "Tak. Domyślnie wskrzeszony pojawia się obok gracza, który odprawił rytuał. Jeśli tego nie chcesz, zmień w konfiguratorze miejsce, w którym się pojawia, albo ustaw przerwę między rytuałami." },
         { who: "owners", q: "Gracze wylogowują się i tak przeczekują karę.",

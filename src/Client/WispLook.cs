@@ -88,9 +88,8 @@ internal class WispLook(ICoreClientAPI api, Ghosts ghosts)
 
     private void Show(EntityPlayer entity, bool lit, bool particles)
     {
-        // Bobs slowly; the id keeps several wisps out of step.
-        double phase = (api.World.ElapsedMilliseconds / 1000.0) + (entity.EntityId % 100);
-        Vec3d pos = entity.Pos.XYZ.Add(0, (entity.LocalEyePos?.Y ?? 1.6) * 0.75 + (0.12 * Math.Sin(phase * 1.7)), 0);
+        double phase = Phase(api, entity);
+        Vec3d pos = Center(api, entity);
 
         if (lit)
         {
@@ -110,6 +109,12 @@ internal class WispLook(ICoreClientAPI api, Ghosts ghosts)
         sparks.AddPos.Set(0.3, 0.3, 0.3);
         api.World.SpawnParticles(sparks);
     }
+
+    private static double Phase(ICoreClientAPI api, EntityPlayer entity) => (api.World.ElapsedMilliseconds / 1000.0) + (entity.EntityId % 100);
+
+    /// <summary>Where the wisp floats; it bobs slowly, and the id keeps several wisps out of step. Also used by <see cref="WispOrb"/>.</summary>
+    internal static Vec3d Center(ICoreClientAPI api, EntityPlayer entity) =>
+        entity.Pos.XYZ.Add(0, (entity.LocalEyePos?.Y ?? 1.6) * 0.75 + (0.12 * Math.Sin(Phase(api, entity) * 1.7)), 0);
 
     private void Light(long id, Vec3d pos, double phase)
     {

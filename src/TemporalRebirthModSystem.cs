@@ -47,6 +47,7 @@ public sealed class TemporalRebirthModSystem : ModSystem
         {
             renderers.Add(new LeashLook(api, guard));
             renderers.Add(new EchoLook(api, ghosts));
+            renderers.Add(new WispOrb(api, ghosts));
         };
     }
 

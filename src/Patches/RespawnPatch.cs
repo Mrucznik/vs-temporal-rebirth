@@ -31,7 +31,7 @@ internal static class RespawnPatch
         }
         else
         {
-            client.Player.SendMessage(GlobalConstants.CurrentChatGroup, "Cannot revive! All lives used up.", Vintagestory.API.Common.EnumChatType.CommandError);
+            client.Player.SendMessage(GlobalConstants.CurrentChatGroup, Lang.GetL(client.Player.LanguageCode, "temporalrebirth:no-respawn"), Vintagestory.API.Common.EnumChatType.CommandError);
         }
 
         return false;

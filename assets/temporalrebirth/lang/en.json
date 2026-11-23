@@ -21,6 +21,7 @@
   "msg-announceritual": "{0} brought {1} back to life.",
   "msg-announcereturned": "{0} has returned from beyond.",
   "ban-forever": "You are out of lives. Only a ritual or an admin can bring you back.",
+  "no-respawn": "Cannot respawn! All lives used up.",
   "cmd-lives": "Lives left: {0}",
   "cmd-lives-unlimited": "This world has unlimited lives.",
   "cmd-ghosts-none": "Nobody is waiting to come back.",

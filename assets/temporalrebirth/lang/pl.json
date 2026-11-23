@@ -21,6 +21,7 @@
   "msg-announceritual": "{0} przywraca do życia: {1}.",
   "msg-announcereturned": "{0} wraca zza zasłony.",
   "ban-forever": "Skończyły ci się życia. Może cię przywrócić tylko rytuał albo admin.",
+  "no-respawn": "Nie możesz się odrodzić! Wszystkie życia zostały wykorzystane.",
   "cmd-lives": "Pozostałe życia: {0}",
   "cmd-lives-unlimited": "W tym świecie liczba żyć jest nieograniczona.",
   "cmd-ghosts-none": "Nikt nie czeka na powrót.",

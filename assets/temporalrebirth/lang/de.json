@@ -21,6 +21,7 @@
   "msg-announceritual": "{0} hat {1} ins Leben zurückgeholt.",
   "msg-announcereturned": "{0} ist aus dem Jenseits zurückgekehrt.",
   "ban-forever": "Du hast keine Leben mehr. Nur ein Ritual oder ein Admin kann dich zurückholen.",
+  "no-respawn": "Wiedergeburt nicht möglich! Alle Leben aufgebraucht.",
   "cmd-lives": "Verbleibende Leben: {0}",
   "cmd-lives-unlimited": "In dieser Welt sind die Leben unbegrenzt.",
   "cmd-ghosts-none": "Niemand wartet auf die Rückkehr.",

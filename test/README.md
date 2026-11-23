@@ -5,6 +5,10 @@
 - `test/run.py [-k TEXT] [-j SERVERS] [--no-build]` — scenarios on a real local server (127.0.0.1, account check off, throwaway
   worlds in `~/.cache/temporalrebirth-test`). Builds the mod, the bots and the helper first.
 
+- `test/shaders/preview.py [output.png]` — compiles the shaders in headless Chrome and draws them over a made-up world (3 s). For
+  changing their look without the game; the game's own compiler, light and colors can still differ. New views: `SCENES` in
+  `preview.html`.
+
 | | |
 |---|---|
 | `bots/` | players without graphics: join, chat, respawn, leave |
@@ -36,7 +40,7 @@ folder. Everything needed that is not in the repository:
 | Vintage Story 1.22.7 | `~/Games/VintageStory`, the Flatpak install, or the folder in `VINTAGE_STORY` | the game's own download, or `flatpak install at.vintagestory.VintageStory`; no login is needed for these tests |
 | Python 3 | `python3` | used with 3.14, standard library only |
 | Node | `node` | used with 22; the configurator tests and some of `v07.py` need it, `ui.mjs` needs at least 22 |
-| Chrome | `google-chrome` | only for `configurator/ui.mjs` |
+| Chrome | `google-chrome` | only for `configurator/ui.mjs` and `shaders/preview.py` |
 | Downed 2.9.4 | `~/.cache/temporalrebirth-test/mods/downed_2.9.4.zip` | https://mods.vintagestory.at/downed; only for scenarios with Downed, the others run without |
 | ilspycmd | anywhere | `dotnet tool install ilspycmd --tool-path <folder>`; only to look into the game after an update |
 

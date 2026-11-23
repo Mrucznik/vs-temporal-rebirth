@@ -60,7 +60,7 @@
           caption: "Ostatnie sekundy licznika.",
           text: "Licznik u góry ekranu pokazuje, ile zostało. Domyślnie wracasz następnego dnia o 06:00 czasu serwera. Liczy się czas rzeczywisty, więc płynie też wtedy, gdy nie grasz.",
           more: "Jeśli w tym czasie znowu zginiesz, nic się nie zmienia. Nie tracisz życia, a czekanie nie skraca się ani nie wydłuża." },
-        { short: "Albo rytuał", title: "Albo przyjaciel odprawia rytuał", video: "W15", alt: true,
+        { short: "Rytuał", title: "Albo przyjaciel odprawia rytuał", video: "W15", alt: true,
           caption: "Rytuał przy wyrwie temporalnej.",
           text: "Żywy przyjaciel może sprowadzić cię wcześniej. Staje przy aktywnej <b>wyrwie temporalnej</b>, bierze zębatkę temporalną do ręki i przytrzymuje prawy przycisk myszy na bloku przez 3,5 sekundy. Zębatka znika, a ty wracasz.",
           more: "Gdy przyjaciel trzyma zębatkę, zamiast ognika widzi twoje <b>echo</b>, czyli falującą sylwetkę z twoim nickiem. Dzięki temu wie, kogo wskrzesza. Więcej w części <a href=\"#rytualy\">Rytuały</a>." },

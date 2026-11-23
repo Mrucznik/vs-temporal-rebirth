@@ -1,6 +1,7 @@
 using System.Reflection;
 using Newtonsoft.Json;
 using Vintagestory.API.Common;
+using Vintagestory.API.Common.Entities;
 using Vintagestory.API.MathTools;
 using Vintagestory.API.Server;
 using Vintagestory.GameContent;
@@ -43,6 +44,7 @@ public sealed class HelperModSystem : ModSystem
         Add("state", a => State(Player(a)), parsers.Word("player"));
         Add("gear", a => UseGear(Player(a)), parsers.Word("player"));
         Add("rift", a => AddRift(Player(a), (int)a[1]), parsers.Word("player"), parsers.Int("distance"));
+        Add("riftnear", a => RiftNear(Find((string)a[0]), (int)a[1], (int)a[2], (int)a[3], (int)a[4]), parsers.Word("player"), parsers.Int("dx"), parsers.Int("dy"), parsers.Int("dz"), parsers.Int("size"));
         Add("clearrifts", _ => ClearRifts());
         Add("move", a => Move(Player(a), (int)a[1], (int)a[2], (int)a[3]), parsers.Word("player"), parsers.Int("dx"), parsers.Int("dy"), parsers.Int("dz"));
         Add("near", a => MoveNear(Player(a), Find((string)a[1])), parsers.Word("player"), parsers.Word("other"));
@@ -59,6 +61,15 @@ public sealed class HelperModSystem : ModSystem
         Add("pointfar", a => PointFar(Player(a), (string)a[1], (int)a[2]), parsers.Word("player"), parsers.Word("place"), parsers.Int("distance"));
         Add("interact", a => Interact(Player(a), Find((string)a[1]), (string)a[2], (int)a[3]), parsers.Word("player"), parsers.Word("other"), parsers.Word("item or none"), parsers.Int("mouse button"));
         Add("oldentry", a => OldEntry((string)a[0]), parsers.Word("player"));
+        Add("players", _ => api.World.AllOnlinePlayers.Cast<IServerPlayer>().Where(p => p.ConnectionState is EnumClientState.Connected or EnumClientState.Playing && p.Entity != null).Select(p => p.PlayerName).ToArray());
+        Add("put", a => Put(Player(a), Find((string)a[1]), (int)a[2], (int)a[3], (int)a[4]), parsers.Word("player"), parsers.Word("other"), parsers.Int("dx"), parsers.Int("above the ground"), parsers.Int("dz"));
+        Add("box", a => Box(Player(a), (string)a[1], (int)a[2], (int)a[3], (int)a[4], (int)a[5], (int)a[6], (int)a[7]), parsers.Word("player"), parsers.Word("block"), parsers.Int("x1"), parsers.Int("y1"), parsers.Int("z1"), parsers.Int("x2"), parsers.Int("y2"), parsers.Int("z2"));
+        Add("view", a => View(Player(a)), parsers.Word("player"));
+        Add("front", a => Front(Player(a), Find((string)a[1]), (int)a[2]), parsers.Word("player"), parsers.Word("other"), parsers.Int("distance"));
+        Add("turn", a => Turn(Player(a), (int)a[1]), parsers.Word("player"), parsers.Int("degrees"));
+        Add("meadow", a => Meadow(Player(a)), parsers.Word("player"));
+        Add("dress", a => Dress(Player(a), (int)a[1]), parsers.Word("player"), parsers.Int("look"));
+        Add("wear", a => Wear(Player(a), (string)a[1]), parsers.Word("player"), parsers.Word("item"));
     }
 
     private IServerPlayer Find(string name) =>
@@ -141,9 +152,29 @@ public sealed class HelperModSystem : ModSystem
         return new { rift.RiftId };
     }
 
+    /// <summary>Scenes: a grown rift next to someone, sent to clients at once (the game itself sends rifts every 3 s).</summary>
+    private object RiftNear(IServerPlayer p, int dx, int dy, int dz, int size)
+    {
+        var rifts = api.ModLoader.GetModSystem<ModSystemRifts>();
+        double now = api.World.Calendar.TotalHours;
+        var rift = new Rift
+        {
+            RiftId = rifts.NextRiftId,
+            Size = size,
+            Position = p.Entity.Pos.XYZ.AddCopy(dx, dy, dz),
+            SpawnedTotalHours = now - 2,
+            DieAtTotalHours = now + 1000,
+        };
+        rifts.riftsById[rift.RiftId] = rift;
+        rifts.BroadCastRifts();
+        return new { rift.RiftId };
+    }
+
     private object ClearRifts()
     {
-        api.ModLoader.GetModSystem<ModSystemRifts>().riftsById.Clear();
+        var rifts = api.ModLoader.GetModSystem<ModSystemRifts>();
+        rifts.riftsById.Clear();
+        rifts.BroadCastRifts();
         return new { ok = true };
     }
 
@@ -160,6 +191,177 @@ public sealed class HelperModSystem : ModSystem
         string name = p.PlayerName;
         p.Entity.TeleportToDouble(other.Entity.Pos.X + 1, other.Entity.Pos.Y, other.Entity.Pos.Z, () => api.Logger.Notification("ARRIVED {0}", name));
         return new { ok = true };
+    }
+
+    /// <summary>Scenes: puts a player on the ground at a distance from another one, in land that is loaded.</summary>
+    private object Put(IServerPlayer p, IServerPlayer other, int dx, int above, int dz)
+    {
+        BlockPos pos = OnGround(other.Entity.Pos.AsBlockPos.AddCopy(dx, 0, dz));
+        string name = p.PlayerName;
+        p.Entity.TeleportToDouble(pos.X + 0.5, pos.Y + above, pos.Z + 0.5, () => api.Logger.Notification("ARRIVED {0}", name));
+        return new { x = pos.X, y = pos.Y + above, z = pos.Z };
+    }
+
+    private BlockPos OnGround(BlockPos pos)
+    {
+        IBlockAccessor blocks = api.World.BlockAccessor;
+        pos.Y = blocks.GetTerrainMapheightAt(pos) + 1;
+        bool Free(BlockPos at) => blocks.GetBlock(at).GetCollisionBoxes(blocks, at) is not { Length: > 0 };
+        while (!Free(pos) || !Free(pos.UpCopy()))
+        {
+            pos.Up();
+        }
+
+        return pos;
+    }
+
+    /// <summary>Scenes: where a player looks, which hotbar slot they hold, how bright the day is.</summary>
+    private object View(IServerPlayer p) => new
+    {
+        yaw = p.Entity.Pos.Yaw,
+        pitch = p.Entity.Pos.Pitch,
+        slot = p.InventoryManager.ActiveHotbarSlotNumber,
+        daylight = api.World.Calendar.GetDayLightStrength(p.Entity.Pos.AsBlockPos),
+        hour = api.World.Calendar.HourOfDay,
+        chosen = p.GetModData("createCharacter", false),
+    };
+
+    /// <summary>Scenes: puts a player on the ground where another one looks, face to face.</summary>
+    private object Front(IServerPlayer p, IServerPlayer other, int distance)
+    {
+        // The view vector of the API points backwards for a player's yaw (checked on a real client).
+        Vec3f ahead = EntityPos.GetViewVector(0, other.Entity.Pos.Yaw) * -1;
+        BlockPos pos = OnGround(other.Entity.Pos.AsBlockPos.AddCopy((int)Math.Round(ahead.X * distance), 0, (int)Math.Round(ahead.Z * distance)));
+        string name = p.PlayerName;
+        EntityPos to = p.Entity.Pos.Copy().SetPos(pos.X + 0.5, pos.Y, pos.Z + 0.5);
+        to.Yaw = other.Entity.Pos.Yaw + GameMath.PI;
+        p.Entity.BodyYaw = to.Yaw;
+        p.Entity.TeleportTo(to, () => api.Logger.Notification("ARRIVED {0}", name));
+        return new { x = pos.X, y = pos.Y, z = pos.Z };
+    }
+
+    /// <summary>Scenes: turns a bot's body and head; how a client draws a yaw is found by looking.</summary>
+    private object Turn(IServerPlayer p, int degrees)
+    {
+        // A bot sends no positions, so the yaw is set where the server sends it from.
+        float yaw = degrees * GameMath.DEG2RAD;
+        EntityPlayer e = p.Entity;
+        e.ServerPos.Yaw = e.Pos.Yaw = e.BodyYaw = yaw;
+        e.ServerPos.HeadYaw = e.Pos.HeadYaw = 0;
+        api.Logger.Notification("ARRIVED {0}", p.PlayerName);
+        return new { yaw };
+    }
+
+    /// <summary>Scenes: moves a player to the flattest dry spot without trees in the land loaded around them.</summary>
+    private object Meadow(IServerPlayer p)
+    {
+        const int Search = 96, Half = 8;
+        IBlockAccessor blocks = api.World.BlockAccessor;
+        BlockPos at = p.Entity.Pos.AsBlockPos, best = at.Copy();
+        int bestRange = int.MaxValue;
+        for (int x = -Search; x <= Search; x += 4)
+        {
+            for (int z = -Search; z <= Search; z += 4)
+            {
+                int low = int.MaxValue, high = int.MinValue;
+                for (int dx = -Half; dx <= Half && low != -1; dx += 2)
+                {
+                    for (int dz = -Half; dz <= Half; dz += 2)
+                    {
+                        BlockPos pos = at.AddCopy(x + dx, 0, z + dz);
+                        int height = blocks.GetChunkAtBlockPos(pos.X, at.Y, pos.Z) == null ? -1 : blocks.GetTerrainMapheightAt(pos);
+                        pos.Y = height + 1;
+                        // Water, or a tree above.
+                        if (height < 0 || blocks.GetBlock(pos, BlockLayersAccess.Fluid).IsLiquid() || blocks.GetRainMapHeightAt(pos) > height + 1)
+                        {
+                            low = -1;
+                            break;
+                        }
+
+                        low = Math.Min(low, height);
+                        high = Math.Max(high, height);
+                    }
+                }
+
+                if (low >= 0 && high - low < bestRange)
+                {
+                    bestRange = high - low;
+                    best = at.AddCopy(x, 0, z);
+                }
+            }
+        }
+
+        if (bestRange < int.MaxValue)
+        {
+            string name = p.PlayerName;
+            BlockPos ground = OnGround(best);
+            p.Entity.TeleportToDouble(ground.X + 0.5, ground.Y, ground.Z + 0.5, () => api.Logger.Notification("ARRIVED {0}", name));
+        }
+
+        return new { found = bestRange < int.MaxValue, range = bestRange, x = best.X - at.X, z = best.Z - at.Z };
+    }
+
+    /// <summary>Scenes: fills a box given relative to the block a player stands in.</summary>
+    private object Box(IServerPlayer p, string code, int x1, int y1, int z1, int x2, int y2, int z2)
+    {
+        Block block = api.World.GetBlock(new AssetLocation(code)) ?? throw new InvalidOperationException("no such block: " + code);
+        BlockPos at = p.Entity.Pos.AsBlockPos;
+        for (int x = Math.Min(x1, x2); x <= Math.Max(x1, x2); x++)
+        {
+            for (int y = Math.Min(y1, y2); y <= Math.Max(y1, y2); y++)
+            {
+                for (int z = Math.Min(z1, z2); z <= Math.Max(z1, z2); z++)
+                {
+                    BlockPos pos = at.AddCopy(x, y, z);
+                    api.World.BlockAccessor.SetBlock(0, pos);
+                    api.World.BlockAccessor.SetBlock(0, pos, BlockLayersAccess.Fluid);
+                    api.World.BlockAccessor.SetBlock(block.BlockId, pos, block.ForFluidsLayer ? BlockLayersAccess.Fluid : BlockLayersAccess.Default);
+                }
+            }
+        }
+
+        return new { ok = true };
+    }
+
+    /// <summary>
+    /// Scenes: a bot never picks a character, and a player without one has no body on other screens. Picks one from the
+    /// standard variants (the number shifts the choice) and the first class, with its clothes.
+    /// </summary>
+    private object Dress(IServerPlayer p, int look)
+    {
+        EntityPlayer entity = p.Entity;
+        var skin = entity.GetBehavior<EntityBehaviorExtraSkinnable>();
+        foreach (SkinnablePart part in skin.AvailableSkinParts)
+        {
+            SkinnablePartVariant[] standard = part.Variants.Where(v => v.Category == "standard").ToArray();
+            if (standard.Length == 0)
+            {
+                continue;
+            }
+
+            string code = part.Code is "mustache" or "beard" ? "none" : standard[(look * 7 + part.Code.Length) % standard.Length].Code;
+            skin.selectSkinPart(part.Code, code, retesselateShape: false, playVoice: false);
+        }
+
+        var characters = api.ModLoader.GetModSystem<CharacterSystem>();
+        characters.setCharacterClass(entity, characters.characterClasses[0].Code, true);
+        p.SetModData("createCharacter", true);
+        entity.WatchedAttributes.MarkPathDirty("skinConfig");
+        p.BroadcastPlayerData(true);
+        return new { characterClass = characters.characterClasses[0].Code };
+    }
+
+    /// <summary>Scenes: puts an item where it is worn, else into the first hotbar slot.</summary>
+    private object Wear(IServerPlayer p, string code)
+    {
+        var name = new AssetLocation(code);
+        CollectibleObject thing = (CollectibleObject?)api.World.GetItem(name) ?? api.World.GetBlock(name) ?? throw new InvalidOperationException("no such item: " + code);
+        var stack = new ItemStack(thing);
+        var source = new DummySlot(stack);
+        ItemSlot slot = p.InventoryManager.GetOwnInventory("character").FirstOrDefault(s => s.CanHold(source)) ?? p.InventoryManager.GetHotbarInventory()[0];
+        slot.Itemstack = stack;
+        slot.MarkDirty();
+        return new { inventory = slot.Inventory.ClassName, item = thing.Code.ToString() };
     }
 
     /// <summary>Own spawn point in land nobody visited: going there waits for world generation.</summary>

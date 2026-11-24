@@ -178,8 +178,8 @@ def join(s, d):
 
 def clean_screen(d):
     """Hides what does not belong in the picture and returns what to put back with restore_screen:
-    - the start tip: holding K opens the intro dialog and removes the tip for this session only; the dialog is closed with
-      its Close button (not 'never show again', which would be saved);
+    - the start tip: holding K opens the intro dialog and removes the tip; the dialog is closed with 'Close & never show
+      again', saved in the recording profile only, so it no longer pops up during shots;
     - the minimap (F6) and the block name overlay (Ctrl+B): both are saved settings of the player, so both are put back;
     - the chat: closed with Tab if open (also a saved setting, put back); the death message is off in the scene world,
       the mod's own messages still open it (see the report)."""
@@ -199,11 +199,12 @@ def clean_screen(d):
 
 
 def dismiss_intro(d, seconds=0.0):
-    """Closes the intro dialog (Close, not 'never show again') if it is open now or opens within the given time."""
+    """Closes the intro dialog for good ('Close & never show again') if it is open now or opens within the given time."""
     end = time.monotonic() + seconds
     while True:
         if d.intro_open():
-            d.x("mousemove", 808, 483, "click", "1")
+            # "Close & never show again": the recording profile should never see it again.
+            d.x("mousemove", 562, 483, "click", "1")
             time.sleep(1)
             d.x("mousemove", WIDTH // 2, HEIGHT // 2)
             time.sleep(0.5)

@@ -162,6 +162,8 @@ class Ctx:
     def recording(self, name, folder, trim=(0.4, 0.5)):
         RAW.mkdir(parents=True, exist_ok=True)
         file = RAW / f"{name}-{time.strftime('%H%M%S')}.mkv"
+        # The intro dialog can pop up after a death or a respawn; never film it.
+        dismiss_intro(self.d, 1)
         recorder = film(self.d, file)
         time.sleep(0.8)
         try:
@@ -258,7 +260,8 @@ def m2(c):
         time.sleep(2.2)
     s.back(funia)
     # Exile: the camera at the edge of its place.
-    c.base("Exile", clock="17:30", mow=28, **{"Place.At": "Body", "Place.Radius": 24, "Return.DieAtEnd": "false"})
+    # Open, flat ground well past the edge, so nothing hides the barrier; the camera walks the 16 blocks to it and stays.
+    c.base("Exile", clock="17:30", mow=44, **{"Place.At": "Body", "Place.Radius": 16, "Return.DieAtEnd": "false"})
     s.lose(c.cam, "Survival")
     time.sleep(2)
     d.x("keydown", "w")
@@ -325,13 +328,11 @@ def m4(c):
     with c.recording("M4", "modpage"):
         time.sleep(1)
         d.x("keydown", "w")
-        d.x("keydown", "ctrl")
         try:
-            time.sleep(8)
+            time.sleep(6)
         finally:
-            d.x("keyup", "ctrl")
             d.x("keyup", "w")
-        time.sleep(1.5)
+        time.sleep(3)
     s.back(c.cam)
 
 
@@ -453,6 +454,7 @@ def ghost_view(c, name, form, radius, keys, seconds):
     c.cam.kill()
     c.cam.until(mode="Spectator", alive=True, lives=0, timeout=20)
     time.sleep(2.5)
+    dismiss_intro(d, 4)
     aim(s, d, LEVEL)
     with c.recording(name, "wiki"):
         time.sleep(1)
@@ -759,6 +761,28 @@ def w18(c):
 
 # ---------- the run ----------
 
+def install_mod():
+    """Builds the mod's zip from the repo and puts it into the recording client's Mods, then checks that the shaders
+    inside it are the repo's: a plain `dotnet build` does not remake the zip, and an old zip once got recorded."""
+    import hashlib, os, shutil, subprocess, zipfile
+    repo = Path(__file__).resolve().parent.parent.parent
+    game = os.environ.get("VINTAGE_STORY") or "/var/lib/flatpak/app/at.vintagestory.VintageStory/x86_64/stable/active/files/extra/vintagestory"
+    dotnet = shutil.which("dotnet") or str(Path.home() / ".dotnet/dotnet")
+    subprocess.run([dotnet, "build", "-c", "Release", "-t:Package", "-v", "q"], cwd=repo, check=True, env={**os.environ, "VINTAGE_STORY": game})
+    version = json.loads((repo / "modinfo.json").read_text(encoding="utf8"))["version"]
+    built = repo / "dist" / f"temporalrebirth_{version}.zip"
+    mods = Path.home() / ".var/app/at.vintagestory.VintageStory/trt-client/Mods"
+    for old in mods.glob("temporalrebirth_*.zip"):
+        old.unlink()
+    shutil.copy2(built, mods / built.name)
+    with zipfile.ZipFile(mods / built.name) as z:
+        for shader in (repo / "assets/temporalrebirth/shaders").iterdir():
+            inside = z.read(f"assets/temporalrebirth/shaders/{shader.name}")
+            if hashlib.sha256(inside).digest() != hashlib.sha256(shader.read_bytes()).digest():
+                sys.exit(f"the zip in Mods has an old {shader.name}")
+    log(f"mod {version} built and installed; its shaders match the repo")
+
+
 def main():
     options = argparse.ArgumentParser()
     options.add_argument("names", nargs="*")
@@ -769,6 +793,7 @@ def main():
         print(" ".join(f"{n}{'*' if m else ''}" for n, (_, _, m, _) in SCENES.items()))
         return 0
     names = [n.upper() for n in args.names]
+    install_mod()
     unknown = [n for n in names if n not in SCENES]
     if unknown:
         sys.exit("no such scene: " + ", ".join(unknown))

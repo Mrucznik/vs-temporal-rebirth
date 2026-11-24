@@ -90,10 +90,11 @@ vec2 wallCoords(vec3 q, float radius, float cell) {
 void main() {
 	vec3 dir = normalize(farPoint - camera);
 	float b = dot(fromCenter, dir);
-	// The look is drawn half a block inside the real barrier, so it shows before the ghost touches it.
-	const float insideBy = 0.5;
+	// The look is drawn a little beyond the real barrier: the ghost is stopped with its eyes at the barrier itself, so a
+	// wall drawn inside it would end up behind the camera, as if the ghost had walked through.
+	const float beyondBy = 0.3;
 	float realRadius = sqrt(max(dot(fromCenter, fromCenter) - outside, 0.0));
-	float shown = max(realRadius - insideBy, 0.5);
+	float shown = realRadius + beyondBy;
 	float outsideShown = dot(fromCenter, fromCenter) - shown * shown;
 	float disc = b * b - outsideShown;
 	if (disc <= 0.0) discard;

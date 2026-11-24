@@ -4,7 +4,7 @@ using Vintagestory.API.MathTools;
 namespace TemporalRebirth;
 
 /// <summary>
-/// Client side: the sphere that holds the player, drawn half a block inside it. Nothing within 50 blocks of the edge;
+/// Client side: the sphere that holds the player, drawn a little beyond it so the camera always stops in front of it. Nothing within 50 blocks of the edge;
 /// then dark contour lines with small turning gears, rift smoke and bolts that grow as the ghost comes near, less
 /// see-through from about 4 blocks, with a glow running out from where it is hit. Zones have no walls yet.
 /// </summary>

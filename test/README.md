@@ -14,11 +14,11 @@
 | `bots/` | players without graphics: join, chat, respawn, leave |
 | `helper/` | server mod for tests only: reads state, uses gears, adds rifts, deals damage, moves clocks |
 | `harness.py` | starts servers and bots, waits for what should happen |
-| `scenarios/v06_baseline.py` | what 0.6.x does; a migrated config must keep passing after the rewrite |
+| `steps.py` | steps the scenarios share: waiting for a phase, setting up a ghost or a zone, changing settings |
+| `scenarios/<mechanic>.py` | one file per mechanic: `lives`, `forms`, `places`, `returns`, `rituals`, `bans`, `config`, `downed` |
 | `scenarios/races.py` | leaving, rejoining, crashing or acting twice while the mod waits for something |
-| `scenarios/v07.py`, `v08.py`, `v09.py` | what these versions add |
-| `scenarios/review07.py` | faults found by reading 0.7.0 |
-| `scenarios/downed.py` | together with Downed |
+
+Groups named `old*` run on a 0.6.x config file: a migrated old config must keep behaving as it did (`-k old`).
 
 Worlds are flat unless a group says `"flat": False` (races in unfinished land need real terrain). Move bots with `Bot.go`, which
 waits until they arrive; fixed waits fail at random under load.
@@ -39,7 +39,7 @@ folder. Everything needed that is not in the repository:
 | .NET 10 SDK | `~/.dotnet/dotnet`, or the path in `DOTNET` | `curl -sSL https://dot.net/v1/dotnet-install.sh \| bash -s -- --channel 10.0` |
 | Vintage Story 1.22.7 | `~/Games/VintageStory`, the Flatpak install, or the folder in `VINTAGE_STORY` | the game's own download, or `flatpak install at.vintagestory.VintageStory`; no login is needed for these tests |
 | Python 3 | `python3` | used with 3.14, standard library only |
-| Node | `node` | used with 22; the configurator tests and some of `v07.py` need it, `ui.mjs` needs at least 22 |
+| Node | `node` | used with 22; the configurator tests and some of `config.py` need it, `ui.mjs` needs at least 22 |
 | Chrome | `google-chrome` | only for `configurator/ui.mjs` and `shaders/preview.py` |
 | Downed 2.9.4 | `~/.cache/temporalrebirth-test/mods/downed_2.9.4.zip` | https://mods.vintagestory.at/downed; only for scenarios with Downed, the others run without |
 | ilspycmd | anywhere | `dotnet tool install ilspycmd --tool-path <folder>`; only to look into the game after an update |

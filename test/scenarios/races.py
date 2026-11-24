@@ -1,49 +1,8 @@
 """Leaving, rejoining, crashing or acting twice while the mod is waiting for something."""
 import time
 from harness import Failed, check
-from v06_baseline import slow
+from steps import at_spawn, consistent, ghost, last_life, slow
 
-
-def consistent(w, bot, timeout=8):
-    """Waits until the mod is done with the player. Nobody may end up alive with no lives, or listed without a name."""
-    end = time.monotonic() + timeout
-    while True:
-        s, entry = bot.state(), w.trt("registry").get("bot-" + bot.name)
-        if entry is None:
-            good = s["mode"] == "Survival" and s["alive"] and s["lives"] > 0
-        else:
-            good = entry["name"] == bot.name and entry["phase"] == "Serving" and s["mode"] == "Spectator" and s["alive"] and s["lives"] == 0
-        if good:
-            return s
-        if time.monotonic() > end:
-            raise Failed(f"inconsistent {bot.name}: {s['mode']} alive={s['alive']} lives={s['lives']} entry={entry}")
-        time.sleep(0.4)
-
-
-def at_spawn(bot, timeout=10):
-    """The teleport may still be on its way when the player already counts as back."""
-    end = time.monotonic() + timeout
-    while True:
-        s = bot.state()
-        if abs(s["x"] - s["spawnX"]) < 60 and abs(s["z"] - s["spawnZ"]) < 60:
-            return
-        if time.monotonic() > end:
-            raise Failed(f"came back {abs(s['x'] - s['spawnX']):.0f} blocks away from the spawn point")
-        time.sleep(0.4)
-
-
-def last_life(w, bot):
-    w.console(f"/rebirth setlives {bot.name} 1")
-    bot.until(lives=1)
-
-
-def ghost(w, bot):
-    last_life(w, bot)
-    bot.kill()
-    bot.until(mode="Spectator", alive=True)
-
-
-# ---------- 1.5 s between the last death and becoming a ghost ----------
 
 @slow(60)
 def relog_at_every_moment_after_death(w):
@@ -132,8 +91,6 @@ def server_stops_right_after_last_death(w):
     bot.quit()
 
 
-# ---------- the teleport home waits for chunks ----------
-
 @slow(30)
 def relog_during_return(w):
     failures = []
@@ -210,8 +167,6 @@ def server_stops_during_return(w):
     bot.quit()
 
 
-# ---------- rituals ----------
-
 def target_leaves_during_the_ritual(w):
     bot, ola = w.join("Tld", "TldB")
     ghost(w, bot)
@@ -268,8 +223,6 @@ def chosen_target_already_returned(w):
     x.quit(), y.quit(), ola.quit()
 
 
-# ---------- tether, time and saving ----------
-
 def relogs_in_a_row_as_a_ghost(w):
     bot, = w.join("Rir")
     ghost(w, bot)
@@ -321,9 +274,28 @@ def crash_after_becoming_a_ghost_and_saving(w):
     bot.quit()
 
 
-GROUPS = [{"name": "relogs", "tests": [relog_at_every_moment_after_death]}, {"name": "races", "world": {"flat": False}, "tests": [
-    early_respawn_key_after_last_death, lives_granted_before_becoming_a_ghost,
-    revived_by_admin_before_becoming_a_ghost, ritual_before_the_target_is_a_ghost, server_stops_right_after_last_death,
-    relog_during_return, return_twice_at_once, admin_revive_during_return, killed_during_return, server_stops_during_return,
-    target_leaves_during_the_ritual, target_left_before_the_ritual, two_casters_one_ghost, chosen_target_already_returned,
-    relogs_in_a_row_as_a_ghost, time_passes_while_joining, crash_keeps_state_consistent, crash_after_becoming_a_ghost_and_saving]}]
+GROUPS = [
+    {"name": "relogs", "tests": [
+        relog_at_every_moment_after_death,
+    ]},
+    {"name": "races", "world": {'flat': False}, "tests": [
+        early_respawn_key_after_last_death,
+        lives_granted_before_becoming_a_ghost,
+        revived_by_admin_before_becoming_a_ghost,
+        ritual_before_the_target_is_a_ghost,
+        server_stops_right_after_last_death,
+        relog_during_return,
+        return_twice_at_once,
+        admin_revive_during_return,
+        killed_during_return,
+        server_stops_during_return,
+        target_leaves_during_the_ritual,
+        target_left_before_the_ritual,
+        two_casters_one_ghost,
+        chosen_target_already_returned,
+        relogs_in_a_row_as_a_ghost,
+        time_passes_while_joining,
+        crash_keeps_state_consistent,
+        crash_after_becoming_a_ghost_and_saving,
+    ]},
+]

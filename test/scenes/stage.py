@@ -5,11 +5,11 @@ from pathlib import Path
 os.environ.setdefault("TRT_WORK", str(Path.home() / ".cache/temporalrebirth-gifs"))
 os.environ.setdefault("VINTAGE_STORY", "/var/lib/flatpak/app/at.vintagestory.VintageStory/x86_64/stable/active/files/extra/vintagestory")
 HERE = Path(__file__).resolve().parent
-sys.path[:0] = [str(HERE.parent), str(HERE.parent / "scenarios")]
+sys.path[:0] = [str(HERE.parent)]
 
 import harness  # noqa: E402
 from harness import Bot, Failed, World  # noqa: E402
-from v07 import settings as use  # noqa: E402
+from steps import settings as use  # noqa: E402
 
 PORT = int(os.environ.get("TRT_PORT", "42430"))
 harness.free_port = lambda: PORT

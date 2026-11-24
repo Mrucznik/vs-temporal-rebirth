@@ -1,4 +1,4 @@
-"""The config file, presets, commands, privileges, messages."""
+"""The config file, presets, commands, privileges, messages, other mods on the same methods."""
 import json, time
 from harness import check
 from steps import ghost, node, read_config, settings
@@ -145,7 +145,13 @@ def old_config_is_migrated(w):
     check(json.loads((w.config_path.parent / (w.config_path.name + ".bak")).read_text(encoding="utf8")) == {"LivesPerGear": 4, "ReturnMode": "NextDay"}, "the old file is kept as .bak")
 
 
+def other_mods_on_the_same_methods_are_named(w):
+    check(w.log_has(r"ShouldReceiveDamage is also changed by: trt\.helper\.neighbour", timeout=30), "the log names the other mod")
+    check(not w.log_has(r"is also changed by: .*temporalrebirth", timeout=0.1), "the mod does not name itself")
+
+
 GROUPS = [
+    {"name": "neighbours", "tests": [other_mods_on_the_same_methods_are_named]},
     {"name": "fresh", "world": {'bare': True}, "tests": [
         fresh_install_is_the_ghost_preset,
     ]},

@@ -18,9 +18,15 @@ public sealed class HelperModSystem : ModSystem
 
     public override bool ShouldLoad(EnumAppSide side) => side == EnumAppSide.Server;
 
+    private static void NoOp() { }
+
     public override void StartServerSide(ICoreServerAPI sapi)
     {
         api = sapi;
+        // Plays another mod that changes a method Temporal Rebirth changes too, so its log warning can be checked.
+        var neighbour = new HarmonyLib.Harmony("trt.helper.neighbour");
+        neighbour.Patch(typeof(EntityPlayer).GetMethod(nameof(EntityPlayer.ShouldReceiveDamage)),
+            postfix: new HarmonyLib.HarmonyMethod(typeof(HelperModSystem).GetMethod(nameof(NoOp), BindingFlags.Static | BindingFlags.NonPublic)));
         var parsers = api.ChatCommands.Parsers;
         var root = api.ChatCommands.Create("trt").WithDescription("Test helper").RequiresPrivilege(Privilege.controlserver);
 

@@ -69,13 +69,23 @@ internal class LeashGuard(ICoreClientAPI api)
 
         // Places are in the coordinates of the server, where dimensions are stacked.
         double dimension = pos.InternalY - pos.Y;
-        to.Set(pos.X, pos.InternalY, pos.Z);
+        // Hold whichever of the feet and the eyes is further out: a flying ghost held only by its feet put its camera
+        // (and so its view) past the barrier, above or beside it.
+        double eyes = entity.LocalEyePos.Y;
+        to.Set(pos.X, pos.InternalY + eyes, pos.Z);
+        double lift = eyes;
+        if (shape.DistanceOutside(new Vec3d(pos.X, pos.InternalY, pos.Z)) > shape.DistanceOutside(to))
+        {
+            to.Y -= eyes;
+            lift = 0;
+        }
+
         if (shape.DistanceOutside(to) == 0)
         {
             return;
         }
 
-        start.Set(from.X, from.Y + dimension, from.Z);
+        start.Set(from.X, from.Y + dimension + lift, from.Z);
         if (shape.DistanceOutside(start) > LeashShape.Slack)
         {
             return;
@@ -87,6 +97,11 @@ internal class LeashGuard(ICoreClientAPI api)
         {
             return;
         }
+
+        // Back from the held point (eyes or feet) to the feet.
+        stopped.Y -= lift;
+        to.Y -= lift;
+        start.Y -= lift;
 
         // Sliding along the edge must not end inside a hill.
         if (!player.WorldData.NoClip && collisions.IsColliding(api.World.BlockAccessor, entity.CollisionBox, stopped, false))

@@ -443,7 +443,8 @@ def w5(c):
 
 def ghost_view(c, name, form, radius, keys, seconds):
     s, d = c.s, c.d
-    c.base(clock=DUSK, dist=6, **{"OutOfLives": form, "Place.At": "Body", "Place.Radius": radius})
+    # Open ground well past the edge, so no hill stands between the camera and the barrier.
+    c.base(clock=DUSK, dist=6, mow=radius + 20, **{"OutOfLives": form, "Place.At": "Body", "Place.Radius": radius})
     (fx, fz), _ = c.vectors()
     away(c, "Finn")
     away(c, "Funia")

@@ -4,13 +4,14 @@ using Vintagestory.API.MathTools;
 namespace TemporalRebirth;
 
 /// <summary>
-/// Client side: the sphere that holds the player. Nearly invisible from afar, a torn, rusty wall up close, with a glow
-/// running out from where it is hit. Zones have no walls yet.
+/// Client side: the sphere that holds the player, drawn half a block inside it. Nothing within 50 blocks of the edge;
+/// then dark contour lines with small turning gears, rift smoke and bolts that grow as the ghost comes near, less
+/// see-through from about 4 blocks, with a glow running out from where it is hit. Zones have no walls yet.
 /// </summary>
 internal class LeashLook : IRenderer
 {
-    /// <summary>Same distance as where the faintest part of the shader ends.</summary>
-    private const double VisibleAt = 60;
+    /// <summary>Same distance as where the shader starts to show anything.</summary>
+    private const double VisibleAt = 50;
     private const float GlowSeconds = 2.5f;
 
     private static readonly string[] HitNames = ["hit0", "hit1", "hit2"];

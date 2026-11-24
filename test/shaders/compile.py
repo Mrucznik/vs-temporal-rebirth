@@ -52,7 +52,7 @@ def main():
     getProgramLog = fn("glGetProgramInfoLog", None, ctypes.c_uint, ctypes.c_int, ctypes.c_void_p, ctypes.c_char_p)
     print("driver:", getString(GL_RENDERER).decode())
 
-    folder = REPO / "assets/temporalrebirth/shaders"
+    folder = Path(os.environ["SHADER_DIR"]) if os.environ.get("SHADER_DIR") else REPO / "assets/temporalrebirth/shaders"
     names = sys.argv[1:] or sorted({p.stem for p in folder.glob("*.fsh")})
     failed = False
     for name in names:

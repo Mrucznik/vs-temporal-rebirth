@@ -14,6 +14,9 @@
   <label>Light <input id="light" type="range" min="0.05" max="1" step="0.01" value="0.35"></label>
   <label>Echo distance <input id="far" type="range" min="1.5" max="20" step="0.1" value="4"></label>
   <label>Wisp distance <input id="wispFar" type="range" min="1.5" max="30" step="0.1" value="6"></label>
+  <label>Wall distance <input id="wall" type="range" min="0.3" max="60" step="0.1" value="4"></label>
+  <label><input id="leashOn" type="checkbox"> barrier (with a 1.8-block player 0.7 blocks in front of it; grass tiles are 1 block)</label>
+  <label>Turn <input id="yaw" type="range" min="-1.5" max="1.5" step="0.01" value="0"></label>
   <label><input id="echoOn" type="checkbox" checked> echo</label>
   <label><input id="wispOn" type="checkbox" checked> wisp</label>
   <label><input id="flyOn" type="checkbox" checked> drift and fly</label>
@@ -46,10 +49,12 @@ function invert(m) {
   return r;
 }
 
-function viewProjection(pitch) {
-  const f = 1 / Math.tan(0.6), c = Math.cos(pitch), s = Math.sin(pitch);
+function viewProjection(pitch, yaw = 0) {
+  const f = 1 / Math.tan(0.6), c = Math.cos(pitch), s = Math.sin(pitch), cy = Math.cos(yaw), sy = Math.sin(yaw);
   const projection = [f / (W / H), 0, 0, 0, 0, f, 0, 0, 0, 0, (FAR + NEAR) / (NEAR - FAR), -1, 0, 0, 2 * FAR * NEAR / (NEAR - FAR), 0];
-  const view = [1, 0, 0, 0, 0, c, s, 0, 0, -s, c, 0, 0, 0, 0, 1];
+  const pitchM = [1, 0, 0, 0, 0, c, s, 0, 0, -s, c, 0, 0, 0, 0, 1];
+  const yawM = [cy, 0, -sy, 0, 0, 1, 0, 0, sy, 0, cy, 0, 0, 0, 0, 1];
+  const view = Array.from(multiply(pitchM, yawM));
   for (let i = 0; i < 3; i++) view[12 + i] = -(view[i] * EYE[0] + view[4 + i] * EYE[1] + view[8 + i] * EYE[2]);
   return multiply(projection, view);
 }
@@ -72,6 +77,7 @@ in vec3 farPoint;
 uniform vec3 camera;
 uniform mat4 viewProjection;
 uniform float light;
+uniform vec3 figure; // feet of a player for scale; y below -50 hides it
 layout(location = 0) out vec4 color;
 layout(location = 1) out vec4 depth;
 float hash(vec2 p) { return fract(sin(dot(floor(p), vec2(12.9, 78.2))) * 43758.5); }
@@ -82,6 +88,7 @@ void main() {
   vec3 sky = mix(dusk, mix(vec3(0.05, 0.06, 0.14), vec3(0.35, 0.55, 0.85), light), clamp(d.y * 2.5, 0.0, 1.0));
   vec3 c = sky;
   float t = 1e9;
+  vec3 cFig = vec3(0.0); bool hitFig = false;
   if (d.y < 0.0) {
     t = -camera.y / d.y;
     vec3 p = camera + d * t;
@@ -99,6 +106,25 @@ void main() {
       if (p.y > hi.y - 0.06) c = vec3(0.3, 0.48, 0.2);
     }
   }
+  // A player of the game's size for scale: 1.8 blocks tall, head 0.5, body and arms 0.75, legs 0.75 (blocks).
+  if (figure.y > -50.0) {
+    for (int i = 0; i < 6; i++) {
+      vec3 lo, hi, c;
+      if (i == 0) { lo = vec3(-0.25, 0.0, -0.125); hi = vec3(0.0, 0.75, 0.125); c = vec3(0.22, 0.25, 0.45); }
+      else if (i == 1) { lo = vec3(0.0, 0.0, -0.125); hi = vec3(0.25, 0.75, 0.125); c = vec3(0.20, 0.23, 0.42); }
+      else if (i == 2) { lo = vec3(-0.25, 0.75, -0.125); hi = vec3(0.25, 1.375, 0.125); c = vec3(0.15, 0.50, 0.48); }
+      else if (i == 3) { lo = vec3(-0.5, 0.75, -0.125); hi = vec3(-0.25, 1.375, 0.125); c = vec3(0.13, 0.45, 0.43); }
+      else if (i == 4) { lo = vec3(0.25, 0.75, -0.125); hi = vec3(0.5, 1.375, 0.125); c = vec3(0.13, 0.45, 0.43); }
+      else { lo = vec3(-0.25, 1.375, -0.25); hi = vec3(0.25, 1.8, 0.25); c = vec3(0.80, 0.62, 0.48); }
+      lo += figure; hi += figure;
+      vec3 m = (lo - camera) / d, M = (hi - camera) / d, a = min(m, M), b = max(m, M);
+      float enter = max(max(a.x, a.y), a.z), leave = min(min(b.x, b.y), b.z);
+      if (enter > 0.0 && enter < leave && enter < t) { t = enter; vec3 pp = camera + d * t; c *= 0.75 + 0.25 * step(hi.y - 0.01, pp.y); }
+      if (enter > 0.0 && enter < leave && enter <= t) c = c;
+      if (enter > 0.0 && enter < leave && abs(enter - t) < 1e-6) { cFig = c; hitFig = true; }
+    }
+  }
+  if (hitFig) c = cFig;
   if (t < 1e8) {
     c *= mix(vec3(0.25, 0.3, 0.5) * 0.35, vec3(1.0), light);
     c = mix(c, sky, 1.0 - exp(-t * 0.01));
@@ -143,6 +169,7 @@ function texture(format) {
 const world = program(WORLD_VERTEX, WORLD_FRAGMENT, "world");
 const echo = program(SHADERS["echo.vsh"], SHADERS["echo.fsh"], "echo");
 const wisp = program(SHADERS["wisp.vsh"], SHADERS["wisp.fsh"], "wisp");
+const leash = program(SHADERS["leash.vsh"], SHADERS["leash.fsh"], "leash");
 const color = texture(gl.RGBA8), depth = texture(gl.R32F), target = gl.createFramebuffer();
 gl.bindFramebuffer(gl.FRAMEBUFFER, target);
 gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, color, 0);
@@ -151,7 +178,7 @@ gl.drawBuffers([gl.COLOR_ATTACHMENT0, gl.COLOR_ATTACHMENT1]);
 gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 $("log").textContent = problems.join("\n");
 
-const vp = viewProjection(0.12), inverse = invert(vp);
+let vp = viewProjection(0.12), inverse = invert(vp);
 function use(p, time) {
   gl.useProgram(p);
   const at = (name) => gl.getUniformLocation(p, name);
@@ -180,10 +207,12 @@ function frame(now) {
   if (!$("pause").checked) shown += (now - last) / 1000;
   last = now;
   const t = shown;
+  vp = viewProjection(0.12, +$("yaw").value); inverse = invert(vp);
   gl.viewport(0, 0, W, H);
   gl.disable(gl.BLEND);
   gl.bindFramebuffer(gl.FRAMEBUFFER, target);
-  use(world, t);
+  const wat = use(world, t);
+  gl.uniform3f(wat("figure"), 1.1, $("leashOn").checked ? 0 : -100, -(+$("wall").value - 0.7));
   gl.drawArrays(gl.TRIANGLES, 0, 6);
   gl.bindFramebuffer(gl.READ_FRAMEBUFFER, target);
   gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, null);
@@ -195,6 +224,15 @@ function frame(now) {
   gl.enable(gl.BLEND);
   gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
   const fly = $("flyOn").checked;
+  if ($("leashOn").checked) {
+    // The same numbers LeashLook gives: a sphere of radius 100 whose wall is `wall` blocks ahead of the camera.
+    const at = use(leash, t), radius = 100, fromCenter = [EYE[0], EYE[1], EYE[2] + +$("wall").value - radius], away = Math.hypot(...fromCenter);
+    gl.uniform3fv(at("fromCenter"), fromCenter);
+    gl.uniform1f(at("outside"), (away - radius) * (away + radius));
+    gl.uniform3f(at("player"), 0, -0.6, 0);
+    for (const h of ["hit0", "hit1", "hit2"]) gl.uniform4f(at(h), 0, 0, 0, -1);
+    gl.drawArrays(gl.TRIANGLES, 0, 6);
+  }
   if ($("echoOn").checked) {
     const z = -+$("far").value;
     const x = fly ? Math.sin(t * 0.35) * 1.2 : 0, y = fly ? Math.max(0, Math.sin(t * 0.22)) * 2.0 : 0;

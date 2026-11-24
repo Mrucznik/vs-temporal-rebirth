@@ -67,8 +67,8 @@ As of 2026-11-23, branch `gifs` (not pushed). Released: 0.6.1.
 
 - After the last death the player can be revived at a rift, but only when their ghost is at that rift too.
 - The revival needs no temporal gear: a living player just holds right click on the rift.
-- The cost is part of the health, taken away for good, as in Don't Starve. Default: 2 bars. To settle: whether the
-  revived player or the reviver pays (in Don't Starve it is the revived one).
+- The cost is part of the revived player's maximum health, taken away for good, as in Don't Starve. Default: 2 bars.
+- When the revived player has no health left to lose, only a ritual with a temporal gear brings them back.
 - The lost health comes back with a temporal stew: cooking any meal with a temporal gear as one of its ingredients
   turns it into a temporal stew.
 

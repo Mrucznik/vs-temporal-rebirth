@@ -50,9 +50,11 @@ public sealed class TemporalRebirthModSystem : ModSystem
             TryPatch(api, patch);
         }
 
-        // After the assets: shaders are among them.
+        // After the assets: shaders are among them. By then every mod has started, so its patches are in place too.
+        Harmony clientPatches = harmony;
         api.Event.BlockTexturesLoaded += () =>
         {
+            PatchNeighbours.Warn(api, clientPatches);
             renderers.Add(new LeashLook(api, guard));
             renderers.Add(new EchoLook(api, ghosts));
             renderers.Add(new WispOrb(api, ghosts));
@@ -119,6 +121,9 @@ public sealed class TemporalRebirthModSystem : ModSystem
             api.Logger.Error("[temporalrebirth] Bans do not work until the mod is updated for this game version: players are disconnected but can rejoin.");
         }
         DownedCompat.WarnIfUntested(api);
+        // Other mods patch in their own Start methods, so look once all of them have run.
+        Harmony serverPatches = harmony;
+        api.Event.SaveGameLoaded += () => PatchNeighbours.Warn(api, serverPatches);
     }
 
     /// <summary>

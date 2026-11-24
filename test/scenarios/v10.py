@@ -140,7 +140,13 @@ def hint_says_what_the_gear_would_do(w):
     ola.quit()
 
 
+def other_mods_on_the_same_methods_are_named(w):
+    check(w.log_has(r"ShouldReceiveDamage is also changed by: trt\.helper\.neighbour", timeout=30), "the log names the other mod")
+    check(not w.log_has(r"is also changed by: .*temporalrebirth", timeout=0.1), "the mod does not name itself")
+
+
 GROUPS = [
+    {"name": "neighbours", "tests": [other_mods_on_the_same_methods_are_named]},
     {"name": "chooser", "tests": [chooser_choice_revives_and_takes_the_gear, chooser_closed_keeps_the_gear, one_candidate_needs_no_chooser,
                                   chooser_checks_again_before_the_revival, chooser_closes_when_the_caster_walks_away,
                                   chooser_lists_banned_players_who_left, hint_says_what_the_gear_would_do]},

@@ -19,9 +19,12 @@ As of 2026-11-23, branch `gifs` (not pushed). Released: 0.6.1.
   only when the server accepts the click. One candidate, `/rebirth target` or NearPlayer (nearest) need no chooser. Anywhere
   always opens it while someone waits, because it also offers the vanilla "bind me here". Scenes R1–R3 in `test/scenes/shoot.py`
   (hint, hold, chooser) are written but not recorded. `Messages.RitualChoose` is no longer used.
-- **Review of 0.7.0**: 11 faults, each with a test (`test/scenarios/review07.py`) and fixed.
+- **Review of 0.7.0**: 11 faults, each with a test and fixed.
 - **Structure and performance**: `Rebirth.cs` split up, Harmony patches reach the server side through
   `TemporalRebirthModSystem.Server`, how a player comes back is one saved object, less work per frame and tick (not measured).
+  Second pass (branch `refactor`, 2026-11-24): settings kept from the time of death come from `schema.js` (`atDeath` on a
+  section), the rules of a player out of lives are put together by `Afterlife.Rules`, `Rebirth.Enter` split into steps, one log
+  prefix (`ModLog`), scenarios grouped by mechanic with shared steps in `test/steps.py`.
 - **Tests**: 116 scenarios on a real server plus configurator tests. Last full run 116/116 in about 10 min.
 
 ## Decided by the user
@@ -29,7 +32,7 @@ As of 2026-11-23, branch `gifs` (not pushed). Released: 0.6.1.
 - Lives out: form, place and time are independent. Presets: Ghost (the default), Rift, Undead, Exile, Timeout, Hardcore.
 - Ghost (was Classic): rituals next to the ghost, who rises where the ghost is. Rift (was Rescue): no time limit, rituals at
   rifts, revived next to the caster. A migrated 0.6.x file gets rituals at rifts next to the caster written out, as 0.6 did.
-  Test worlds without a config get the same (`harness.World`, `v07.settings`), since most scenarios assume it.
+  Test worlds without a config get the same (`harness.World`, `steps.settings`), since most scenarios assume it.
 - Old configs must not change behaviour on update: ghost invisible, timer off.
 - `/rebirth revive` returns a player to "Return.At". No exception for hosts in bans. No `/rebirth kill`, no character wipe.
 - Rituals only by a normal, living player. `InPlace` = nearest safe ground. `NearPlayer` needs the target online.

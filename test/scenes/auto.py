@@ -39,8 +39,6 @@ class Display:
             return
         if Path(f"/tmp/.X11-unix/X{number}").exists() or Path(f"/tmp/.X{number}-lock").exists():
             raise Failed(f"display :{number} is taken")
-        self.name = f":{number}"
-        self.env = {k: v for k, v in os.environ.items() if k not in ("DISPLAY", "XAUTHORITY", "WAYLAND_DISPLAY")} | {"DISPLAY": self.name}
         self.proc = subprocess.Popen(["Xvfb", self.name, "-screen", "0", f"{WIDTH}x{HEIGHT}x24", "-nolisten", "tcp"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
         STARTED.append(self.proc)
         for _ in range(50):
@@ -66,11 +64,7 @@ class Display:
         self.run("ffmpeg", "-y", "-v", "error", "-f", "x11grab", "-video_size", f"{WIDTH}x{HEIGHT}", "-i", self.name, "-frames:v", "1", path)
 
     def pixel(self, x, y):
-        tmp = clip.OUT / "pixel.png"
-        self.grab(tmp)
-        out = subprocess.run(["convert", str(tmp), "-crop", f"1x1+{x}+{y}", "-depth", "8", "txt:-"], capture_output=True, text=True).stdout
-        m = re.search(r"\((\d+),(\d+),(\d+)", out)
-        return tuple(map(int, m.groups())) if m else None
+        return self.area(x, y, 1, 1)
 
     def dialog_open(self):
         """The character dialog: its title bar at both ends has the colour of the game's dialogs."""
@@ -87,19 +81,6 @@ class Display:
         out = subprocess.run(["convert", str(tmp), "-crop", f"{w}x{h}+{x}+{y}", "-scale", "1x1!", "-depth", "8", "txt:-"], capture_output=True, text=True).stdout
         m = re.search(r"\((\d+),(\d+),(\d+)", out.splitlines()[-1] if out else "")
         return tuple(map(int, m.groups())) if m else None
-
-    def chat_open(self):
-        """The chat box: its tab bar and scroll bar have the colour of the game's overlay (seen on recordings)."""
-        tmp = clip.OUT / "chat.png"
-        self.grab(tmp)
-
-        def mean(x, y, w, h):
-            out = subprocess.run(["convert", str(tmp), "-crop", f"{w}x{h}+{x}+{y}", "-scale", "1x1!", "-depth", "8", "txt:-"], capture_output=True, text=True).stdout
-            m = re.search(r"\((\d+),(\d+),(\d+)", out.splitlines()[-1] if out else "")
-            return tuple(map(int, m.groups())) if m else None
-
-        a, b = mean(14, 366, 6, 16), mean(726, 390, 2, 200)
-        return all(x is not None and all(abs(u - v) <= 12 for u, v in zip(x, (57, 48, 33))) for x in (a, b))
 
     def intro_open(self):
         """The intro dialog (opened by holding K) is a brown box in the middle; its texture averages to about this."""
@@ -233,42 +214,6 @@ def dismiss_intro(d, seconds=0.0):
         time.sleep(0.5)
 
 
-class Pixels:
-    """Reads single pixels of the display through Xlib directly: a few milliseconds, where a screenshot takes half a second."""
-
-    def __init__(self, name):
-        import ctypes, ctypes.util
-        self.x = ctypes.CDLL(ctypes.util.find_library("X11"))
-        self.x.XOpenDisplay.restype = ctypes.c_void_p
-        self.x.XOpenDisplay.argtypes = [ctypes.c_char_p]
-        self.x.XDefaultRootWindow.restype = ctypes.c_ulong
-        self.x.XDefaultRootWindow.argtypes = [ctypes.c_void_p]
-        self.x.XGetImage.restype = ctypes.c_void_p
-        self.x.XGetImage.argtypes = [ctypes.c_void_p, ctypes.c_ulong, ctypes.c_int, ctypes.c_int, ctypes.c_uint, ctypes.c_uint, ctypes.c_ulong, ctypes.c_int]
-        self.x.XGetPixel.restype = ctypes.c_ulong
-        self.x.XGetPixel.argtypes = [ctypes.c_void_p, ctypes.c_int, ctypes.c_int]
-        self.display = self.x.XOpenDisplay(name.encode())
-        if not self.display:
-            raise Failed("cannot open " + name)
-        self.root = self.x.XDefaultRootWindow(self.display)
-
-    def mean(self, x, y, w, h):
-        image = self.x.XGetImage(self.display, self.root, x, y, w, h, 0xFFFFFFFF, 2)
-        total = [0, 0, 0]
-        for i in range(w):
-            for j in range(h):
-                v = self.x.XGetPixel(image, i, j)
-                total[0] += (v >> 16) & 255
-                total[1] += (v >> 8) & 255
-                total[2] += v & 255
-        # The image is small; freeing it needs the struct's own function pointer, which is not worth it here.
-        return tuple(t // (w * h) for t in total)
-
-    def chat_open(self):
-        near = lambda c: all(abs(u - v) <= 12 for u, v in zip(c, (57, 48, 33)))
-        return near(self.mean(14, 366, 6, 16)) and near(self.mean(726, 420, 2, 40))
-
-
 class ChatCloser:
     """Closes the chat each time a message opens it, while a shot is recorded. The client opens the chat on every new
     line; the bots hear the same lines at the same moment, so a line in the bots' output means: the chat is open now,
@@ -336,7 +281,7 @@ LEVEL = math.pi + 0.06
 GROUND = math.pi + 0.45
 
 
-def grab(d, path):
+def film(d, path):
     """Records the display in real time until stopped; for a client drawing at least 30 frames a second."""
     return subprocess.Popen(["ffmpeg", "-y", "-v", "error", "-f", "x11grab", "-framerate", "30", "-video_size", f"{WIDTH}x{HEIGHT}", "-draw_mouse", "0",
                              "-i", d.name, "-c:v", "libx264", "-preset", "veryfast", "-crf", "14", "-pix_fmt", "yuv420p", str(path)],
@@ -377,7 +322,7 @@ def pilot_realtime(s, d):
     vx, vz = a["x"] - c["x"], a["z"] - c["z"]
     norm = math.hypot(vx, vz) or 1
     side = (-vz / norm, vx / norm)
-    recorder = grab(d, file)
+    recorder = film(d, file)
     # The chat stays: its lines (died, last life, ritual) tell what happens. TRT_HIDE_CHAT=1 closes it instead.
     chat = ChatCloser(d, s.w, "Funia") if os.environ.get("TRT_HIDE_CHAT") == "1" else None
     marks = {}
@@ -471,7 +416,7 @@ def rift_compare(s, d):
         time.sleep(2)
         dismiss_intro(d)
         file = clip.OUT / f"ECHO-close-{time.strftime('%Y%m%d-%H%M%S')}.mkv"
-        recorder = grab(d, file)
+        recorder = film(d, file)
         time.sleep(4)
         recorder.communicate(b"q", timeout=30)
         # The wisp alone (no gear in hand) at the distance of the scene, at the pilot's hour and at night.

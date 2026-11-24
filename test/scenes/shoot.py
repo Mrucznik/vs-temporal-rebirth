@@ -12,7 +12,7 @@ import argparse, base64, contextlib, json, math, signal, sys, time
 from pathlib import Path
 
 import auto, clip
-from auto import GROUND, LEVEL, Client, Display, aim, clean_screen, close_dialogs, dismiss_intro, glide, grab, join, log, restore_screen
+from auto import GROUND, LEVEL, Client, Display, aim, close_dialogs, dismiss_intro, film, glide, join, log, restore_screen
 from play import meadow, point
 from stage import AIR, GRASS, STONE, Camera, Failed, Stage, harness, use
 
@@ -162,7 +162,7 @@ class Ctx:
     def recording(self, name, folder, trim=(0.4, 0.5)):
         RAW.mkdir(parents=True, exist_ok=True)
         file = RAW / f"{name}-{time.strftime('%H%M%S')}.mkv"
-        recorder = grab(self.d, file)
+        recorder = film(self.d, file)
         time.sleep(0.8)
         try:
             yield
@@ -282,7 +282,7 @@ def m2_ban(c):
     c.cam.until(lives=1)
     RAW.mkdir(parents=True, exist_ok=True)
     file = RAW / f"M2-ban-{time.strftime('%H%M%S')}.mkv"
-    recorder = grab(d, file)
+    recorder = film(d, file)
     try:
         time.sleep(1)
         c.cam.kill()

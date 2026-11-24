@@ -441,7 +441,7 @@ def w5(c):
     d.key("2")
 
 
-def ghost_view(c, name, form, radius, keys, seconds):
+def ghost_view(c, name, form, radius, keys, seconds, rise=0.0):
     s, d = c.s, c.d
     # Open ground well past the edge, so no hill stands between the camera and the barrier.
     c.base(clock=DUSK, dist=6, mow=radius + 20, **{"OutOfLives": form, "Place.At": "Body", "Place.Radius": radius})
@@ -459,6 +459,11 @@ def ghost_view(c, name, form, radius, keys, seconds):
     aim(s, d, LEVEL)
     with c.recording(name, "wiki"):
         time.sleep(1)
+        if rise:
+            # Up first, over the wall, then straight on: square to the barrier, not into its curved top.
+            d.x("keydown", "space")
+            time.sleep(rise)
+            d.x("keyup", "space")
         for key in keys:
             d.x("keydown", key)
         try:
@@ -472,7 +477,7 @@ def ghost_view(c, name, form, radius, keys, seconds):
 
 @scene("W6", "wiki")
 def w6(c):
-    ghost_view(c, "W6", "Ghost", 14, ["w", "space"], 7.5)
+    ghost_view(c, "W6", "Ghost", 14, ["w"], 7.5, rise=1.5)
 
 
 @scene("W7", "wiki")

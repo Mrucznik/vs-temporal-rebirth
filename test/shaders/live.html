@@ -17,6 +17,7 @@
   <label>Wall distance <input id="wall" type="range" min="0.3" max="60" step="0.1" value="4"></label>
   <label><input id="leashOn" type="checkbox"> barrier (with a 1.8-block player 0.7 blocks in front of it; grass tiles are 1 block)</label>
   <label>Turn <input id="yaw" type="range" min="-1.5" max="1.5" step="0.01" value="0"></label>
+  <label><input id="pushOn" type="checkbox"> pushing into the barrier</label>
   <label><input id="echoOn" type="checkbox" checked> echo</label>
   <label><input id="wispOn" type="checkbox" checked> wisp</label>
   <label><input id="flyOn" type="checkbox" checked> drift and fly</label>
@@ -203,6 +204,7 @@ function billboard(at, x, y, z, half, height, seed) {
 }
 
 let shown = 0, last = performance.now();
+const hits = [-9, -9, -9]; let nextHit = 0, lastHit = -9;
 function frame(now) {
   if (!$("pause").checked) shown += (now - last) / 1000;
   last = now;
@@ -230,7 +232,12 @@ function frame(now) {
     gl.uniform3fv(at("fromCenter"), fromCenter);
     gl.uniform1f(at("outside"), (away - radius) * (away + radius));
     gl.uniform3f(at("player"), 0, -0.6, 0);
-    for (const h of ["hit0", "hit1", "hit2"]) gl.uniform4f(at(h), 0, 0, 0, -1);
+    // While "pushing", the guard reports a hit every 0.6 s, as LeashGuard does, at the wall straight ahead.
+    if ($("pushOn").checked && t - lastHit > 0.6) { hits[nextHit] = t; nextHit = (nextHit + 1) % 3; lastHit = t; }
+    ["hit0", "hit1", "hit2"].forEach((h, i) => {
+      const age = t - hits[i];
+      gl.uniform4f(at(h), 0, -0.4, -(+$("wall").value), hits[i] >= 0 && age < 2.5 ? age : -1);
+    });
     gl.drawArrays(gl.TRIANGLES, 0, 6);
   }
   if ($("echoOn").checked) {

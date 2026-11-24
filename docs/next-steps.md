@@ -72,6 +72,13 @@ As of 2026-11-23, branch `gifs` (not pushed). Released: 0.6.1.
 - The lost health comes back with a temporal stew: cooking any meal with a temporal gear as one of its ingredients
   turns it into a temporal stew.
 
+### Learning the server's rules in the game (user's idea, 2026-11-24)
+
+- A player should be able to find out which mechanics are active on the server (what happens after the last death,
+  how long it lasts, where rituals work, ...) without the wiki or knowing the config.
+- In the game and in its mood, the way Vintage Story's lore is found (notes, books, tablets, inscriptions), not as a
+  chat message.
+
 ## Not verified
 
 - 0.10 on a client: the hint and its refresh, the hold's sound, motes and bar, the chooser dialog (bots get the server side

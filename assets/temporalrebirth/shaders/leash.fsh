@@ -34,6 +34,13 @@ float sceneDistance() {
 	return length(p.xyz / p.w - camera);
 }
 
+// How stirred up the wall is around a place where the ghost pushed into it: strong for a block or two around it and
+// fading over a second and a half. The ghost keeps re-hitting the wall while it pushes, so this stays up while it does.
+float pushOf(vec4 hit, vec3 p) {
+	if (hit.w < 0.0) return 0.0;
+	return exp(-distance(p, hit.xyz) * 0.7) * exp(-hit.w * 1.6);
+}
+
 float glowOf(vec4 hit, vec3 p) {
 	if (hit.w < 0.0) return 0.0;
 	float r = distance(p, hit.xyz);
@@ -113,6 +120,10 @@ void main() {
 	vec3 q = fromCenter + p;
 	float away = length(p - player);
 	float glow = min(1.3, glowOf(hit0, p) + glowOf(hit1, p) + glowOf(hit2, p));
+	float push = min(1.0, pushOf(hit0, p) + pushOf(hit1, p) + pushOf(hit2, p));
+	// The same for the whole wall at once (only how long ago), for things that must not differ between pixels.
+	float pushNow = max(max(hit0.w < 0.0 ? 0.0 : exp(-hit0.w * 1.6), hit1.w < 0.0 ? 0.0 : exp(-hit1.w * 1.6)), hit2.w < 0.0 ? 0.0 : exp(-hit2.w * 1.6));
+	float stir = smoothstep(0.05, 0.35, push);
 
 	// How far the ghost is from the wall: beyond 50 blocks nothing shows.
 	float centre = length(fromCenter + player);
@@ -148,20 +159,22 @@ void main() {
 	vec2 gearCentre = vec2(1e5);
 	for (int j = -1; j <= 1; j++) for (int i = -1; i <= 1; i++) {
 		vec2 c = gc + vec2(i, j);
-		if (hash(c + 23.0) > 0.35) continue;
+		if (hash(c + 23.0) > 0.35 + 0.5 * stir) continue; // more gears wake up where the ghost pushes
 		vec2 o = vec2(i, j) + (vec2(hash(c), hash(c + 11.0)) - 0.5) * 0.4 - gf;
 		float spin = (hash(c + 5.0) < 0.5 ? 1.0 : -1.0) * time * speed;
 		spin += (valuenoise(vec3(c, time * 0.8)) - 0.5) * 0.9; // jerks back and forth
+		// Where the ghost pushes they whirl (a whole turn is seamless, so the turn can be taken from fract) and rattle.
+		spin += stir * (hash(c + 5.0) < 0.5 ? 1.0 : -1.0) * fract(time * 1.3) * 6.2831853 + push * sin(time * 37.0 + hash(c) * 6.0) * 0.5;
 		// Each gear its own size, from a tenth to a half of the full size.
-		float size = mix(0.1, 0.5, hash(c + 31.0));
+		float size = mix(0.1, 0.5, hash(c + 31.0)) * (1.0 + 0.7 * stir);
 		float d = gearSdf(-o * 2.0 / size, spin, 10.0, 4.0) * 0.12 * size;
 		if (d < gearField) { gearField = d; gearSpin = spin; gearCentre = g - o * 0.35; }
 		vec2 px = gearPixels(-o * 2.0 / size, spin);
 		gearOn = max(gearOn, px.x); gearIn = max(gearIn, px.y);
 	}
 	float field = h - 0.05 * smoothstep(0.2, 0.0, gearField);
-	float density = 9.0 + 14.0 * approach;
-	float level = field * density;
+	float density = 9.0 + 14.0 * approach + 22.0 * stir;
+	float level = field * density - time * 2.5 * stir;
 	float width = fwidth(level) * 1.2 + 0.02;
 	float iso = smoothstep(width, 0.0, min(fract(level), 1.0 - fract(level)));
 	float major = smoothstep(width * 1.5, 0.0, min(fract(level / 5.0), 1.0 - fract(level / 5.0)) * 5.0);
@@ -189,7 +202,7 @@ void main() {
 	vec2 along = normalize(grad + 1e-5), across = vec2(-along.y, along.x);
 	// How much of the wall the rift takes: nothing from afar, most of it right at the wall.
 	float take = appear * near * (0.1 + 0.9 * closeness);
-	float smokeLevel = smoke * 0.8 + take * 0.62 - 0.6 + 0.18 * pull * take;
+	float smokeLevel = smoke * 0.8 + take * 0.62 - 0.6 + 0.18 * pull * take + 0.45 * push;
 	float fill = smoothstep(0.0, 0.10, smokeLevel);
 	float rim = smoothstep(-0.25, 0.0, smokeLevel) * (1.0 - fill);
 	// Dark strands reaching out from the smoke, like the hairs around a rift.
@@ -197,12 +210,18 @@ void main() {
 	float hair = smoothstep(0.045, 0.0, abs(hairNoise - 0.5)) * rim * 1.3;
 	// The world behind bends and rusts near the smoke (the rift's sepia, darkened).
 	vec2 bend = warp * 0.05 * (rim + fill) + vec2(valuenoise(vec3(g * 3.0, clock)) - 0.5) * 0.01 * rim;
-	vec3 seen = texture(sceneColor, clamp(uv + bend, 0.001, 0.999)).rgb;
+	bend += vec2(valuenoise(vec3(g * 4.0, time * 6.0)) - 0.5) * 0.03 * push;
+	vec2 split = vec2(0.006, 0.002) * push;
+	bend += (vec2(valuenoise(vec3(g * 9.0, time * 12.0)), valuenoise(vec3(g * 9.0 + 3.0, time * 12.0))) - 0.5) * 0.02 * push;
+	vec3 seen = vec3(texture(sceneColor, clamp(uv + bend + split, 0.001, 0.999)).r,
+		texture(sceneColor, clamp(uv + bend, 0.001, 0.999)).g,
+		texture(sceneColor, clamp(uv + bend - split, 0.001, 0.999)).b);
 	float lum = dot(seen, vec3(0.30, 0.59, 0.11));
 	vec3 rust = vec3(lum * 1.05, lum * 0.62, lum * 0.42) * 0.55;
 	// Inside, the smoke still churns: dark maroon swirls over near-black, never a flat fill.
 	float churn = valuenoise(w3 * 3.0 + vec3(0.0, 0.0, clock * 0.4));
 	vec3 core = mix(vec3(0.16, 0.035, 0.025), vec3(0.015, 0.004, 0.004), smoothstep(0.0, 0.35, smokeLevel) * (0.6 + 0.4 * churn));
+	core = mix(core, vec3(0.45, 0.10, 0.03) * (0.6 + 0.8 * churn), push * 0.7);
 	vec3 rgb = mix(seen, rust, rim * 0.8);
 	rgb = mix(rgb, core, fill * 0.5);
 	rgb = mix(rgb, vec3(0.03, 0.01, 0.01), hair);
@@ -217,7 +236,7 @@ void main() {
 	float bolt = 0.0, boltGlow = 0.0;
 	vec3 qp = fromCenter + player;
 	vec2 pg = wallCoords(qp / max(length(qp), 0.001) * radius, radius, 1.0);
-	int count = int(1.0 + 7.0 * approach * approach);
+	int count = min(8, int(1.0 + 7.0 * approach * approach + 4.0 * pushNow));
 	for (int k = 0; k < 8; k++) {
 		if (k >= count) break;
 		float rate = 0.9 + 0.31 * float(k);
@@ -252,8 +271,12 @@ void main() {
 	// Bolts in the orange the gear lines once had.
 	rgb = mix(rgb, vec3(1.0, 0.55, 0.22), bolt);
 	rgb += vec3(0.75, 0.32, 0.12) * boltGlow;
-	rgb += vec3(0.55, 0.12, 0.05) * (seam * 0.8 + glow * 0.8);
-	float alpha = solid * 0.65 + fill * 0.45 + rim * 0.5 + hair + lines_ * 0.8 + gearLine * 0.7 + inside * 0.2 + bolt + boltGlow * 0.5 + seam * 0.8 + glow * 0.9;
+	// Pushed: the gears and lines around the spot flare up in the bolts' orange.
+	vec3 flare = vec3(1.0, 0.55, 0.22);
+	rgb += (hash(floor(gl_FragCoord.xy * 0.5) + floor(time * 30.0)) - 0.5) * 0.18 * push; // static
+	rgb = mix(rgb, flare, clamp(gearLine * push * 1.2 + lines_ * push * 0.9, 0.0, 1.0));
+	rgb += vec3(0.55, 0.12, 0.05) * seam * 0.8;
+	float alpha = solid * 0.65 + fill * 0.45 + rim * 0.5 + hair + lines_ * 0.8 + gearLine * (0.7 + push) + inside * 0.2 + bolt + boltGlow * 0.5 + seam * 0.8 + glow * 0.9;
 	float alpha_ = clamp(alpha, 0.0, 1.0);
 	alpha_ *= mix(0.85, 1.0, smoothstep(0.3, 2.0, t));
 	alpha_ *= smoothstep(0.0, 0.06, behind);

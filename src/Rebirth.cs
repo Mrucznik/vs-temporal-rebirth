@@ -153,21 +153,16 @@ internal class Rebirth(ICoreServerAPI api, RebirthConfig config, Afterlife after
     /// <summary>Makes the player what their settings say. Safe to repeat: after a relog, or after dying as a zombie.</summary>
     private void Enter(IServerPlayer player, LostPlayer lost)
     {
-        RebirthConfig rules = lost.RulesIn(config);
-        EntityPlayer entity = player.Entity;
+        RebirthConfig rules = afterlife.Rules(lost);
         bool first = lost.Phase == Phase.Dying;
         if (first)
         {
-            lost.Phase = Phase.Serving;
-            lost.Start = LostPlayer.Pack(places.StartOf(player, lost, rules));
-            lost.Travelling = true;
-            afterlife.Save();
-            Announce(player, lost, rules);
+            BeginServing(player, lost, rules);
         }
 
         // Someone left sitting on a mount or in a boat could keep steering it.
-        entity.TryUnmount();
-        bool died = PlayerControl.Revive(entity);
+        player.Entity.TryUnmount();
+        bool died = PlayerControl.Revive(player.Entity);
 
         if (rules.Form == Form.Ban)
         {
@@ -175,29 +170,55 @@ internal class Rebirth(ICoreServerAPI api, RebirthConfig config, Afterlife after
             return;
         }
 
-        ClientState.Set(entity, ClientState.Form, rules.Form == Form.Zombie && !rules.ZombieGlow ? "Player" : rules.Form.ToString());
-        ClientState.Set(entity, ClientState.GhostLook, rules.Form == Form.Ghost && rules.GhostVisible != GhostVisible.Nobody ? rules.GhostVisible.ToString() : null);
-        SyncTimer(player, lost);
-        if (died && !first && rules.PlaceAt == Place.Body && rules.Walks && lost.LandedAtUtc is { } landed && DateTime.UtcNow < landed.AddSeconds(QuickDeathSeconds))
+        ShowForm(player, lost, rules);
+        if (died && !first && DiedRightAfterLanding(lost, rules))
         {
             MoveToSpawn(player, lost);
         }
 
-        Vec3d start = lost.StartVec ?? lost.DeathVec ?? entity.Pos.XYZ;
-        lost.Start ??= LostPlayer.Pack(start);
+        lost.Start ??= LostPlayer.Pack(lost.DeathVec ?? player.Entity.Pos.XYZ);
 
         if (!rules.Walks)
         {
+            // For flying forms a death is no reason to move them.
             control.MakeSpectator(player, rules.Form == Form.Spectator);
             died = false;
         }
 
-        if (!first && !died && !lost.Travelling)
+        // A relog of someone already let loose leaves them where they are.
+        if (first || died || lost.Travelling)
         {
-            return;
+            GoToStart(player, lost, rules);
         }
+    }
 
-        if (entity.Pos.XYZ.DistanceTo(start) < (rules.Walks ? 1 : 0.1) && SafeSpot.IsLoaded(api.World.BlockAccessor, start))
+    /// <summary>The death was counted: where they stay is decided once, and everyone is told.</summary>
+    private void BeginServing(IServerPlayer player, LostPlayer lost, RebirthConfig rules)
+    {
+        lost.Phase = Phase.Serving;
+        lost.Start = LostPlayer.Pack(places.StartOf(player, lost, rules));
+        lost.Travelling = true;
+        afterlife.Save();
+        Announce(player, lost, rules);
+    }
+
+    /// <summary>What clients draw for this player, and their timer.</summary>
+    private void ShowForm(IServerPlayer player, LostPlayer lost, RebirthConfig rules)
+    {
+        ClientState.Set(player.Entity, ClientState.Form, rules.Form == Form.Zombie && !rules.ZombieGlow ? "Player" : rules.Form.ToString());
+        ClientState.Set(player.Entity, ClientState.GhostLook, rules.Form == Form.Ghost && rules.GhostVisible != GhostVisible.Nobody ? rules.GhostVisible.ToString() : null);
+        SyncTimer(player, lost);
+    }
+
+    /// <summary>A walking player who died again right after rising by their body: that place is deadly.</summary>
+    private static bool DiedRightAfterLanding(LostPlayer lost, RebirthConfig rules) =>
+        rules.PlaceAt == Place.Body && rules.Walks && lost.LandedAtUtc is { } landed && DateTime.UtcNow < landed.AddSeconds(QuickDeathSeconds);
+
+    /// <summary>Lets them loose where they are when that is the start already, otherwise takes them there first.</summary>
+    private void GoToStart(IServerPlayer player, LostPlayer lost, RebirthConfig rules)
+    {
+        Vec3d start = lost.StartVec!;
+        if (player.Entity.Pos.XYZ.DistanceTo(start) < (rules.Walks ? 1 : 0.1) && SafeSpot.IsLoaded(api.World.BlockAccessor, start))
         {
             Land(player.PlayerUID);
             return;
@@ -223,7 +244,7 @@ internal class Rebirth(ICoreServerAPI api, RebirthConfig config, Afterlife after
             return;
         }
 
-        RebirthConfig rules = lost.RulesIn(config);
+        RebirthConfig rules = afterlife.Rules(lost);
         if (!rules.Walks)
         {
             lost.Travelling = false;
@@ -270,12 +291,12 @@ internal class Rebirth(ICoreServerAPI api, RebirthConfig config, Afterlife after
 
     private void TellWhenReturn(IServerPlayer player, LostPlayer lost)
     {
-        if (lost.RulesIn(config).Form == Form.Ban)
+        if (afterlife.Rules(lost).Form == Form.Ban)
         {
             return;
         }
 
-        if (lost.EndUtc(config) is { } at)
+        if (afterlife.EndUtc(lost) is { } at)
         {
             messages.Tell(player, "ReturnAt", ("time", Messages.Time(at)));
         }
@@ -298,7 +319,7 @@ internal class Rebirth(ICoreServerAPI api, RebirthConfig config, Afterlife after
                 continue;
             }
 
-            RebirthConfig rules = lost.RulesIn(config);
+            RebirthConfig rules = afterlife.Rules(lost);
             PlayerControl.SetNoClip(player, rules.Form == Form.Spectator);
             if (!leash.Enforce(player, lost, rules))
             {
@@ -335,8 +356,8 @@ internal class Rebirth(ICoreServerAPI api, RebirthConfig config, Afterlife after
     /// <summary>How long until they come back, for the timer on their screen.</summary>
     private void SyncTimer(IServerPlayer player, LostPlayer lost)
     {
-        RebirthConfig rules = lost.RulesIn(config);
-        int? seconds = rules.ShowTimer && rules.Form != Form.Ban && lost.EndUtc(config) is { } at
+        RebirthConfig rules = afterlife.Rules(lost);
+        int? seconds = rules.ShowTimer && rules.Form != Form.Ban && afterlife.EndUtc(lost) is { } at
             ? (int)Math.Clamp((at - DateTime.UtcNow).TotalSeconds, 0, int.MaxValue)
             : null;
         ClientState.Set(player.Entity, ClientState.TimerSeconds, seconds);

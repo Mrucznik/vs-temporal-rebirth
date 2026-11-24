@@ -62,21 +62,21 @@ public sealed class TemporalRebirthModSystem : ModSystem
     public override void StartServerSide(ICoreServerAPI api)
     {
         sapi = api;
-        var file = new ConfigFile(Path.Combine(GamePaths.ModConfig, ConfigFileName), text => api.Logger.Error("[temporalrebirth] {0}", text));
+        var file = new ConfigFile(Path.Combine(GamePaths.ModConfig, ConfigFileName), text => api.Logger.ModError("{0}", text));
         RebirthConfig config = file.Load();
         WarnAboutMissing(api, config);
 
-        var afterlife = new Afterlife(api);
+        var afterlife = new Afterlife(api, config);
         var messages = new Messages(api, config);
         var control = new PlayerControl(api);
-        zones = new Zones(api, config, afterlife);
-        var places = new Places(api, config, afterlife, zones);
+        zones = new Zones(api, afterlife);
+        var places = new Places(api, afterlife, zones);
         var leash = new Leash(api, config, zones, messages);
         var bans = new Bans(api, config, afterlife, messages);
-        var returns = new Returns(api, config, afterlife, control, places, leash, messages);
+        var returns = new Returns(api, afterlife, control, places, leash, messages);
         var rebirth = new Rebirth(api, config, afterlife, control, places, leash, bans, returns, messages);
         var rituals = new Rituals(api, config, afterlife, returns, messages);
-        var zombies = new ZombieRules(api, config, afterlife);
+        var zombies = new ZombieRules(api, afterlife);
         Server = new ServerParts(config, afterlife, rebirth, bans, rituals, messages, zombies);
 
         api.Event.SaveGameLoaded += afterlife.Load;
@@ -104,7 +104,7 @@ public sealed class TemporalRebirthModSystem : ModSystem
         if (!TryPatch(api, typeof(RespawnPatch)))
         {
             LifeRules.Disabled = true;
-            api.Logger.Error("[temporalrebirth] Lives, ghosts and rituals are DISABLED until the mod is updated for this game version.");
+            api.Logger.ModError("Lives, ghosts and rituals are DISABLED until the mod is updated for this game version.");
         }
 
         TryPatch(api, typeof(TemporalGearPatch));
@@ -116,7 +116,7 @@ public sealed class TemporalRebirthModSystem : ModSystem
         TryPatch(api, typeof(ProtectionPatch));
         if (!TryPatch(api, typeof(JoinPatch)))
         {
-            api.Logger.Error("[temporalrebirth] Bans do not work until the mod is updated for this game version: players are disconnected but can rejoin.");
+            api.Logger.ModError("Bans do not work until the mod is updated for this game version: players are disconnected but can rejoin.");
         }
         DownedCompat.WarnIfUntested(api);
     }
@@ -134,7 +134,7 @@ public sealed class TemporalRebirthModSystem : ModSystem
         }
         catch (Exception e)
         {
-            api.Logger.Error("[temporalrebirth] Could not apply {0} (game version {1}): {2}", patchClass.Name, GameVersion.ShortGameVersion, e.Message);
+            api.Logger.ModError("Could not apply {0} (game version {1}): {2}", patchClass.Name, GameVersion.ShortGameVersion, e.Message);
             return false;
         }
     }
@@ -144,7 +144,7 @@ public sealed class TemporalRebirthModSystem : ModSystem
     {
         if (config.LivesCount != LivesCount.Deaths && !DownedCompat.IsInstalled(api))
         {
-            api.Logger.Warning("[temporalrebirth] Lives.Count {0} needs the Downed mod; deaths take lives.", config.LivesCount);
+            api.Logger.ModWarning("Lives.Count {0} needs the Downed mod; deaths take lives.", config.LivesCount);
         }
     }
 

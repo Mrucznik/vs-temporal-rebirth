@@ -59,7 +59,8 @@ from `schema.js`. Server setup (install, commands) belongs in the configurator, 
 
 `docs/configurator/schema.js` is the single source of keys, ranges, presets and texts. It is embedded in the mod and
 used by the web configurator (`docs/configurator/index.html`). `ConfigFile.Format` must equal `toFile` in `logic.js`, and
-`ConfigFile.MigrateOld` must equal `migrateOld`; scenarios check the former.
+`ConfigFile.MigrateOld` must equal `migrateOld`; scenarios check the former. Section flags: `keep` (presets leave it alone),
+`fileOnly` (no command changes it), `atDeath` (a player out of lives keeps the values from the time of death).
 
 ## Rules
 

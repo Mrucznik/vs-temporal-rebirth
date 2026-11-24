@@ -23,7 +23,7 @@ internal static class Epochs
         if (isLimited && !wasLimited)
         {
             epoch++;
-            api.Logger.Notification("[temporalrebirth] World now has limited lives; starting lives epoch {0}, death counts restart.", epoch);
+            api.Logger.ModNotification("World now has limited lives; starting lives epoch {0}, death counts restart.", epoch);
         }
 
         save.StoreData(EpochKey, BitConverter.GetBytes(epoch));

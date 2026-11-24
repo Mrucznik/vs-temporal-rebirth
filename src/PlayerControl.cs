@@ -88,7 +88,7 @@ internal class PlayerControl(ICoreServerAPI api)
         {
             if (result.Status != EnumCommandStatus.Success)
             {
-                api.Logger.Error("[temporalrebirth] Could not set {0} to {1}: {2}", player.PlayerName, modeName, result.StatusMessage);
+                api.Logger.ModError("Could not set {0} to {1}: {2}", player.PlayerName, modeName, result.StatusMessage);
             }
             else
             {

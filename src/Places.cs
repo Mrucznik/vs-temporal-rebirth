@@ -5,7 +5,7 @@ using Vintagestory.API.Server;
 namespace TemporalRebirth;
 
 /// <summary>Decides where players out of lives stay, and where they come back.</summary>
-internal class Places(ICoreServerAPI api, RebirthConfig config, Afterlife afterlife, Zones zones)
+internal class Places(ICoreServerAPI api, Afterlife afterlife, Zones zones)
 {
     /// <summary>Where their time out of lives starts.</summary>
     public Vec3d StartOf(IServerPlayer player, LostPlayer lost, RebirthConfig rules)
@@ -28,7 +28,7 @@ internal class Places(ICoreServerAPI api, RebirthConfig config, Afterlife afterl
                     return point;
                 }
 
-                api.Logger.Error("[temporalrebirth] No place is marked for players out of lives (/rebirth point set start); {0} stays where they died.", player.PlayerName);
+                api.Logger.ModError("No place is marked for players out of lives (/rebirth point set start); {0} stays where they died.", player.PlayerName);
                 break;
         }
 
@@ -52,7 +52,7 @@ internal class Places(ICoreServerAPI api, RebirthConfig config, Afterlife afterl
             return point;
         }
 
-        api.Logger.Error("[temporalrebirth] No place is marked inside the zone of the group {0} (/rebirth point set start).", rules.PlaceGroup);
+        api.Logger.ModError("No place is marked inside the zone of the group {0} (/rebirth point set start).", rules.PlaceGroup);
         return Zones.Contains(claims, death) ? null : zones.Nearest(claims, point ?? death);
     }
 
@@ -79,7 +79,7 @@ internal class Places(ICoreServerAPI api, RebirthConfig config, Afterlife afterl
                 : ritual.DestinationVec ?? SafeSpot.FindGround(blocks, here) ?? SafeSpot.FindGround(blocks, here, true) ?? here;
         }
 
-        switch (lost.RulesIn(config).ReturnAt)
+        switch (afterlife.Rules(lost).ReturnAt)
         {
             case Place.Body:
                 return lost.DeathVec ?? spawn;
@@ -89,7 +89,7 @@ internal class Places(ICoreServerAPI api, RebirthConfig config, Afterlife afterl
                     return point;
                 }
 
-                api.Logger.Error("[temporalrebirth] No place is marked for coming back (/rebirth point set return); {0} goes to their spawn point.", player.PlayerName);
+                api.Logger.ModError("No place is marked for coming back (/rebirth point set return); {0} goes to their spawn point.", player.PlayerName);
                 return spawn;
             default:
                 return spawn;

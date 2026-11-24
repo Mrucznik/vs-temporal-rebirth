@@ -90,7 +90,7 @@ internal class RitualClient
         catch (Exception e)
         {
             // Only the moment the hint shows up depends on this; the hint itself is the patched help.
-            api.Logger.VerboseDebug("[temporalrebirth] Could not show the gear's help again: {0}", e.Message);
+            api.Logger.ModVerboseDebug("Could not show the gear's help again: {0}", e.Message);
         }
     }
 

@@ -265,19 +265,19 @@ internal class Rituals(ICoreServerAPI api, RebirthConfig config, Afterlife after
         var packet = new ChooserOpenPacket { AllowBind = allowBind, X = from.X, Y = from.Y, Z = from.Z };
         foreach (Candidate c in ready)
         {
-            DateTime? end = c.Lost.EndUtc(config);
+            DateTime? end = afterlife.EndUtc(c.Lost);
             packet.Entries.Add(new ChooserEntry
             {
                 Uid = c.Uid,
                 Name = c.Lost.Name,
-                Form = (int)c.Lost.RulesIn(config).Form,
+                Form = (int)afterlife.Rules(c.Lost).Form,
                 SecondsLeft = end is { } at ? Math.Max(0, (int)Math.Ceiling((at - DateTime.UtcNow).TotalSeconds)) : -1,
                 Online = api.World.PlayerByUid(c.Uid) is IServerPlayer { ConnectionState: EnumClientState.Playing },
             });
         }
 
         channel?.SendPacket(packet, caster);
-        api.Logger.Notification("[temporalrebirth] {0} chooses whom to revive: {1}", caster.PlayerName, string.Join(", ", ready.Select(c => c.Lost.Name)));
+        api.Logger.ModNotification("{0} chooses whom to revive: {1}", caster.PlayerName, string.Join(", ", ready.Select(c => c.Lost.Name)));
     }
 
     /// <summary>Whether the chooser also offers what the gear does without a ritual: setting the spawn point here.</summary>
@@ -444,7 +444,7 @@ internal class Rituals(ICoreServerAPI api, RebirthConfig config, Afterlife after
         var center = new Vec3d(ritualPos.X + 0.5, ritualPos.Y + 1, ritualPos.Z + 0.5);
         api.World.PlaySoundAt(new AssetLocation("sounds/effect/portal.ogg"), center.X, center.Y, center.Z, null, false, 48f);
         api.World.SpawnParticles(RitualLook.Burst(center));
-        api.Logger.Audit("[temporalrebirth] {0} revived {1} with a ritual near {2}", caster.PlayerName, target.Lost.Name, ritualPos);
+        api.Logger.ModAudit("{0} revived {1} with a ritual near {2}", caster.PlayerName, target.Lost.Name, ritualPos);
         return true;
     }
 
@@ -499,7 +499,7 @@ internal class Rituals(ICoreServerAPI api, RebirthConfig config, Afterlife after
                 continue;
             }
 
-            if (lost.RulesIn(config).Form == Form.Ban)
+            if (afterlife.Rules(lost).Form == Form.Ban)
             {
                 // Also those who left before they were banned: they cannot join until then.
                 if (config.RitualLiftsBan)

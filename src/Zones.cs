@@ -11,7 +11,7 @@ internal enum ZoneAccess { Traverse, Use, All }
 /// Place.At Zone: the land claims shared with one player group. Claims only give the shape; what players out of lives may
 /// do inside comes from Place.Access, whatever the claims say, and everyone else keeps the claims' own rules.
 /// </summary>
-internal class Zones(ICoreServerAPI api, RebirthConfig config, Afterlife afterlife)
+internal class Zones(ICoreServerAPI api, Afterlife afterlife)
 {
     /// <summary>Groups already reported as having no land claims, so the log says it once.</summary>
     private readonly HashSet<string> reported = new();
@@ -37,7 +37,7 @@ internal class Zones(ICoreServerAPI api, RebirthConfig config, Afterlife afterli
     {
         if (reported.Add(group))
         {
-            api.Logger.Error("[temporalrebirth] No land claim is shared with the group {0}; nobody is held there. {1} may go anywhere.", group, player.PlayerName);
+            api.Logger.ModError("No land claim is shared with the group {0}; nobody is held there. {1} may go anywhere.", group, player.PlayerName);
         }
     }
 
@@ -70,7 +70,7 @@ internal class Zones(ICoreServerAPI api, RebirthConfig config, Afterlife afterli
             return response;
         }
 
-        RebirthConfig rules = lost.RulesIn(config);
+        RebirthConfig rules = afterlife.Rules(lost);
         if (rules.PlaceAt != Place.Zone || !rules.Walks || GroupId(rules.PlaceGroup) is not { } group)
         {
             return response;

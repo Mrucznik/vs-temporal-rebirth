@@ -46,12 +46,12 @@ internal sealed class SceneShader : IDisposable
         }
         catch (Exception e)
         {
-            api.Logger.Error("[temporalrebirth] Shader {0}: {1}", name, e.Message);
+            api.Logger.ModError("Shader {0}: {1}", name, e.Message);
         }
 
         if (program == null)
         {
-            api.Logger.Error("[temporalrebirth] The shader {0} does not work here; what it shows stays invisible.", name);
+            api.Logger.ModError("The shader {0} does not work here; what it shows stays invisible.", name);
         }
 
         // The game itself does not depend on it.

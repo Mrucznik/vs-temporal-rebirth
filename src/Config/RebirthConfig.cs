@@ -63,10 +63,11 @@ internal class RebirthConfig(IReadOnlyDictionary<string, JToken> values)
     public bool Allows(string action) => Flag("Admin.Allow" + action);
 
     /// <summary>
-    /// What one player's time out of lives is bound to: later changes of the settings only affect later deaths.
+    /// What one player's time out of lives is bound to (sections marked "atDeath" in schema.js): later changes of the
+    /// settings only affect later deaths.
     /// </summary>
     public string Snapshot() =>
-        JsonConvert.SerializeObject(Values.Where(v => v.Key is "OutOfLives" || v.Key.Split('.')[0] is "Ghost" or "Zombie" or "Place" or "Time" or "Return").ToDictionary(v => v.Key, v => v.Value));
+        JsonConvert.SerializeObject(Values.Where(v => ConfigSchema.ByKey.TryGetValue(v.Key, out ConfigField? f) && f.AtDeath).ToDictionary(v => v.Key, v => v.Value));
 
     /// <summary>These settings with a snapshot on top.</summary>
     public RebirthConfig With(string? snapshot)

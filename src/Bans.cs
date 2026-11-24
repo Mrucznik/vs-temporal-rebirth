@@ -10,18 +10,18 @@ internal class Bans(ICoreServerAPI api, RebirthConfig config, Afterlife afterlif
     /// <summary>What a player trying to join is told, or null when they may join.</summary>
     public string? RefuseJoin(string? uid)
     {
-        if (uid == null || LifeRules.UnlimitedLives(api.World) || afterlife.Get(uid) is not { } lost || lost.Phase == Phase.Returning || lost.RulesIn(config).Form != Form.Ban)
+        if (uid == null || LifeRules.UnlimitedLives(api.World) || afterlife.Get(uid) is not { } lost || lost.Phase == Phase.Returning || afterlife.Rules(lost).Form != Form.Ban)
         {
             return null;
         }
 
         // Dying: not turned into anything yet, but the ban already counts.
-        return lost.EndUtc(config) is { } at && DateTime.UtcNow >= at ? null : BanText(null, lost);
+        return afterlife.EndUtc(lost) is { } at && DateTime.UtcNow >= at ? null : BanText(null, lost);
     }
 
     private string BanText(string? language, LostPlayer lost)
     {
-        if (lost.EndUtc(config) is { } at)
+        if (afterlife.EndUtc(lost) is { } at)
         {
             return messages.Text(language, "Ban", ("time", Messages.Time(at)), ("player", lost.Name));
         }

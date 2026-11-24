@@ -5,7 +5,7 @@ using Vintagestory.API.Server;
 namespace TemporalRebirth;
 
 /// <summary>Serving -> Returning -> back among the living, by time, ritual or admin.</summary>
-internal class Returns(ICoreServerAPI api, RebirthConfig config, Afterlife afterlife, PlayerControl control, Places places, Leash leash, Messages messages)
+internal class Returns(ICoreServerAPI api, Afterlife afterlife, PlayerControl control, Places places, Leash leash, Messages messages)
 {
     private bool Unlimited => LifeRules.UnlimitedLives(api.World);
 
@@ -17,7 +17,7 @@ internal class Returns(ICoreServerAPI api, RebirthConfig config, Afterlife after
         {
             Begin(uid, lost, new Return { Reason = ReturnReason.Released });
         }
-        else if (lost.EndUtc(config) is { } at && DateTime.UtcNow >= at)
+        else if (afterlife.EndUtc(lost) is { } at && DateTime.UtcNow >= at)
         {
             Begin(uid, lost, new Return { Reason = ReturnReason.Time });
         }
@@ -57,7 +57,7 @@ internal class Returns(ICoreServerAPI api, RebirthConfig config, Afterlife after
             return;
         }
 
-        RebirthConfig rules = lost.RulesIn(config);
+        RebirthConfig rules = afterlife.Rules(lost);
         if (how.Reason == ReturnReason.Time && entered && rules.DieAtEnd && rules.Walks && player.Entity.Alive)
         {
             // Belongings drop by the world's rules; OnPlayerDeath then continues the journey.
@@ -80,7 +80,7 @@ internal class Returns(ICoreServerAPI api, RebirthConfig config, Afterlife after
         }
 
         // Same order as vanilla respawn: wait for the chunks at the destination and only then become mortal.
-        control.MakeSpectator(player, lost.RulesIn(config).Form == Form.Spectator);
+        control.MakeSpectator(player, afterlife.Rules(lost).Form == Form.Spectator);
         string uid = player.PlayerUID;
         control.GoTo(player, places.DestinationOf(player, lost), () => Arrive(uid));
     }
@@ -92,7 +92,7 @@ internal class Returns(ICoreServerAPI api, RebirthConfig config, Afterlife after
             return;
         }
 
-        RebirthConfig rules = lost.RulesIn(config);
+        RebirthConfig rules = afterlife.Rules(lost);
         EntityPlayer entity = player.Entity;
         PlayerControl.Revive(entity);
         if (!Unlimited)

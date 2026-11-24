@@ -11,7 +11,7 @@ namespace TemporalRebirth;
 /// A zombie that may not use items: no held items, no picking up, no blocks such as containers or doors,
 /// no mounts or other creatures. Bare hands may fight.
 /// </summary>
-internal class ZombieRules(ICoreServerAPI api, RebirthConfig config, Afterlife afterlife)
+internal class ZombieRules(ICoreServerAPI api, Afterlife afterlife)
 {
     public void Register()
     {
@@ -22,7 +22,7 @@ internal class ZombieRules(ICoreServerAPI api, RebirthConfig config, Afterlife a
     }
 
     public bool IsBound(string uid) =>
-        afterlife.Get(uid) is { Phase: Phase.Serving } lost && lost.RulesIn(config) is { Form: Form.Zombie, ZombieCanUseItems: false };
+        afterlife.Get(uid) is { Phase: Phase.Serving } lost && afterlife.Rules(lost) is { Form: Form.Zombie, ZombieCanUseItems: false };
 
     private bool CanPlaceOrBreak(IServerPlayer player, BlockSelection selection, out string? claimant)
     {

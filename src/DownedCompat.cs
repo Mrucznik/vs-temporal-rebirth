@@ -30,8 +30,8 @@ internal static class DownedCompat
         string? version = api.ModLoader.GetMod("downed")?.Info?.Version;
         if (version != null && !TestedVersions.Contains(version))
         {
-            api.Logger.Warning(
-                "[temporalrebirth] Downed {0} is installed; compatibility was checked against {1}. If downed players can perform rituals, report it.",
+            api.Logger.ModWarning(
+                "Downed {0} is installed; compatibility was checked against {1}. If downed players can perform rituals, report it.",
                 version,
                 string.Join(", ", TestedVersions)
             );

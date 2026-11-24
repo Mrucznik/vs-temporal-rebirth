@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Vintagestory.API.MathTools;
@@ -55,10 +56,6 @@ internal sealed class LostPlayer
     /// <summary>Entries written by 0.6.x have no phase; those players are ghosts already.</summary>
     public Phase Phase { get; set; } = Phase.Serving;
 
-    private RebirthConfig? rules;
-    private object? rulesFrom;
-    private string? rulesSettings;
-
     /// <summary>The settings at the time of death, see <see cref="RebirthConfig.Snapshot"/>. Null for 0.6.x entries.</summary>
     public string? Settings { get; set; }
 
@@ -83,30 +80,13 @@ internal sealed class LostPlayer
     [JsonIgnore]
     public Vec3d? DeathVec => Unpack(DeathPos);
 
-    /// <summary>
-    /// The settings this time out of lives is bound to; the rest as they are now. Asked every second and on every use of a
-    /// block, so they are only put together again after a change.
-    /// </summary>
-    public RebirthConfig RulesIn(RebirthConfig config)
-    {
-        if (rules == null || !ReferenceEquals(rulesFrom, config.Values) || rulesSettings != Settings)
-        {
-            (rules, rulesFrom, rulesSettings) = (config.With(Settings), config.Values, Settings);
-        }
-
-        return rules;
-    }
-
-    /// <summary>When it ends by itself, or null when it never does.</summary>
-    public DateTime? EndUtc(RebirthConfig config) => RulesIn(config).Duration.EndUtc(DiedAtUtc);
-
     public static double[] Pack(Vec3d p) => [p.X, p.Y, p.Z];
 
     public static Vec3d? Unpack(double[]? p) => p is { Length: 3 } ? new Vec3d(p[0], p[1], p[2]) : null;
 }
 
 /// <summary>What the mod keeps in the savegame: players out of lives, marked places, ritual cooldowns.</summary>
-internal class Afterlife(ICoreServerAPI api)
+internal class Afterlife(ICoreServerAPI api, RebirthConfig config)
 {
     private const string PlayersKey = "temporalrebirth-ghosts";
     private const string PointsKey = "temporalrebirth-points";
@@ -115,6 +95,16 @@ internal class Afterlife(ICoreServerAPI api)
     private Dictionary<string, LostPlayer> players = new();
     private Dictionary<string, double[]> points = new();
     private Dictionary<string, DateTime> rituals = new();
+
+    /// <summary>Rules put together for a player, with what they were put together from.</summary>
+    private readonly ConditionalWeakTable<LostPlayer, BoundRules> bound = new();
+
+    private sealed class BoundRules
+    {
+        public object? From;
+        public string? Settings;
+        public RebirthConfig? Rules;
+    }
 
     public IReadOnlyDictionary<string, LostPlayer> Players => players;
 
@@ -149,6 +139,24 @@ internal class Afterlife(ICoreServerAPI api)
         Store(PointsKey, points);
         Store(RitualsKey, rituals);
     }
+
+    /// <summary>
+    /// The settings this time out of lives is bound to; the rest as they are now. Asked every second and on every use of a
+    /// block, so they are only put together again after a change.
+    /// </summary>
+    public RebirthConfig Rules(LostPlayer lost)
+    {
+        BoundRules b = bound.GetOrCreateValue(lost);
+        if (b.Rules == null || !ReferenceEquals(b.From, config.Values) || b.Settings != lost.Settings)
+        {
+            (b.Rules, b.From, b.Settings) = (config.With(lost.Settings), config.Values, lost.Settings);
+        }
+
+        return b.Rules;
+    }
+
+    /// <summary>When it ends by itself, or null when it never does.</summary>
+    public DateTime? EndUtc(LostPlayer lost) => Rules(lost).Duration.EndUtc(lost.DiedAtUtc);
 
     public bool Contains(string uid) => players.ContainsKey(uid);
 
@@ -219,7 +227,7 @@ internal class Afterlife(ICoreServerAPI api)
         }
         catch (JsonException e)
         {
-            api.Logger.Error("[temporalrebirth] Could not read {0} from the savegame, starting empty: {1}", key, e.Message);
+            api.Logger.ModError("Could not read {0} from the savegame, starting empty: {1}", key, e.Message);
             return new();
         }
     }

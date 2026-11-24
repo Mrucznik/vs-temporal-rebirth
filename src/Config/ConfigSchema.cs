@@ -24,6 +24,7 @@ internal sealed class ConfigField
         IsMessage = json["builtin"] != null;
         Kept = (bool?)section["keep"] ?? false;
         FileOnly = (bool?)section["fileOnly"] ?? false;
+        AtDeath = (bool?)section["atDeath"] ?? false;
     }
 
     public string Key { get; }
@@ -48,6 +49,9 @@ internal sealed class ConfigField
 
     /// <summary>Only the file may change these: an admin must not lift their own limits with a command.</summary>
     public bool FileOnly { get; }
+
+    /// <summary>A player out of lives keeps the value from the time of death (form, place, time, return).</summary>
+    public bool AtDeath { get; }
 
     /// <summary>Returns the normalized value, or null and a description of what is accepted.</summary>
     public JToken? Validate(JToken? value, out string allowed)

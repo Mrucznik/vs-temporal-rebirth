@@ -64,7 +64,7 @@ internal class Commands(ICoreServerAPI api, RebirthConfig config, ConfigFile fil
         {
             string died = Messages.Time(lost.DiedAtUtc);
             text.AppendLine(lost.Phase == Phase.Returning ? T(args, "cmd-ghosts-returning", lost.Name)
-                : lost.EndUtc(config) is { } at ? T(args, "cmd-ghosts-entry", lost.Name, died, Messages.Time(at))
+                : afterlife.EndUtc(lost) is { } at ? T(args, "cmd-ghosts-entry", lost.Name, died, Messages.Time(at))
                 : T(args, "cmd-ghosts-ritual-only", lost.Name, died));
         }
 

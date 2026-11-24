@@ -143,14 +143,18 @@
     // Neither existed in 0.6.x; an update must not change what players see.
     out["Ghost.Visible"] = "Nobody";
     out["Time.ShowTimer"] = false;
-    // 0 was the only way to turn rituals off in 0.6.x.
+    // 0 was the only way to turn rituals off in 0.6.x. Otherwise they worked at rifts, which is no longer the default.
     if (old.RitualRiftRange <= 0) out["Ritual.Where"] = "Disabled";
-    else copyWithin("RitualRiftRange", "Ritual.Range");
+    else {
+      out["Ritual.Where"] = "Rift";
+      copyWithin("RitualRiftRange", "Ritual.Range");
+    }
     copyWithin("RitualCooldownHours", "Ritual.CooldownHours");
     // Old percentages only lowered what the game gives (full health, 50% satiety); new ones set it exactly.
     if (old.ReturnHealthPercent < 100) out["Return.HealthPercent"] = Math.max(1, old.ReturnHealthPercent);
     if (old.ReturnSatietyPercent < 50) out["Return.SatietyPercent"] = Math.max(0, old.ReturnSatietyPercent);
-    if ("RitualReviveAt" in old) out["Ritual.ReviveAt"] = old.RitualReviveAt === "DeathSpot" ? "Body" : old.RitualReviveAt;
+    // 0.6.x revived next to the caster unless the file said otherwise; the default is now elsewhere.
+    out["Ritual.ReviveAt"] = !("RitualReviveAt" in old) ? "Caster" : old.RitualReviveAt === "DeathSpot" ? "Body" : old.RitualReviveAt;
     const hour = Math.min(23, Math.max(0, Number(old.NextDayResetHour ?? 6)));
     const mode = old.ReturnMode ?? "NextDay";
     out["Time.Duration"] =

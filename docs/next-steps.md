@@ -26,7 +26,10 @@ As of 2026-11-23, branch `gifs` (not pushed). Released: 0.6.1.
 
 ## Decided by the user
 
-- Lives out: form, place and time are independent. Presets: Classic (= 0.6.x), Rescue, Undead, Exile, Timeout, Hardcore.
+- Lives out: form, place and time are independent. Presets: Ghost (the default), Rift, Undead, Exile, Timeout, Hardcore.
+- Ghost (was Classic): rituals next to the ghost, who rises where the ghost is. Rift (was Rescue): no time limit, rituals at
+  rifts, revived next to the caster. A migrated 0.6.x file gets rituals at rifts next to the caster written out, as 0.6 did.
+  Test worlds without a config get the same (`harness.World`, `v07.settings`), since most scenarios assume it.
 - Old configs must not change behaviour on update: ghost invisible, timer off.
 - `/rebirth revive` returns a player to "Return.At". No exception for hosts in bans. No `/rebirth kill`, no character wipe.
 - Rituals only by a normal, living player. `InPlace` = nearest safe ground. `NearPlayer` needs the target online.

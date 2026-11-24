@@ -14,7 +14,7 @@ and turns the loss of the last one into a penalty with an end, not a dead end. V
 
 1. **Earn lives.** Using a temporal gear (the vanilla "set respawn point" action) gives extra lives, one per gear by
    default, with an optional cap. See [Lives](https://github.com/Mrucznik/vs-temporal-rebirth/wiki/Lives).
-2. **Pick a preset.** `Classic`, `Rescue`, `Undead`, `Exile`, `Timeout` or `Hardcore` set everything below at once;
+2. **Pick a preset.** `Ghost` (the default), `Rift`, `Undead`, `Exile`, `Timeout` or `Hardcore` set everything below at once;
    `/rebirth preset <name>` or the configurator. See [Presets](https://github.com/Mrucznik/vs-temporal-rebirth/wiki/Presets).
 3. **Lose the last life.** The player becomes something else, for a set time and in a set place:
    - **form:** a ghost, a spectator, a zombie, a normal player, or a banned player
@@ -24,7 +24,7 @@ and turns the loss of the last one into a penalty with an end, not a dead end. V
    - **time:** real time, such as 24 hours or until 06:00 the next day, or until someone brings them back
      ([Time and Return](https://github.com/Mrucznik/vs-temporal-rebirth/wiki/Settings-Guide#time-and-return)).
 4. **Come back.** When the time is up, or sooner when a living player holds a temporal gear for 3.5 s in the right
-   place (by a rift, next to the player, in a marked place or anywhere, as you choose). The gear's hint says whether a
+   place (next to the player by default, or by a rift, in a marked place or anywhere). The gear's hint says whether a
    ritual works where you stand; with several players waiting a list asks whom to bring back. The gear is used up
    ([Rituals](https://github.com/Mrucznik/vs-temporal-rebirth/wiki/Rituals)).
 

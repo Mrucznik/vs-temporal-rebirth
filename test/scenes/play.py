@@ -21,7 +21,7 @@ def scene(name, about, mods=()):
 def ghost_of(s, name="Funia", dx=8, dz=0, above=1, **config):
     """A ghost a few blocks east of the camera. Returns its bot."""
     ghost = s.bot(name)
-    use(s.w, "Classic", **{"Ghost.Visible": "WispAndEcho", "Time.Duration": "24h", "Place.Radius": 0, **config})
+    use(s.w, "Ghost", **{"Ghost.Visible": "WispAndEcho", "Time.Duration": "24h", "Place.Radius": 0, **config})
     s.put(ghost, dx, dz)
     s.lose(ghost)
     s.put(ghost, dx, dz, above)
@@ -45,7 +45,7 @@ def zombie_of(s, name="Funia", dx=5, dz=0, **config):
     return zombie
 
 
-def become(s, form, preset="Classic", **config):
+def become(s, form, preset="Ghost", **config):
     """The camera player loses the last life."""
     use(s.w, preset, **{"Time.Duration": "24h", **config})
     s.lose(s.camera, "Spectator" if form == "Ghost" else "Survival")
@@ -72,7 +72,7 @@ def meadow(s):
 def pilot_people(s):
     """Settings, weather and Funia, before the camera player looks around."""
     s.bot("Funia")
-    use(s.w, "Classic", **{"Time.Duration": "24h", "Ghost.Visible": "WispAndEcho", "Ritual.Where": "NearPlayer", "Ritual.ReviveAt": "InPlace"})
+    use(s.w, "Ghost", **{"Time.Duration": "24h", "Ghost.Visible": "WispAndEcho", "Ritual.Where": "NearPlayer", "Ritual.ReviveAt": "InPlace"})
     s.weather("clearsky")
 
 
@@ -259,7 +259,7 @@ def t5(s):
     for scale in ("0.75", "1", "1.5", "2"):
         s.do(f"Set the interface scale to {scale} (Settings, Interface).", "Esc, Settings, Interface, GUI scale")
         s.shot(f"timer at scale {scale}")
-    use(s.w, "Classic", **{"Lives.Count": "Downs"})
+    use(s.w, "Ghost", **{"Lives.Count": "Downs"})
     time.sleep(6)
     s.w.trt(f"hurt {s.camera.name} 500")
     s.cue("downed while out of lives: Downed's texts and the timer")
@@ -296,7 +296,7 @@ def t6(s):
 
 @scene("T7", "the death screen: second last life, last life, downs at no lives", mods=("downed",))
 def t7(s):
-    use(s.w, "Classic")
+    use(s.w, "Ghost")
     cam = s.camera
     s.w.console(f"/rebirth setlives {cam.name} 2")
     cam.until(lives=2)
@@ -311,7 +311,7 @@ def t7(s):
     cam.kill()
     cam.until(mode="Spectator", alive=True, timeout=10)
     s.back(cam)
-    use(s.w, "Classic", **{"Lives.Count": "Downs"})
+    use(s.w, "Ghost", **{"Lives.Count": "Downs"})
     s.w.console(f"/rebirth setlives {cam.name} 1")
     cam.until(lives=1)
     s.cue("a down that takes the last life, bleeding out after 15 s")
@@ -366,7 +366,7 @@ def t9(s):
             time.sleep(0.5)
         time.sleep(2)
 
-    use(s.w, "Classic", **{"Time.Duration": "24h"})
+    use(s.w, "Ghost", **{"Time.Duration": "24h"})
     s.cue("dying for good: leave the world within 1.5 s")
     s.last_death(cam)
     leave_and_join("Leave the world at once and join again.")
@@ -399,7 +399,7 @@ def t10(s):
 
 @scene("T11", "three ghosts at once: frame rate")
 def t11(s):
-    use(s.w, "Classic")
+    use(s.w, "Ghost")
     s.weather("clearsky")
     s.do("Show the frame rate and note it.", "Ctrl+F3 or .debug fps")
     for name, dx, dz in (("Funia", 5, -3), ("Finn", 6, 0), ("Mira", 5, 3)):
@@ -415,7 +415,7 @@ def t11(s):
 @scene("M1", "last death, wisp, a friend with a gear, the echo, ritual, back")
 def m1(s):
     funia = s.bot("Funia")
-    use(s.w, "Classic", **{"Ghost.Visible": "WispAndEcho", "Time.Duration": "24h", "Ritual.Where": "NearPlayer", "Ritual.ReviveAt": "InPlace"})
+    use(s.w, "Ghost", **{"Ghost.Visible": "WispAndEcho", "Time.Duration": "24h", "Ritual.Where": "NearPlayer", "Ritual.ReviveAt": "InPlace"})
     s.weather("clearsky")
     s.time("19:00")
     s.put(funia, 5, 0)
@@ -464,7 +464,7 @@ def m2(s):
 
 @scene("M3", "a gear gives a life, lives on the death screen")
 def m3(s):
-    use(s.w, "Classic")
+    use(s.w, "Ghost")
     s.time("12:00")
     s.w.console(f"/rebirth setlives {s.camera.name} 2")
     s.wear(s.camera, "game:gear-temporal")

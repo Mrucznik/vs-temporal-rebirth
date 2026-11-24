@@ -111,7 +111,7 @@ class Stage:
 
     def reset(self):
         """Between scenes: everybody alive with three lives on the ground at the spawn point, noon, clear sky."""
-        self.w.console("/rebirth preset Classic")
+        self.w.console("/rebirth preset Ghost")
         for who in [self.camera, *self.bots.values()]:
             lost = self.w.trt("registry").values()
             if any(entry["name"] == who.name for entry in lost):

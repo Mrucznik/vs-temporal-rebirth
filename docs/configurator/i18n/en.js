@@ -141,8 +141,8 @@
         "Messages.AnnounceReturned": { label: "Someone returned", builtin: "{player} has returned from beyond." },
       },
       presets: {
-        Classic: ["Default", "A ghost at the place of death until the next morning. A ritual at a rift brings it back sooner."],
-        Rescue: ["For a group of friends", "A ghost waits until someone revives it. The ritual works anywhere."],
+        Ghost: ["Default", "A ghost at the place of death until the next morning. A ritual next to it brings it back on the spot."],
+        Rift: ["For a group of friends", "A ghost waits until someone performs a ritual at a rift."],
         Undead: ["You stay in the game", "A zombie without items until the next morning. A ritual next to it brings it back on the spot."],
         Exile: ["Survive far away", "24 hours in a distant place. Dies at the end and returns with all starting lives."],
         Timeout: ["Take a break", "Banned for 24 hours. A ritual at a rift lifts it."],

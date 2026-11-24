@@ -354,6 +354,7 @@ def old_config_is_migrated(w):
     check(saved["Lives"]["PerGear"] == 4, "the admin's value is kept")
     check(saved["Time"]["Duration"] == "next day 06:00" and saved["Ritual"]["Range"] == 8, "the rest is filled in")
     check(saved["Ghost"]["Visible"] == "Nobody", "an update does not change what players see")
+    check(saved["Ritual"]["Where"] == "Rift" and saved["Ritual"]["ReviveAt"] == "Caster", f"rituals stay at rifts, next to the caster: {saved['Ritual']}")
     check(json.loads((w.config_path.parent / (w.config_path.name + ".bak")).read_text(encoding="utf8")) == {"LivesPerGear": 4, "ReturnMode": "NextDay"}, "the old file is kept as .bak")
 
 

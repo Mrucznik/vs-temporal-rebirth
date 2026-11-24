@@ -1,7 +1,7 @@
 {
  "en": {
   "preset": [
-   "Ready-made preset: Classic, Rescue, Undead, Exile, Timeout, Hardcore.",
+   "Ready-made preset: Ghost, Rift, Undead, Exile, Timeout, Hardcore.",
    "Enter a name and restart the server. The mod fills in the rest and clears this field."
   ],
   "fields": {
@@ -57,7 +57,7 @@
  },
  "pl": {
   "preset": [
-   "Gotowy preset: Classic, Rescue, Undead, Exile, Timeout, Hardcore.",
+   "Gotowy preset: Ghost, Rift, Undead, Exile, Timeout, Hardcore.",
    "Wpisz nazwę i zrestartuj serwer. Mod wypełni resztę i wyczyści to pole."
   ],
   "fields": {
@@ -113,7 +113,7 @@
  },
  "de": {
   "preset": [
-   "Fertige Voreinstellung: Classic, Rescue, Undead, Exile, Timeout, Hardcore.",
+   "Fertige Voreinstellung: Ghost, Rift, Undead, Exile, Timeout, Hardcore.",
    "Namen eintragen und Server neu starten. Die Mod füllt den Rest aus und leert dieses Feld."
   ],
   "fields": {
@@ -169,7 +169,7 @@
  },
  "ru": {
   "preset": [
-   "Готовый пресет: Classic, Rescue, Undead, Exile, Timeout, Hardcore.",
+   "Готовый пресет: Ghost, Rift, Undead, Exile, Timeout, Hardcore.",
    "Впишите название и перезапустите сервер. Мод заполнит остальное и очистит это поле."
   ],
   "fields": {

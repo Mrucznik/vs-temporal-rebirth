@@ -276,8 +276,8 @@ function setLang(code) {
 }
 setLang(lang);
 
-let preset = "Classic";
-let state = TR.applyPreset("Classic");
+let preset = "Ghost";
+let state = TR.applyPreset("Ghost");
 // World setting, shown next to the other lives options but not part of the config.
 let worldLives = Number(store.get("worldLives")) || 3;
 let tab = "settings";
@@ -695,7 +695,7 @@ function refresh() {
 }
 
 function renderFile() {
-  const base = TR.toFile(TR.applyPreset("Classic"), $("comments").checked).split("\n");
+  const base = TR.toFile(TR.applyPreset("Ghost"), $("comments").checked).split("\n");
   const lines = TR.toFile(state, $("comments").checked).split("\n");
   $("file").replaceChildren(...lines.map((line, i) =>
     el("span", { class: /^\s*\/\//.test(line) ? "com" : line !== base[i] ? "chg" : "", textContent: line + "\n" })));

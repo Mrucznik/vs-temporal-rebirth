@@ -106,7 +106,7 @@ window.TR_SCHEMA = {
       "label": "Sytość po powrocie (%)",
       "special": { "value": -1, "label": "Jak w grze", "custom": "Własna", "min": 0, "start": 100, "help": "Gra zostawia 50%." } },
 
-    { "key": "Ritual.Where", "section": "ritual", "type": "enum", "default": "Rift", "main": true,
+    { "key": "Ritual.Where", "section": "ritual", "type": "enum", "default": "NearPlayer", "main": true,
       "label": "Gdzie działa rytuał",
       "help": "Normalny, żywy gracz trzyma zębatkę temporalną przez 3,5 s i przywraca innego przed czasem. Zębatka przepada.", "helpExcept": ["Disabled"],
       "options": [
@@ -118,7 +118,7 @@ window.TR_SCHEMA = {
       ] },
     { "key": "Ritual.Range", "section": "ritual", "type": "int", "min": 1, "max": 256, "default": 8, "when": { "Ritual.Where": ["Rift", "NearPlayer", "FixedPlace"] },
       "label": "Jak blisko trzeba stać (bloki)", "file": "Dla Rift, NearPlayer i FixedPlace." },
-    { "key": "Ritual.ReviveAt", "section": "ritual", "type": "enum", "default": "Caster", "when": { "Ritual.Where": ["Rift", "NearPlayer", "FixedPlace", "Anywhere"] },
+    { "key": "Ritual.ReviveAt", "section": "ritual", "type": "enum", "default": "InPlace", "when": { "Ritual.Where": ["Rift", "NearPlayer", "FixedPlace", "Anywhere"] },
       "label": "Gdzie pojawia się wskrzeszony",
       "options": [
         { "value": "Caster", "label": "Obok wskrzeszającego", "help": "Może posłużyć jako teleport do znajomego.", "warn": true, "helpUnless": { "Ritual.Where": ["NearPlayer"] } },
@@ -189,15 +189,15 @@ window.TR_SCHEMA = {
       "label": "Ktoś wrócił", "builtin": "{player} wraca zza zasłony.", "vars": ["player"] }
   ],
   "presets": [
-    { "id": "Classic", "icon": "Ghost", "tag": "Domyślny", "set": {},
-      "text": "Duch w miejscu śmierci do jutra rana. Rytuał przy wyrwie przywraca go szybciej." },
-    { "id": "Rescue", "icon": "Ghost", "tag": "Dla ekipy", "set": { "Time.Duration": "forever", "Ritual.Where": "Anywhere" },
-      "text": "Duch czeka, aż ktoś go wskrzesi. Rytuał działa wszędzie." },
+    { "id": "Ghost", "icon": "Ghost", "tag": "Domyślny", "set": {},
+      "text": "Duch w miejscu śmierci do jutra rana. Rytuał przy nim przywraca go na miejscu." },
+    { "id": "Rift", "icon": "Ghost", "tag": "Dla ekipy", "set": { "Time.Duration": "forever", "Ritual.Where": "Rift", "Ritual.ReviveAt": "Caster" },
+      "text": "Duch czeka, aż ktoś odprawi rytuał przy wyrwie." },
     { "id": "Undead", "icon": "Zombie", "tag": "Zostajesz w grze", "set": { "OutOfLives": "Zombie", "Place.Radius": 0, "Return.At": "Spawn", "Ritual.Where": "NearPlayer", "Ritual.ReviveAt": "InPlace" },
       "text": "Zombie bez przedmiotów do jutra rana. Rytuał przy nim przywraca go na miejscu." },
     { "id": "Exile", "icon": "Exile", "tag": "Przetrwaj daleko", "set": { "OutOfLives": "Player", "Place.At": "Fixed", "Place.Radius": 128, "Time.Duration": "24h", "Return.Lives": -1, "Return.DieAtEnd": true, "Ritual.Where": "Disabled" },
       "text": "24 godziny w odległym miejscu. Na koniec ginie i wraca z pełną pulą żyć." },
-    { "id": "Timeout", "icon": "Ban", "tag": "Przerwa", "set": { "OutOfLives": "Ban", "Time.Duration": "24h" },
+    { "id": "Timeout", "icon": "Ban", "tag": "Przerwa", "set": { "OutOfLives": "Ban", "Time.Duration": "24h", "Ritual.Where": "Rift", "Ritual.ReviveAt": "Caster" },
       "text": "Ban na 24 godziny. Rytuał przy wyrwie go zdejmuje." },
     { "id": "Hardcore", "icon": "Ban", "tag": "Bez litości", "set": { "OutOfLives": "Ban", "Time.Duration": "7d", "Ritual.Where": "Disabled" },
       "text": "Ban na 7 dni, bez rytuału." }

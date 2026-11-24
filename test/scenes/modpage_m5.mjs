@@ -102,7 +102,7 @@ const story = () => run(`[...document.querySelectorAll('#sentences dd')].map((d)
 console.log('language', await run('document.documentElement.lang'));
 
 await hold(0.6);
-await moveTo('#preset-Rescue', 0.7, 90, 30);
+await moveTo('#preset-Rift', 0.7, 90, 30);
 await click();
 await hold(0.7);
 console.log('preset ', await story());

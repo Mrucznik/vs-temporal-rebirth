@@ -24,8 +24,6 @@ RESULTS = []
 RESPAWN = (640, 400)
 
 DUSK = "18:45"
-# The settings of the pilot: a friend near the dead one is enough, the dead one comes back where she lies.
-CLASSIC = {"Ghost.Visible": "WispAndEcho", "Ritual.Where": "NearPlayer", "Ritual.ReviveAt": "InPlace"}
 
 
 # The saved setting 'block name overlay' was left off by earlier runs; this run keeps it off while recording and switches it
@@ -66,13 +64,13 @@ class Ctx:
 
     # ---------- staging ----------
 
-    def base(self, preset="Classic", clock=DUSK, people=("Funia",), dist=6, mow=12, **config):
+    def base(self, preset="Ghost", clock=DUSK, people=("Funia",), dist=6, mow=12, **config):
         """Fresh world state, a mown meadow, the settings, the people and the time. The first of `people` stands `dist`
         blocks in front of the camera; the camera looks level with an empty hand."""
         s, d = self.s, self.d
         s.reset()
         meadow(s)
-        use(s.w, preset, **{"Time.Duration": "24h", **(CLASSIC if preset == "Classic" else {}), **config})
+        use(s.w, preset, **{"Time.Duration": "24h", **config})
         for name in people:
             s.bot(name)
         for name, bot in s.bots.items():
@@ -749,14 +747,14 @@ def import_code(preset, **values):
 @scene("W18", "wiki")
 def w18(c):
     s, d = c.s, c.d
-    c.base("Classic", people=(), clock="12:00")
+    c.base("Ghost", people=(), clock="12:00")
     time.sleep(1)
     code = import_code("Undead", **{"Time.Duration": "12h", "Lives.Max": 5})
     with c.recording("W18", "wiki"):
         time.sleep(1)
         c.type("/rebirth import " + code, 5)
         time.sleep(3)
-    s.w.console("/rebirth preset Classic")
+    s.w.console("/rebirth preset Ghost")
 
 
 # ---------- the run ----------

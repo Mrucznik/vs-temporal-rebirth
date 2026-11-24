@@ -58,7 +58,7 @@ def second_quick_death_moves_to_the_spawn_point(w):
 # ---------- 2. rituals anywhere only for a valid choice ----------
 
 def old_choice_does_not_turn_gears_into_rituals(w):
-    settings(w, "Rescue")
+    settings(w, **{"Time.Duration": "forever", "Ritual.Where": "Anywhere"})
     x, y, ola = w.join("Oca", "Ocb", "OcC")
     ghost(w, x)
     ola.ask("/rebirth target Oca", "will bring back Oca")
@@ -240,7 +240,7 @@ def told_once_when_they_return(w):
 
 def import_lists_what_changed(w):
     settings(w, **{"Lives.Max": 5, "Messages.Ghost": "Witaj"})
-    code = node("const s=T.applyPreset('Classic');s['Place.Radius']=40;process.stdout.write(T.encode('Classic',s))")
+    code = node("const s=T.applyPreset('Ghost');s['Place.Radius']=40;process.stdout.write(T.encode('Ghost',s))")
     admin, = w.join("Ilc")
     w.console("/player Ilc role admin")
     time.sleep(0.5)

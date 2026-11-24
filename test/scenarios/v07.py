@@ -5,10 +5,16 @@ from races import consistent, ghost, last_life
 from v06_baseline import read_config, slow
 
 
-def settings(w, preset="Classic", **values):
-    """Starts from a preset and changes single settings, like an admin in the console."""
+# Most scenarios were written for rituals at rifts that bring players back next to the caster, the defaults before the
+# Ghost preset (rituals next to the ghost) became the default; the harness writes the same into a world without a config.
+RIFT_RITUALS = {"Ritual.Where": "Rift", "Ritual.ReviveAt": "Caster"}
+
+
+def settings(w, preset="Ghost", **values):
+    """Starts from a preset and changes single settings, like an admin in the console. Ghost comes with rituals at rifts."""
     w.console("/rebirth preset " + preset)
-    for key, value in {"Lives.Max": -1, "Lives.PerGear": 1, **values}.items():
+    pinned = RIFT_RITUALS if preset == "Ghost" else {}
+    for key, value in {"Lives.Max": -1, "Lives.PerGear": 1, **pinned, **values}.items():
         since = w.console(f"/rebirth config {key} {value}")
         if not w.server.wait(rf"{key} is now ", since, 5):
             raise Failed(f"could not set {key} to {value}")
@@ -70,8 +76,14 @@ def configurator_code_is_imported(w):
     settings(w)
 
 
+def fresh_install_is_the_ghost_preset(w):
+    saved = read_config(w)
+    check(saved["Ritual"]["Where"] == "NearPlayer" and saved["Ritual"]["ReviveAt"] == "InPlace", f"rituals next to the ghost: {saved['Ritual']}")
+    check(w.config_path.read_text(encoding="utf8") == node("process.stdout.write(T.toFile(T.applyPreset('Ghost'),true))"), "the configurator's Ghost preset")
+
+
 def every_preset_imports_like_it_applies(w):
-    for preset in ("Classic", "Rescue", "Undead", "Exile", "Timeout", "Hardcore"):
+    for preset in ("Ghost", "Rift", "Undead", "Exile", "Timeout", "Hardcore"):
         w.console("/rebirth import " + node(f"process.stdout.write(T.encode('{preset}',T.applyPreset('{preset}')))"))
         time.sleep(0.4)
         check(w.config_path.read_text(encoding="utf8") == node(f"process.stdout.write(T.toFile(T.applyPreset('{preset}'),true))"), preset)
@@ -376,7 +388,7 @@ def ritual_at_a_marked_place_only(w):
 
 
 def ritual_anywhere_needs_a_choice(w):
-    settings(w, "Rescue")
+    settings(w, **{"Time.Duration": "forever", "Ritual.Where": "Anywhere"})
     ala, ola = w.join("Ran", "RanB")
     ghost(w, ala)
     w.trt("clearrifts")
@@ -493,6 +505,7 @@ def custom_messages(w):
 
 GROUPS = [
     {"name": "config", "tests": [new_file_matches_the_configurator, configurator_code_is_imported, every_preset_imports_like_it_applies, config_commands, rights]},
+    {"name": "fresh", "world": {"bare": True}, "tests": [fresh_install_is_the_ghost_preset]},
     {"name": "brokenedit", "world": {"raw_config": "{ oops"}, "tests": [broken_file_survives_an_edit]},
     {"name": "applypreset", "world": {"raw_config": '{ "ApplyPreset": "hardcore", "OutOfLives": "Ghost", "Lives": { "PerGear": 3 } }'}, "tests": [apply_preset_in_file]},
     {"name": "badvalues", "world": {"raw_config": '{ "OutOfLives": "Ghost", "Place": { "Radius": "dużo" }, "Nonsense": 1 }'}, "tests": [bad_values_stay_in_the_file]},

@@ -88,7 +88,7 @@ class Process:
 class World:
     """One server run: its config, its bots and helper commands."""
 
-    def __init__(self, name, config=None, lives=2, mods=(), raw_config=None, files=None, flat=True):
+    def __init__(self, name, config=None, lives=2, mods=(), raw_config=None, files=None, flat=True, bare=False):
         self.name, self.lives, self.mods = name, lives, mods
         self.dir = WORK / "runs" / name
         shutil.rmtree(self.dir, ignore_errors=True)
@@ -107,6 +107,10 @@ class World:
             self.config_path.write_text(raw_config, encoding="utf8")
         elif config is not None:
             self.config_path.write_text(json.dumps(config), encoding="utf8")
+        elif not bare:
+            # Most scenarios were written for rituals at rifts that bring players back next to the caster, the defaults
+            # before the Ghost preset; the mod fills in the rest. A bare world gets the mod's own new file.
+            self.config_path.write_text(json.dumps({"Ritual": {"Where": "Rift", "ReviveAt": "Caster"}}), encoding="utf8")
         for path, data in (files or {}).items():
             (self.dir / path).write_text(json.dumps(data), encoding="utf8")
         self.server = self.bots = None

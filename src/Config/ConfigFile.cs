@@ -182,6 +182,8 @@ internal sealed class ConfigFile(string path, Action<string> warn)
         }
         else
         {
+            // Rituals worked at rifts, which is no longer the default.
+            made["Ritual.Where"] = "Rift";
             CopyWithin("RitualRiftRange", "Ritual.Range");
         }
 
@@ -197,10 +199,8 @@ internal sealed class ConfigFile(string path, Action<string> warn)
             made["Return.SatietyPercent"] = Math.Max(0, satiety);
         }
 
-        if (old["RitualReviveAt"] is { } reviveAt)
-        {
-            made["Ritual.ReviveAt"] = (string?)reviveAt == "DeathSpot" ? "Body" : reviveAt;
-        }
+        // 0.6.x revived next to the caster unless the file said otherwise; the default is now elsewhere.
+        made["Ritual.ReviveAt"] = old["RitualReviveAt"] is not { } reviveAt ? "Caster" : (string?)reviveAt == "DeathSpot" ? "Body" : reviveAt;
 
         int hour = (int)Math.Clamp(Number("NextDayResetHour") ?? 6, 0, 23);
         made["Time.Duration"] = (string?)old["ReturnMode"] switch

@@ -141,8 +141,8 @@
         "Messages.AnnounceReturned": { label: "Jemand ist zurückgekehrt", builtin: "{player} ist aus dem Jenseits zurückgekehrt." },
       },
       presets: {
-        Classic: ["Standard", "Ein Geist am Todesort bis zum nächsten Morgen. Ein Ritual an einem Riss holt ihn früher zurück."],
-        Rescue: ["Für eine Freundesgruppe", "Ein Geist wartet, bis ihn jemand wiederbelebt. Das Ritual wirkt überall."],
+        Ghost: ["Standard", "Ein Geist am Todesort bis zum nächsten Morgen. Ein Ritual neben ihm holt ihn an Ort und Stelle zurück."],
+        Rift: ["Für eine Freundesgruppe", "Ein Geist wartet, bis jemand an einem Riss ein Ritual durchführt."],
         Undead: ["Du bleibst im Spiel", "Ein Zombie ohne Gegenstände bis zum nächsten Morgen. Ein Ritual neben ihm holt ihn an Ort und Stelle zurück."],
         Exile: ["Überlebe in der Ferne", "24 Stunden an einem fernen Ort. Am Ende stirbt er und kehrt mit allen Startleben zurück."],
         Timeout: ["Pause", "24 Stunden Bann. Ein Ritual an einem Riss hebt ihn auf."],

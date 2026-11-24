@@ -61,6 +61,17 @@ As of 2026-11-23, branch `gifs` (not pushed). Released: 0.6.1.
    leash in view.
 2. Publish the configurator; new ModDB text and README.
 
+## Ideas (not decided)
+
+### Preset in the style of Don't Starve (user's idea, 2026-11-24)
+
+- After the last death the player can be revived at a rift, but only when their ghost is at that rift too.
+- The revival needs no temporal gear: a living player just holds right click on the rift.
+- The cost is part of the health, taken away for good, as in Don't Starve. Default: 2 bars. To settle: whether the
+  revived player or the reviver pays (in Don't Starve it is the revived one).
+- The lost health comes back with a temporal stew: cooking any meal with a temporal gear as one of its ingredients
+  turns it into a temporal stew.
+
 ## Not verified
 
 - 0.10 on a client: the hint and its refresh, the hold's sound, motes and bar, the chooser dialog (bots get the server side

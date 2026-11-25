@@ -60,7 +60,7 @@ internal class TimerHud : HudElement
 
         string time = Format(Math.Max(0, (endMs - now + 999) / 1000));
         string custom = attrs!.GetString(ClientState.TimerText, "");
-        string text = custom.Length > 0 ? custom.Replace("{time}", time) : Lang.Get("temporalrebirth:msg-timer", time);
+        string text = custom.Length > 0 ? custom.Replace("{time}", time) : Lang.Get(KeyFor(attrs.GetString(ClientState.Kind)), time);
 
         if (SingleComposer == null)
         {
@@ -127,4 +127,14 @@ internal class TimerHud : HudElement
         capi.Event.UnregisterGameTickListener(tickId);
         base.Dispose();
     }
+
+    /// <summary>The timer says what is waited for: the same countdown means something else to a ghost and to an exile.</summary>
+    private static string KeyFor(string? kind) => kind switch
+    {
+        nameof(Form.Ghost) => "temporalrebirth:timer-ghost",
+        nameof(Form.Spectator) => "temporalrebirth:timer-spectator",
+        nameof(Form.Zombie) => "temporalrebirth:timer-zombie",
+        nameof(Form.Player) => "temporalrebirth:timer-player",
+        _ => "temporalrebirth:msg-timer",
+    };
 }

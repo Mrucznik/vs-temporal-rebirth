@@ -109,6 +109,10 @@ internal class Returns(ICoreServerAPI api, Afterlife afterlife, PlayerControl co
         PlayerControl.SetVital(entity, "health", "currenthealth", "maxhealth", rules.HealthPercent, 1f);
         PlayerControl.SetVital(entity, "hunger", "currentsaturation", "maxsaturation", rules.SatietyPercent, 0f);
         Announce(player, lost.Return);
+        if (lost.Return?.Reason == ReturnReason.Ritual)
+        {
+            TemporalRebirthModSystem.Server?.Rituals.Face(player, lost.Return.Helper);
+        }
     }
 
     private void Announce(IServerPlayer player, Return? how)

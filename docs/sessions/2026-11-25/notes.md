@@ -1,0 +1,92 @@
+# Sesja testowa 2026-11-25 — uwagi
+- T12.1 OK: bez czekających zębatka ma tylko vanillową podpowiedź („Use on ground”, nad paskiem, środek-dół).
+- Do sprawdzenia: trawa bardzo żółta (też na M4) — pora roku świata testowego czy coś innego?
+- POMYSŁ (user): opis zębatki w ekwipunku (tooltip) ma wspominać o wskrzeszaniu przyjaciół, jeśli rytuały są włączone na serwerze (i gdzie działają). Łączy się z pomysłem „zasady serwera poznawane w grze”.
+- T12.2 BŁĄD SCENKI: steps.settings przy presecie Ghost wymusza Ritual.Where=Rift (RIFT_RITUALS) — bez wyrwy zębatka przy duchu dała życie (vanilla). Scenka T12 do poprawy (NearPlayer jawnie).
+  Do sprawdzenia w modzie: czy przy czekającym duchu i braku wyrwy podpowiedź mówi „dlaczego nie”, a nie vanillowe „Use on ground”? Projekt: z czekającym — powód; bez czekających — vanilla.
+- T12 rytuał przy duchu (NearPlayer, InPlace) DZIAŁA: zębatka zabrana, Funia wstała obok gracza, rejestr pusty.
+- UX (user): spodziewał się, że wskrzeszony wstanie tam, gdzie gracz celuje zębatką — wstała gdzie indziej (miejsce ducha nad wodą → najbliższy bezpieczny grunt). Rozważyć: ReviveAt „gdzie celuje rzucający” albo wyraźniej to komunikować.
+- T12 przytrzymanie (z dźwiękiem): narastający dźwięk JEST, pasek pod celownikiem JEST, wisp bez zębatki / echo z zębatką OK.
+- NIE ZAUWAŻONE: rdzawe drobinki (RitualLook.Mote — lecą z okolicy do punktu na ziemi, w który celuje gracz; na koniec Burst). Sprawdzić: czy są rysowane / czy za małe / ustawienia cząsteczek w profilu trt-client.
+- POMYSŁ (user): osobny dźwięk na zakończenie przywołania.
+- POMYSŁ (user): celować w ducha zamiast w ziemię — bardziej intuicyjne.
+- Podpowiedź nad paskiem: user nie zdążył przeczytać (znika/zmienia się szybko?) — sprawdzić przy następnym rytuale.
+- T12 dwa duchy przy NearPlayer: od razu wskrzesiło najbliższą (Mirę), bez okna wyboru — ZGODNE z projektem (NearPlayer = najbliższy), ale dla usera zaskakujące. Rozważyć: okno wyboru także przy NearPlayer, gdy w zasięgu jest kilku / celowanie w ducha wybiera kogo.
+- T12 okno wyboru (Rift, 2 duchy) DZIAŁA.
+- T12 BŁĄD: drobinki rytuału NIE widoczne (dwa razy, patrząc na punkt celowania). RitualLook.Mote / Rituals.cs:199 — sprawdzić po sesji (rysowanie po kliencie, ustawienia cząsteczek).
+- T12 okno wyboru obejrzane drugi raz — DZIAŁA (user: „ok działa”).
+- ŚRODOWISKO: świat scen ma włączoną stabilność temporalną — gracz spadł do ~0.12, spawnowały się dryftery/shivery/bowtorny. Do poprawy w Stage: worldconfig temporalStability false (przy tworzeniu świata). Uwaga: `/entity cmd setattr float temporalStability` psuje (gra czyta double) — nie używać.
+- T12 cooldown: po rytuale podpowiedź zębatki „rytuał możliwy za 1:56:26” — DZIAŁA. Uwaga: pokazuje się też gdy NIKT nie czeka (projekt mówił: bez czekających = vanilla). Do decyzji, czy to dobrze (user nie zgłosił problemu).
+- T12 cooldown z czekającym duchem: rytuał zablokowany — DZIAŁA.
+- T12 cooldown działa WSTECZ: włączenie Ritual.CooldownHours=2 po rytuale sprzed 3 min od razu zablokowało rytuał (1:56:26). Do decyzji, czy to OK (admin włącza cooldown → gracze, którzy właśnie odprawili, są zablokowani).
+- T12 Rift bez wyrwy: podpowiedź „Ritual: too far from rift” — DZIAŁA (powód podany). Wcześniejsze „dostałem tylko życie” w T12.2 to pewnie to samo — user nie zdążył przeczytać.
+- T12 Rift z wyrwą: podpowiedź zmienia się, rytuał działa, Funia obok rzucającego. Drobinek dalej NIE widać (3. raz).
+- POMYSŁ (user): wskrzeszony po powstaniu ma być obrócony przodem do wskrzeszającego, z kamerą patrzącą na niego.
+- T12 zakończony ręcznie (FAILED w logu skryptu to celowe przeskoczenie reszty kroków, nie błąd moda).
+- Drobinek brak też na autonomicznej stopklatce ~/Videos/temporal-rebirth/test/ritual-hold.png (pasek ~70%) — potwierdzony błąd rysowania, nie przeoczenie.
+- T1 wisp za dnia: OK (rdzawy jak wyrwa — tak ma być). Poprawione nieaktualne „teal” w next-steps i WispLook.cs (niezacommitowane).
+- DO POPRAWY (user): sylwetka echa wygląda jak ludzik z Minecrafta, nie z Vintage Story (ręce i proporcje inne) — dopasować kształt w echo.fsh do modelu gracza VS.
+- T1 obchodzenie wispa i echa: stabilne, OK.
+- T1 noc: wisp i echo OK.
+- T1 zmierzch: OK.
+- T1 mgła: OK.
+- T1 30 bloków dzień: OK.
+- T1 30 bloków noc: OK.
+- T1 60 bloków dzień: wisp widoczny (po przeniesieniu nad skałę — skrypt stawia ducha 2 bloki nad ziemią, łatwo go zasłonić); echo widać dopiero z bliska — sprawdzić, czy to zamierzony zasięg echa.
+- T1 60 bloków noc: OK. Reszta T1 (90 bloków, jaskinia) pominięta na prośbę usera.
+- Zasięgi: echo 48 bloków (imię 24), wisp 96 — user ma zdecydować, czy OK.
+- T2 echo: branie/odkładanie zębatki, z bliska, od tyłu — OK.
+- T2 echo za szkłem: OK.
+- T2 echo za liśćmi: niewidoczne — OK (liście zasłaniają).
+- T2 echo nad wodą: OK, bez odbicia w wodzie (user: nie musi być).
+- T2 echo spod wody: OK. (Echo w nocy pominięte — noc sprawdzona w T1.)
+- T3 bariera z wnętrza: user — bardzo ładna, efekt odbijania fajny.
+- BŁĄD T3: na szczycie kuli wzór zbiega się w promienie (biegun współrzędnych wallCoords: atan(q.z,q.x) × q.y). Zrzut: docs/sessions/2026-11-25/barrier-pole.png. Poprawka: rzutowanie bez biegunów (triplanar / cube map).
+- T3 przy ścianie: płynność OK (iGPU, po optymalizacji). DO POPRAWY: zatrzymywać gracza trochę dalej od bariery — teraz widzi ją za blisko i czasem kamera wyjeżdża poza barierę.
+- T3 WSKAZÓWKA: kamera prześwituje poza barierę głównie na ZACHODZIE (-x). Asymetria → podejrzenie przesunięcia środka kuli o pół bloku (floor/BlockPos zamiast środka) między klientem (zatrzymanie) a shaderem/serwerem. Sprawdzić LeashGuard/LeashLook: skąd brany środek.
+- BŁĄD T3: na górze widać linię łączącą (szew) — najpewniej miejsce, gdzie atan przeskakuje z -π na π (fwidth/pochodne na szwie). Zniknie razem z poprawką bieguna (rzutowanie bez szwu).
+- T3 zwykły gracz na smyczy 8 bloków, zbocze: zatrzymanie działa dobrze. (Uderzenie nocą pominięte.)
+- T3 jaskinia: w ciemności bariera i otoczenie niewidoczne (bariera tylko załamuje obraz za sobą). Do przemyślenia: lekka własna poświata bariery w ciemności / przy uderzeniu.
+- T3 dół kuli w powietrzu: duch zatrzymuje się; dół wygląda jak góra (ten sam biegun/szew).
+- DO POPRAWY T3 (user): blisko bariery ściemnia się CAŁA kula (solid zależy od odległości gracza od ściany, jednakowo dla każdego piksela). Ma się ściemniać tylko obszar przy graczu (uzależnić od odległości piksela od gracza). Zrzut: docs/sessions/2026-11-25/barrier-veil.png.
+- T3 zombie: test „bariera pod spodem” nie wyszedł — po teleporcie 25 w górę gracz spadł i zginął od upadku przed komendą kill, więc miejsce śmierci było na ziemi. Zombie wstał w kuli na ziemi, bez pętli śmierci.
+- BŁĄD T3 (ważny): wygnaniec (zwykły gracz, smycz 6) nad dziurą — nie spada przez dno kuli (OK), ale jest ZAMROŻONY: nie może chodzić ani skakać, stojąc na dnie bariery. Zatrzymywanie na kliencie (LeashGuard) blokuje cały ruch zamiast tylko składowej na zewnątrz? Repro: Exile, Place.At Body, Radius 6, wyciąć 7x7x18 pod graczem.
+  - Nawet z gruntem tuż pod stopami (na dnie kuli) dalej zamrożony — blokada nie zależy od braku podłoża, tylko od bycia na krawędzi dna.
+  - Drugie zamrożenie: w szczelinie między barierą a ścianą terenu (bariera + bloki naraz). Wspólny mianownik: gracz dotyka bariery i jednocześnie koliduje z blokami/gruntem → nie może się ruszyć w żadną stronę. Zrzut: docs/sessions/2026-11-25/stuck-gap.png.
+- BŁĄD: spam na czacie „Something holds you here. You cannot go any farther.” — kilkanaście razy pod rząd przy zablokowaniu. Ograniczyć (np. raz na kilka sekund / tylko przy pierwszym uderzeniu).
+  - Korekta usera: komunikat pojawiał się co jakiś czas (nie co klatkę), ale przy zablokowaniu i tak nazbierało się kilkanaście — do przemyślenia, czy w ogóle powtarzać.
+- T4 strefa L z claimów: trzyma w środku — OK. Brak rysowanej ściany strefy (zgodnie z decyzją; user zauważył — może chcieć ścian później).
+- POMYSŁ/DECYZJA (user): strefy z claimów też powinny mieć rysowaną barierę (jak kula).
+- T4 sprint i skoki na granicę: nie puszcza — OK.
+- KRYTYCZNY BŁĄD T4: CRASH KLIENTA przy sprincie/skokach na granicę strefy z claimów. System.ArgumentException: Given pos contained NaN (Y=NaN) w EntityBehaviorPlayerPhysics.SimPhysics_Patch1 (Harmony temporalrebirth.client) → BehaviorControlledPhysics.ApplyTests. Przewidywanie/zatrzymywanie w strefie (pudełka) daje NaN — pewnie dzielenie przez zero / normalizacja zerowego wektora przy narożniku albo skoku. Log: docs/sessions/2026-11-25/crash-zone-nan.log.
+- Po crashu skrypt przeleciał bez gracza: T6, T13, T8, T9, T10, T11 NIEPRZETESTOWANE (do powtórki).
+- T5 timer z czatem, ekwipunkiem, podręcznikiem, nazwą bloku: OK, timer się dostosowuje.
+- T5 skale interfejsu 0.75–2: timer OK.
+- T5 powalenie bez żyć (Downed + timer): odpalone przez pomyłkę bez usera — do powtórki ręcznie.
+- T7 ekran śmierci na przedostatnim życiu: działa, jasny. DO POPRAWY: „Congratulations, you died! 1 lives left.” — liczba pojedyncza (1 life), sprawdzić odmianę też po polsku/rosyjsku.
+- KRYTYCZNY BŁĄD T7 (serwer z Downed, preset Ghost + Rift): śmierć na ostatnim życiu (/entity cmd kill) → lives 0, ale gracz NIE został duchem: ~10 s martwy z mayRespawn=true, potem żywy Survival, form=null, timer brak. Logi: runs/scene/Logs/server-main.log ok. 21:59:26–36. Czekam na relację usera (był ekran śmierci? kliknął Respawn?).
+  - User potwierdza: po śmierci na ostatnim życiu był NORMALNY ekran śmierci i zwykły respawn (serwer z modem Downed). Porównać z serwerem bez Downed.
+- T13 zombie: jedzenie, stawianie, narzędzia, rzucanie, wyrzucanie, zębatka — poprawnie zablokowane, z komunikatem moda. OK.
+- T13 DO SPRAWDZENIA: bicie Finna (bronią i pięścią) „działa”, ale Finn nie traci zdrowia (15/15 po długim biciu, PvP włączone). Projekt: zombie może bić gołymi rękami (powinno zadawać obrażenia).
+  - Wynik: 5 ciosów pięścią → Finn 15 → 9,5. Pięść zadaje obrażenia (OK). Ciosy bronią: animacja jest, obrażeń brak — zgodnie z „bez broni”, ale bez komunikatu; rozważyć komunikat albo blokadę samego zamachu.
+- T13: wyrzucanie przedmiotów (Q) DZIAŁA, podnoszenie zablokowane. Do decyzji, czy zombie ma móc wyrzucać (pozbywa się ekwipunku) — user nie zgłosił problemu.
+- DO DECYZJI (z pytania usera): mod nie rusza ekwipunku przy śmierci — decyduje vanillowe deathPunishment (domyślnie drop). Zombie wstaje bez broni, więc blokada broni ma znaczenie tylko przy keep. ALE zombie nie może podnosić rzeczy → nie odzyska ekwipunku z miejsca śmierci, a leżące przedmioty znikają z czasem. Opcje: pozwolić zombie podnosić / przechować ekwipunek do powrotu / zostawić i opisać.
+- T13 stworzenia: niesprawdzone na kliencie (kura nie znaleziona); po stronie serwera pokryte testami botów.
+- T8 woda: 3 śmierci, przeniesienie na bezpieczny grunt, 0 dodatkowych śmierci — OK (serwer). Lawa: scenka padła na zbyt ścisłym sprawdzeniu pozycji w skrypcie (zombie 35 zamiast 40 bloków) — nieprzetestowana. Skrypt: expect() za ścisły dla zombie (wstają na bezpiecznym gruncie).
+- T8: Funia po drugiej szybkiej śmierci przeniesiona na spawn — zgodnie z projektem. T9 (relogi) pominięte na prośbę usera — pokryte testami botów.
+  - PORÓWNANIE: na serwerze BEZ Downed śmierć na ostatnim życiu → Ghost (Spectator, lives 0) poprawnie. Błąd z T7 występuje tylko z modem Downed (Lives.Count=Deaths, /entity cmd kill).
+  - T7 był na presecie Ghost (nie zombie). Logi serwera z Downed NADPISANE przez przebieg 2 (ten sam runs/scene) — ostrzeżeń o nakładających się patchach nie da się już przeczytać. Po sesji: odtworzyć z Downed i przeczytać ostrzeżenia „is also changed by”. Stage: osobny katalog/archiwum logów na przebieg.
+- T10 ochrona po powstaniu: 0–4 s chroniony, od 5 s obrażenia — OK (serwer).
+- T11 trzy duchy (wisp/echo), noc: 30–35 FPS na iGPU — user: OK.
+- T6 zombie: lekka poświata za dnia; wygląd zombie i tak do przerobienia (user) — reszta T6 pominięta.
+  - Serwer z Downed (przebieg 3): jedyne ostrzeżenie o nakładających się patchach to trt.helper.neighbour — Downed NIE patchuje tych samych metod. Przyczyna błędu T7 w logice współpracy z Downed, nie w konflikcie Harmony.
+  - Przebieg 3 (Downed, T7 jako pierwsza scenka): śmierć na ostatnim życiu → duch POPRAWNIE. Błąd NIE odtworzony. Trop: w przebiegu 1 T7 szło po T5, które kończy się /downed revive + /rebirth revive — stan po podniesieniu przez Downed psuje następną ostatnią śmierć? Repro po sesji: T5 → T7.
+- T7 Downs: powalenie zabiera ostatnie życie → wykrwawienie → ekran śmierci przy 0 życiach Z przyciskiem Respawn → respawn na spawnie z 0 życiami. OK.
+- T7 cios przy 0 życiach (Downs): od razu duch — OK. T7 cały przeszedł w przebiegu 3.
+  - Ostatni krok T7: serwer zrobił z gracza ducha po ~1,5 s (log 22:24:06), ale play.py w tej samej sekundzie zamknął serwer — user nie zdążył zobaczyć. DO POPRAWY w play.py: po ostatniej scenie czekać na Enter przed stop.
+- T14 zombie powalony bez żyć: powalenie nic nie kosztuje, wykrwawienie → znów zombie, 0 żyć, timer ~24 h. OK wg projektu.
+- UX (user pytał „czemu mam timer skoro jestem żywy?”): jako zombie nie czuje się „nie-żywy”. Timer powinien mówić, na co czeka (np. „Nieumarły: powrót do życia za …” zamiast „Back in …”) + wygląd zombie do przeróbki.
+- T14 teksty Downed + timer podczas powalenia: user nie zauważył problemu („raczej ok”).
+- KRYTYCZNY BŁĄD T7 — ODTWORZONY (T14, przebieg 4, Downed): preset Undead → zombie (0 żyć) → Lives.Count=Downs, hurt 500 (powalony) → wykrwawienie → znów zombie → /downed revive ("not downed") + /rebirth revive → use Ghost (Lives.Count=Deaths) → setlives 1 → kill: lives 1→0, ALE rejestr pusty, mayRespawn=true, zwykły ekran śmierci, brak ducha. Logi: docs/sessions/2026-11-25/logs-run4/server-main.log 22:35:09–22:36. Hipoteza: znacznik „po powaleniu” (death after a down costs nothing) zostaje po wykrwawieniu zombie i nie jest czyszczony przy wykrwawieniu/revive → następna śmierć idzie ścieżką po powaleniu i pomija wpis do rejestru. Do sprawdzenia też: zmiana Lives.Count Downs→Deaths w trakcie.
+  - Ekran przy błędzie: czysto vanillowy „Congratulations, you died!” BEZ liczby żyć (mod w ogóle nie potraktował tej śmierci jako swojej). Zrzut: docs/sessions/2026-11-25/death-screen-bug.png.
+  - Po Respawn: normalny gracz z 0 żyć (bez formy, timera, smyczy) — gracz „ucieka” karze.

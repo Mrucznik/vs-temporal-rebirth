@@ -30,19 +30,22 @@ internal static class RitualLook
             center.Y + (Math.Sin(pitch) * radius),
             center.Z + (Math.Sin(yaw) * Math.Cos(pitch) * radius));
         var velocity = new Vec3f((float)((center.X - from.X) / MoteLife), (float)((center.Y - from.Y) / MoteLife), (float)((center.Z - from.Z) / MoteLife));
-        return new SimpleParticleProperties(1, 1, rand.NextDouble() < 0.25 ? Ember : Rust, from, from, velocity, velocity, MoteLife, 0f, 0.12f + (0.12f * progress), 0.22f + (0.16f * progress), EnumParticleModel.Quad)
+        // As big as a wisp's sparks at least, and glowing: the first motes (0.12 and shrinking on the way) were never seen.
+        return new SimpleParticleProperties(1, 1, rand.NextDouble() < 0.35 ? Ember : Rust, from, from, velocity, velocity, MoteLife, 0f, 0.35f + (0.2f * progress), 0.55f + (0.3f * progress), EnumParticleModel.Quad)
         {
-            VertexFlags = (int)(80 + (175 * progress)),
+            VertexFlags = (int)(150 + (105 * progress)),
             WithTerrainCollision = false,
-            SizeEvolve = EvolvingNatFloat.create(EnumTransformFunction.LINEAR, -0.15f),
+            // They grow a little as they gather and only fade at the very end.
+            SizeEvolve = EvolvingNatFloat.create(EnumTransformFunction.LINEAR, 0.1f),
+            OpacityEvolve = EvolvingNatFloat.create(EnumTransformFunction.LINEAR, -60),
         };
     }
 
     /// <summary>The flash when someone is brought back.</summary>
     internal static SimpleParticleProperties Burst(Vec3d center) =>
-        new(60, 120, Rust, center.AddCopy(-0.3, -0.3, -0.3), center.AddCopy(0.3, 0.3, 0.3), new Vec3f(-2.5f, -1f, -2.5f), new Vec3f(2.5f, 3.5f, 2.5f), 1.4f, 0.2f, 0.15f, 0.45f, EnumParticleModel.Quad)
+        new(80, 140, Ember, center.AddCopy(-0.3, -0.3, -0.3), center.AddCopy(0.3, 0.3, 0.3), new Vec3f(-2.5f, -1f, -2.5f), new Vec3f(2.5f, 3.5f, 2.5f), 1.4f, 0.2f, 0.4f, 0.8f, EnumParticleModel.Quad)
         {
-            VertexFlags = 200,
+            VertexFlags = 255,
             WithTerrainCollision = false,
             OpacityEvolve = EvolvingNatFloat.create(EnumTransformFunction.LINEAR, -120),
             SizeEvolve = EvolvingNatFloat.create(EnumTransformFunction.LINEAR, -0.2f),

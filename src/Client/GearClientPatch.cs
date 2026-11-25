@@ -32,7 +32,7 @@ internal static class GearClientStepPatch
         }
 
         ritual.StepHold(__instance, secondsUsed);
-        __result = blockSel != null && secondsUsed < RitualLook.HoldSeconds;
+        __result = (blockSel != null || ritual.HoldingInAir) && secondsUsed < RitualLook.HoldSeconds;
         return false;
     }
 }
@@ -80,3 +80,21 @@ internal static class GearClientHelpPatch
         }
     }
 }
+
+/// <summary>The gear's description says it can bring friends back, and where, when this server has rituals.</summary>
+[HarmonyPatch(typeof(CollectibleObject), nameof(CollectibleObject.GetHeldItemInfo))]
+internal static class GearClientInfoPatch
+{
+    private static void Postfix(CollectibleObject __instance, IWorldAccessor world, System.Text.StringBuilder dsc)
+    {
+        if (__instance is not ItemTemporalGear || world.Side != EnumAppSide.Client
+            || (world.Api as ICoreClientAPI)?.World.Player?.Entity?.WatchedAttributes.GetString(ClientState.RitualWhere) is not { } where)
+        {
+            return;
+        }
+
+        dsc.AppendLine();
+        dsc.AppendLine(Vintagestory.API.Config.Lang.Get("temporalrebirth:geardesc-" + where.ToLowerInvariant()));
+    }
+}
+

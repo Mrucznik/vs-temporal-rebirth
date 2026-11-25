@@ -45,8 +45,11 @@ public sealed class RitualHintPacket
     /// <summary>Cooldown: seconds until the first one can be brought back.</summary>
     [ProtoMember(4)] public int SecondsLeft { get; set; }
 
+    /// <summary>Ready next to ghosts: the one looked at is brought back.</summary>
+    [ProtoMember(5)] public bool LookAtGhost { get; set; }
+
     /// <summary>The seconds are compared by the sender, which knows how long ago the other one went out.</summary>
-    public bool SameAs(RitualHintPacket? other) => other != null && other.State == State && other.AtSite == AtSite && other.Count == Count;
+    public bool SameAs(RitualHintPacket? other) => other != null && other.State == State && other.AtSite == AtSite && other.Count == Count && other.LookAtGhost == LookAtGhost;
 }
 
 [ProtoContract]
@@ -90,4 +93,13 @@ public sealed class ChooserPickPacket
     [ProtoMember(1)] public string Uid { get; set; } = "";
     [ProtoMember(2)] public bool Bind { get; set; }
     [ProtoMember(3)] public bool Cancel { get; set; }
+}
+
+/// <summary>To a player just brought back by a ritual: turn to the one who did it.</summary>
+[ProtoContract]
+public sealed class FacePacket
+{
+    [ProtoMember(1)] public double X { get; set; }
+    [ProtoMember(2)] public double Y { get; set; }
+    [ProtoMember(3)] public double Z { get; set; }
 }

@@ -22,8 +22,17 @@ internal class Rituals(ICoreServerAPI api, RebirthConfig config, Afterlife after
     /// <summary>Caster uid -> the last hint sent and when, so an unchanged one is not sent again.</summary>
     private readonly Dictionary<string, (RitualHintPacket Hint, long SentMs)> hints = new();
 
-    /// <summary>Caster uid -> a hold that is a ritual: where it is aimed and when particles were last sent for it.</summary>
-    private readonly Dictionary<string, (Vec3d At, long LastMs)> holds = new();
+    /// <summary>
+    /// Caster uid -> a hold that is a ritual: where it is aimed, when particles were last sent for it, and whether it is
+    /// aimed at a ghost in the air (no block under the crosshair, which vanilla would not hold).
+    /// </summary>
+    private readonly Dictionary<string, (Vec3d At, long LastMs, bool InAir)> holds = new();
+
+    private const string CooldownSinceKey = "temporalrebirth-cooldownsince";
+
+    /// <summary>The cooldown setting as last seen, and since when (UTC) it has been on; rituals before that do not count.</summary>
+    private double seenCooldownHours = -1;
+    private DateTime cooldownSinceUtc = DateTime.MinValue;
 
     private IServerNetworkChannel? channel;
 
@@ -126,7 +135,7 @@ internal class Rituals(ICoreServerAPI api, RebirthConfig config, Afterlife after
         int ready = pool.Count(c => CooldownEnd(c) == null);
         if (ready > 0)
         {
-            return new RitualHintPacket { State = RitualState.Ready, AtSite = true, Count = ready };
+            return new RitualHintPacket { State = RitualState.Ready, AtSite = true, Count = ready, LookAtGhost = config.RitualWhere == RitualPlace.NearPlayer };
         }
 
         DateTime first = pool.Select(c => CooldownEnd(c)!.Value).Min();
@@ -135,8 +144,15 @@ internal class Rituals(ICoreServerAPI api, RebirthConfig config, Afterlife after
 
     private void SendHints()
     {
+        // With unlimited lives there is nobody to bring back, so the gear says nothing about it.
+        string? where = LifeRules.UnlimitedLives(api.World) || config.RitualWhere == RitualPlace.Disabled ? null : config.RitualWhere.ToString();
         foreach (IServerPlayer player in api.World.AllOnlinePlayers.Cast<IServerPlayer>())
         {
+            if (player.Entity != null)
+            {
+                ClientState.Set(player.Entity, ClientState.RitualWhere, where);
+            }
+
             SendHint(player);
         }
     }
@@ -165,8 +181,11 @@ internal class Rituals(ICoreServerAPI api, RebirthConfig config, Afterlife after
 
     // ---------- the hold ----------
 
-    /// <summary>The hold has begun; true when it is a ritual that can happen, so vanilla's start is skipped.</summary>
-    public bool BeginHold(IServerPlayer caster, BlockSelection blockSel)
+    /// <summary>
+    /// The hold has begun; true when it is a ritual that can happen, so vanilla's start is skipped. Without a block it
+    /// can only be aimed at a ghost.
+    /// </summary>
+    public bool BeginHold(IServerPlayer caster, BlockSelection? blockSel)
     {
         holds.Remove(caster.PlayerUID);
         if (Hint(caster).State != RitualState.Ready)
@@ -174,9 +193,25 @@ internal class Rituals(ICoreServerAPI api, RebirthConfig config, Afterlife after
             return false;
         }
 
-        holds[caster.PlayerUID] = (blockSel.Position.ToVec3d().Add(blockSel.HitPosition), 0);
+        // The motes gather on the ghost looked at, else where the gear touches the ground.
+        Vec3d? onGhost = Aimed(caster, Ready(caster)) is { Player: { } ghost } ? RitualAim.PointOf(ghost.Entity) : null;
+        if (blockSel != null)
+        {
+            holds[caster.PlayerUID] = (onGhost ?? blockSel.Position.ToVec3d().Add(blockSel.HitPosition), 0, false);
+            return true;
+        }
+
+        if (onGhost == null)
+        {
+            return false;
+        }
+
+        holds[caster.PlayerUID] = (onGhost, 0, true);
         return true;
     }
+
+    /// <summary>Whether the caster holds a gear at a ghost in the air, which vanilla would stop at once.</summary>
+    public bool IsAirHold(IServerPlayer caster) => holds.TryGetValue(caster.PlayerUID, out var hold) && hold.InAir;
 
     /// <summary>Lets players near the caster see the ritual too. The caster draws their own, every frame.</summary>
     public void StepHold(IServerPlayer caster, float secondsUsed)
@@ -192,7 +227,7 @@ internal class Rituals(ICoreServerAPI api, RebirthConfig config, Afterlife after
             return;
         }
 
-        holds[caster.PlayerUID] = (hold.At, now);
+        holds[caster.PlayerUID] = (hold.At, now, hold.InAir);
         float progress = Math.Clamp(secondsUsed / RitualLook.HoldSeconds, 0, 1);
         for (int i = 0; i < 2; i++)
         {
@@ -206,7 +241,7 @@ internal class Rituals(ICoreServerAPI api, RebirthConfig config, Afterlife after
     /// The gear was held long enough at a ritual site. Brings someone back at once when it is clear whom, otherwise opens
     /// the chooser. The gear is taken only together with a revival.
     /// </summary>
-    public void Complete(IServerPlayer caster, ItemSlot slot, BlockPos ritualPos)
+    public void Complete(IServerPlayer caster, ItemSlot slot, BlockPos? ritualPos)
     {
         EndHold(caster);
         pending.Remove(caster.PlayerUID);
@@ -225,12 +260,8 @@ internal class Rituals(ICoreServerAPI api, RebirthConfig config, Afterlife after
             return;
         }
 
-        Candidate? target = Chosen(caster, ready);
-        // Next to players the nearest is the one meant: walking up to someone is the choice.
-        if (target == null && config.RitualWhere == RitualPlace.NearPlayer)
-        {
-            target = ready[0];
-        }
+        // A choice made with /rebirth target, else the ghost looked at. Several and none of them meant: the chooser.
+        Candidate? target = Chosen(caster, ready) ?? Aimed(caster, ready);
 
         // Anywhere a gear may also bind the caster to the place, so even one candidate needs the chooser, unless the world
         // forbids that.
@@ -241,7 +272,7 @@ internal class Rituals(ICoreServerAPI api, RebirthConfig config, Afterlife after
 
         if (target != null)
         {
-            if (Perform(caster, target, ritualPos))
+            if (Perform(caster, target, ritualPos ?? (target.Player?.Entity ?? caster.Entity).Pos.AsBlockPos))
             {
                 slot.TakeOut(1);
                 slot.MarkDirty();
@@ -250,7 +281,7 @@ internal class Rituals(ICoreServerAPI api, RebirthConfig config, Afterlife after
             return;
         }
 
-        OpenChooser(caster, ready, ritualPos);
+        OpenChooser(caster, ready, ritualPos ?? caster.Entity.Pos.AsBlockPos);
     }
 
     // ---------- the chooser ----------
@@ -442,7 +473,9 @@ internal class Rituals(ICoreServerAPI api, RebirthConfig config, Afterlife after
         messages.Tell(caster, "RitualDone", ("player", target.Lost.Name));
         messages.TellEveryone("AnnounceRitual", ("caster", caster.PlayerName), ("player", target.Lost.Name));
         var center = new Vec3d(ritualPos.X + 0.5, ritualPos.Y + 1, ritualPos.Z + 0.5);
-        api.World.PlaySoundAt(new AssetLocation("sounds/effect/portal.ogg"), center.X, center.Y, center.Z, null, false, 48f);
+        // The hold's sound rises to this: a break in time, then the low bell, so the end is heard as an end.
+        api.World.PlaySoundAt(new AssetLocation("sounds/effect/translocate-breakdimension.ogg"), center.X, center.Y, center.Z, null, false, 48f);
+        api.World.PlaySoundAt(new AssetLocation("sounds/effect/deepbell.ogg"), center.X, center.Y, center.Z, null, false, 48f, 0.6f);
         api.World.SpawnParticles(RitualLook.Burst(center));
         api.Logger.ModAudit("{0} revived {1} with a ritual near {2}", caster.PlayerName, target.Lost.Name, ritualPos);
         return true;
@@ -450,13 +483,51 @@ internal class Rituals(ICoreServerAPI api, RebirthConfig config, Afterlife after
 
     private DateTime? CooldownEnd(Candidate c)
     {
-        if (config.RitualCooldownHours <= 0 || afterlife.LastRitual(c.Uid) is not { } last)
+        TrackCooldown();
+        // Rituals from before the cooldown was switched on do not count: switching it on must not punish whoever just
+        // brought someone back.
+        if (config.RitualCooldownHours <= 0 || afterlife.LastRitual(c.Uid) is not { } last || last < cooldownSinceUtc)
         {
             return null;
         }
 
         DateTime end = last.AddHours(config.RitualCooldownHours);
         return DateTime.UtcNow < end ? end : null;
+    }
+
+    /// <summary>Notices the cooldown being switched on (by a command, an import or the file) and remembers since when.</summary>
+    private void TrackCooldown()
+    {
+        double hours = config.RitualCooldownHours;
+        if (seenCooldownHours < 0)
+        {
+            long stored = api.WorldManager.SaveGame.GetData(CooldownSinceKey, 0L);
+            cooldownSinceUtc = stored > 0 ? new DateTime(stored, DateTimeKind.Utc) : DateTime.MinValue;
+        }
+        else if (seenCooldownHours <= 0 && hours > 0)
+        {
+            cooldownSinceUtc = DateTime.UtcNow;
+            api.WorldManager.SaveGame.StoreData(CooldownSinceKey, cooldownSinceUtc.Ticks);
+        }
+
+        seenCooldownHours = hours;
+    }
+
+    // ---------- after the revival ----------
+
+    /// <summary>Turns a player brought back by a ritual to the one who did it, if they are still around.</summary>
+    public void Face(IServerPlayer revived, string? casterName)
+    {
+        if (channel == null || casterName == null
+            || api.World.AllOnlinePlayers.FirstOrDefault(p => p.PlayerName == casterName) is not { Entity: { } caster }
+            || caster.Pos.DistanceTo(revived.Entity.Pos) > 32)
+        {
+            return;
+        }
+
+        Vec3d eyes = RitualAim.Eyes(caster);
+        revived.Entity.Pos.Yaw = RitualAim.YawTowards(revived.Entity.Pos.XYZ, eyes);
+        channel.SendPacket(new FacePacket { X = eyes.X, Y = eyes.Y, Z = eyes.Z }, revived);
     }
 
     private const double ReviveAside = 2;
@@ -525,6 +596,22 @@ internal class Rituals(ICoreServerAPI api, RebirthConfig config, Afterlife after
             .Where(c => c.Player != null && c.Player.Entity.Pos.DistanceTo(caster.Entity.Pos) <= config.RitualRange)
             .OrderBy(c => c.Player!.Entity.Pos.DistanceTo(caster.Entity.Pos))
             .ToList();
+
+    /// <summary>Who the gear can bring back here now, nearest first next to players.</summary>
+    private List<Candidate> Ready(IServerPlayer caster) => Pool(caster, Candidates(caster)).Where(c => CooldownEnd(c) == null).ToList();
+
+    /// <summary>The ghost the caster looks at, among these. Only rituals next to ghosts are aimed; elsewhere the chooser decides.</summary>
+    private Candidate? Aimed(IServerPlayer caster, List<Candidate> among)
+    {
+        if (config.RitualWhere != RitualPlace.NearPlayer)
+        {
+            return null;
+        }
+
+        List<Candidate> seen = among.Where(c => c.Player?.Entity != null).ToList();
+        int i = RitualAim.Pick(RitualAim.Eyes(caster.Entity), RitualAim.Look(caster.Entity), seen.Select(c => RitualAim.PointOf(c.Player!.Entity)).ToList(), config.RitualRange);
+        return i < 0 ? null : seen[i];
+    }
 
     private Candidate? Chosen(IServerPlayer caster, List<Candidate> candidates) =>
         targets.TryGetValue(caster.PlayerUID, out var chosen) ? candidates.FirstOrDefault(c => c.Uid == chosen.Uid && c.Lost == chosen.Lost) : null;

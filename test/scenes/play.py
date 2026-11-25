@@ -410,6 +410,100 @@ def t11(s):
     s.shot("three echoes at night")
 
 
+@scene("T12", "0.10 rituals on a client: hint, hold (sound, motes, bar, end sound), aiming at a ghost, chooser, cooldown, rift")
+def t12(s):
+    cam = s.camera
+    gear = "game:gear-temporal"
+    # The test harness pins rituals at rifts for the Ghost preset; the preset itself has them next to the ghost.
+    here = {"Time.Duration": "24h", "Ritual.Where": "NearPlayer", "Ritual.ReviveAt": "InPlace"}
+    s.weather("clearsky")
+    use(s.w, "Ghost", **here)
+    s.wear(cam, gear)
+    s.do("A gear is in the first hotbar slot; nobody is out of lives. Take it in hand, read its hint (above the hotbar) and its description in the inventory.", "key 1, then E and hover the gear")
+    s.note("Expected: the vanilla hint only; the description says it can call back a friend, looking at the ghost.")
+    funia = ghost_of(s, "Funia", dx=5, **here)
+    s.do("Funia is a ghost 5 blocks east. Hold the gear again: 'Perform the ritual, looking at the ghost (1 waiting)'.", "key 2, then key 1")
+    s.do("Walk 15 blocks west, away from Funia: the hint should say you are too far.", "hold S")
+    s.do("Come back, look at Funia's wisp (in the air, not at the ground) and hold right mouse until the ritual completes. Rising sound, rust motes gathering on her, a bar, an end sound, a flash.", "hold right mouse")
+    funia.until(mode="Survival", alive=True, timeout=60)
+    s.note(f"Funia is back; gears left with you: {cam.state()['gears']} (0 expected)")
+    s.do("Was the gear taken? Did Funia rise where her ghost was, turned towards you?")
+    s.back(funia)
+    funia = ghost_of(s, "Funia", dx=5, dz=-2, **here)
+    mira = ghost_of(s, "Mira", dx=5, dz=2, **here)
+    s.wear(cam, gear)
+    s.do("Two ghosts. Look at Mira (south of Funia) and hold the gear: Mira comes back, no chooser.", "key 1, hold right mouse at Mira")
+    mira.until(mode="Survival", alive=True, timeout=60)
+    s.back(mira)
+    mira = ghost_of(s, "Mira", dx=5, dz=2, **here)
+    s.wear(cam, gear)
+    s.do("Both are ghosts again. Hold the gear at the ground between them: a chooser opens. Close it with Esc; the gear stays.", "key 1, hold right mouse at the ground, Esc")
+    s.note(f"gears after closing the chooser: {cam.state()['gears']} (1 expected)")
+    s.back(funia, mira)
+    use(s.w, "Ghost", **{**here, "Ritual.CooldownHours": 2})
+    funia = ghost_of(s, "Funia", dx=5, **{**here, "Ritual.CooldownHours": 2})
+    s.wear(cam, gear)
+    s.do("A cooldown of 2 hours was just switched on: it must not count the rituals before. Bring Funia back.", "key 1, hold right mouse at her")
+    funia.until(mode="Survival", alive=True, timeout=60)
+    s.lose(funia)
+    s.wear(cam, gear)
+    s.do("Funia is a ghost again. The hint names the cooldown and the hold does not start a ritual.", "key 1, look at the hint, try holding")
+    s.back(funia)
+    rift = {"Ritual.Where": "Rift", "Ritual.ReviveAt": "Caster"}
+    use(s.w, "Rift", **rift)
+    funia = ghost_of(s, "Funia", dx=5, **rift)
+    s.w.trt("clearrifts")
+    s.wear(cam, gear)
+    s.do("Rituals at rifts now, no rift around. The hint says you are too far from a rift.", "key 1")
+    s.w.trt(f"riftnear {cam.name} 4 1 0 3")
+    s.do("A rift opened 4 blocks east of you. The hint changes; perform the ritual.", "look east, hold right mouse")
+    funia.until(mode="Survival", alive=True, timeout=60)
+    s.note("Funia is back next to you.")
+    s.w.trt("clearrifts")
+
+
+@scene("T13", "a zombie with real input: weapons, tools, food, blocks, creatures")
+def t13(s):
+    cam = s.camera
+    finn = s.bot("Finn")
+    s.put(finn, 4, 0)
+    use(s.w, "Undead", **{"Time.Duration": "24h"})
+    s.lose(cam, "Survival")
+    s.age_revive()
+    for item in ("game:knife-generic-flint", "game:torch-basic-lit-up"):
+        try:
+            s.wear(cam, item)
+        except Exception as e:  # a wrong code should not end the session
+            s.note(f"could not give {item}: {e}")
+    s.do("You are a zombie. Look at what is in your hands and hotbar; try to use, place and throw things.", "right mouse, Q, scroll")
+    s.do("Hit Finn (4 blocks east) bare-handed, then with something in hand.", "left mouse")
+    s.do("Find or ask for a creature nearby and try to hit and interact with it.", "left and right mouse")
+    s.back(cam)
+
+
+@scene("T14", "Downed: a zombie downed (timer and Downed texts), then the last death after a Downed revive", mods=("downed",))
+def t14(s):
+    cam = s.camera
+    use(s.w, "Undead", **{"Time.Duration": "24h"})
+    s.lose(cam, "Survival")
+    use(s.w, "Ghost", **{"Lives.Count": "Downs"})
+    time.sleep(3)
+    s.cue("a zombie out of lives gets downed: Downed's texts and the timer together")
+    s.w.trt(f"hurt {cam.name} 500")
+    s.do("Look at the screen while downed: Downed's texts, the timer, anything overlapping?")
+    s.w.console(f"/downed revive {cam.name}")
+    s.back(cam)
+    use(s.w, "Ghost")
+    s.w.console(f"/rebirth setlives {cam.name} 1")
+    cam.until(lives=1)
+    s.cue("the last death after a Downed revive: no death screen, a ghost after 1.5 s")
+    cam.kill()
+    time.sleep(6)
+    st = cam.state()
+    s.note(f"after the last death: mode {st['mode']}, form {st['form']}, lives {st['lives']}, alive {st['alive']}")
+    s.do("Are you a ghost (wisp, timer, leash)? Look around, then say you are done; the server stops after this.")
+
+
 # ---------- the mod page ----------
 
 @scene("M1", "last death, wisp, a friend with a gear, the echo, ritual, back")
@@ -567,6 +661,12 @@ def main():
                 failed.append(name)
                 print(f"=== {name} FAILED: {e} ===", flush=True)
     finally:
+        if stage and not args.check:
+            # Whoever plays should see the end of the last step before the server goes away.
+            try:
+                input("\nAll scenes done. [Enter stops the server] ")
+            except (EOFError, KeyboardInterrupt):
+                pass
         if stage:
             stage.stop()
         harness.kill_everything()

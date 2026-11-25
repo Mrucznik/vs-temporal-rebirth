@@ -1,0 +1,16 @@
+25.11.2026 21:41:12: Critical error occurred
+Loaded Mods: game@1.22.7, temporalrebirth@0.10.0-dev.1, creative@1.22.7, survival@1.22.7
+Involved Harmony IDs: temporalrebirth.client
+System.ArgumentException: Given pos contained NaN: XYZ: 511988,5750239338/91/511974,76343697804, YPR -48,229584/3,5478127/0, Dim 0 for entity game:player
+   at Vintagestory.GameContent.EntityBehaviorControlledPhysics.ApplyTests(EntityPos pos, EntityControls controls, Single dt, Boolean remote) in VSEssentials\Entity\Behavior\BehaviorControlledPhysics.cs:line 325
+   at Vintagestory.GameContent.EntityBehaviorPlayerPhysics.SimPhysics_Patch1(EntityBehaviorPlayerPhysics this, Single dt, EntityPos pos)
+   at Vintagestory.GameContent.EntityBehaviorPlayerPhysics.OnRenderFrame(Single dt, EnumRenderStage stage) in VSEssentials\Entity\Behavior\BehaviorPlayerPhysics.cs:line 389
+   at Vintagestory.Client.NoObf.ClientMain.MainRenderLoop(Single dt) in VintagestoryLib\Client\ClientMain.cs:line 910
+   at Vintagestory.Client.GuiScreenRunningGame.RenderToPrimary(Single dt) in VintagestoryLib\Client\MainMenu\Screens\GuiScreenRunningGame.cs:line 173
+   at Vintagestory.Client.ScreenManager.Render(Single dt) in VintagestoryLib\Client\ScreenManager.cs:line 742
+   at Vintagestory.Client.ScreenManager.OnNewFrame(Single dt) in VintagestoryLib\Client\ScreenManager.cs:line 686
+   at Vintagestory.Client.NoObf.ClientPlatformWindows.window_RenderFrame(FrameEventArgs e) in VintagestoryLib\Client\ClientPlatform\GameWindow.cs:line 112
+   at OpenTK.Windowing.Desktop.GameWindow.Run()
+   at Vintagestory.Client.ClientProgram.Start(ClientProgramArgs args, String[] rawArgs) in VintagestoryLib\Client\ClientProgram.cs:line 354
+   at Vintagestory.Client.ClientProgram.<>c__DisplayClass10_0.<.ctor>b__1() in VintagestoryLib\Client\ClientProgram.cs:line 131
+   at Vintagestory.ClientNative.CrashReporter.Start(ThreadStart start) in VintagestoryLib\Client\ClientPlatform\ClientNative\CrashReporter.cs:line 95

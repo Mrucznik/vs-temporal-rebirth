@@ -19,6 +19,30 @@ As of 2026-11-25, everything is on `main` (0.10.0-dev.1). Released: 0.6.1.
   only when the server accepts the click. One candidate, `/rebirth target` or NearPlayer (nearest) need no chooser. Anywhere
   always opens it while someone waits, because it also offers the vanilla "bind me here". Scenes R1–R3 in `test/scenes/shoot.py`
   (hint, hold, chooser) are written but not recorded. `Messages.RitualChoose` is no longer used.
+- **After the test session of 2026-11-25** (notes, screenshots and the crash log in `docs/sessions/2026-11-25/`):
+  - Leash on the client (`LeashGuard`): no more freezing where the edge meets blocks (the bottom of a sphere, a crack by a
+    cliff): the step tries several ways along the edge and takes the first that is free; the edge from below is ground to
+    walk and jump on. A position that is not a number is put back to the last good one (it crashed the game at a zone's
+    edge, and a zone handed back an argument that was then moved twice). Spheres hold the player 0.6 blocks inside the drawn
+    wall, so the camera no longer slips past it. The "Something holds you here" chat message is gone.
+  - Barrier (`leash.fsh`): the noise is taken in 3D on the wall, so the sphere has no pinch at its top and bottom and no seam;
+    gears fade out there. The dark veil only near the player. Faint own embers near the player and where it is hit, so it
+    shows in a dark cave. Zones (land claims, up to 8 nearest boxes) are drawn too, the same look, from 50 blocks. About
+    10 % dearer than right after the optimization, still about 20 % cheaper than before it (`test/shaders/bench.py`, which
+    now also looks at the top of a sphere and at an L of claims).
+  - Rituals next to ghosts: the ghost looked at is brought back (`RitualAim`; a hold can start in the air at a wisp); several
+    and none looked at opens the chooser. The hint says to look at the ghost. Motes are big enough to be seen and gather on
+    the ghost; the end is heard (`translocate-breakdimension` and a low bell). The revived player turns to the caster. A
+    cooldown switched on later does not count rituals from before (`temporalrebirth-cooldownsince` in the save).
+  - The gear's description says it can call back a friend, and where, when the server has rituals.
+  - Zombies that may not use items do not swing what they hold, and are told to fight bare-handed.
+  - The timer says what is waited for (ghost, undead, exile, ...). The death screen says "1 life" and, at no lives with a
+    respawn (lives counted by downs), that the next fatal blow is the last.
+  - Echo: the silhouette has the game's player proportions (small head, thin long arms), not a blocky Minecraft one.
+  - Scenes: `play.py` waits for Enter before stopping the server, keeps each run's logs in `~/.cache/temporalrebirth-gifs/logs`,
+    resets `Lives.Count` between scenes, and the test worlds have temporal stability off. T12 rewritten, T13 and T14 new.
+  - Not a bug: "no ghost after the last death" in the session was `Lives.Count` Downs left over from an earlier scene (presets
+    keep the lives section); with Downs a death without a down costs a life and the next fatal hit is the last.
 - **Review of 0.7.0**: 11 faults, each with a test and fixed.
 - **Structure and performance**: `Rebirth.cs` split up, Harmony patches reach the server side through
   `TemporalRebirthModSystem.Server`, how a player comes back is one saved object, less work per frame and tick (not measured).
@@ -40,27 +64,34 @@ As of 2026-11-25, everything is on `main` (0.10.0-dev.1). Released: 0.6.1.
 - `Lives.Count`: Deaths; Downs (3 lives = 3 downs, the next fatal hit is the last; death after a down costs nothing, death
   without one costs a life); DownsFinalDeath (a death takes all lives). Changing it keeps everyone's lives.
 - Being downed while out of lives costs nothing.
-- Ghost look: no player model needed. Wisp = floating teal light with sparks. Echo = silhouette refracting the world like a
-  rift, teal rim, dissolving downwards, with name; only for players holding a temporal gear. If the shader fails, wisp only.
+- Ghost look: no player model needed. Wisp = floating smouldering light in the rift's dark rust, with sparks (was teal; the
+  user confirmed the rust look 2026-11-25). Echo = silhouette refracting the world like a rift, rust rim, dissolving downwards, with name; only for players holding a temporal gear. If the shader fails, wisp only.
   Own shader, do not copy the game's. Spectators stay invisible.
 - Timer: always visible on screen, top centre to start with; off switch `Time.ShowTimer`.
 - Zones: land claims shared with the group `Place.Group`. The mod grants `Place.Access` itself; claims only give the shape.
   Others may enter. No claims = nobody is held, and the log says so.
 - Languages at the end: en, pl, ru, de. German and Russian are a nice-to-have, nobody will proofread them. Custom messages replace the text for everyone.
-- Zombies without items: no weapons, no interacting with creatures; attacking bare-handed is allowed.
+- Zombies without items: no weapons, no interacting with creatures; attacking bare-handed is allowed. They do not even swing
+  a held item (2026-11-25). Dropping items stays allowed. What is lost at death follows the world's own setting.
+- Rituals next to ghosts (2026-11-25): aim at the ghost; several and none aimed at: the chooser. The revived rises where the
+  ghost was, turned to the caster. A cooldown counts only rituals after it was switched on; with nobody waiting the gear's
+  hint stays vanilla, also during a cooldown.
+- Ranges kept: echo 48 blocks (name 24), wisp 96.
 - `/rebirth import` sets everything (what is not in the code is at its default), lists what changed and names the `.bak`.
 - Leash: a sphere around the place, for everyone whose movement is limited. Nearly invisible from afar, its wall shows only up
   close; looks akin to a rift (own shader, not a copy); glows where it is hit. The client stops the player at the edge; the
-  server only checks now and then for being far outside. Zones (boxes) stop smoothly too, but have no drawn walls for now.
+  server only checks now and then for being far outside. Zones (boxes) stop smoothly too and are drawn the same way, visible
+  from close (about 50 blocks).
 - Zombies and normal players out of lives cannot be hurt for 5 s after they rise, in addition to the safe ground and the move to
   the spawn point after a second quick death.
 
 ## Next
 
-1. M4 GIF is 8.7 MB even at 10 frames/s and 64 colours (limit 8): since the barrier got lighter (2026-11-25, `test/shaders/bench.py`:
-   pushing 22.4 -> 15.6 ms at 1080p on the Intel iGPU) the game draws 30 frames/s again and more of them differ. Shorten or re-cut it.
-2. Record scenes R1–R3 (ritual hint, hold, chooser).
-3. The user looks at what the mod draws (they are logged in): timer, wisp, echo, leash, barrier. Frame rate with the leash in view.
+1. A second test session for what changed on 2026-11-25 (T12 rituals with aiming, motes and the end sound; the barrier at
+   the top, in a cave, near the edge and under the player; zone walls; T13 zombie swing; T14 Downed), on a client.
+2. Zombie look rework (the user wants it; how is not decided yet).
+3. Media: the mod's page uses videos, the GitHub wiki needs no GIFs. ModDB takes a YouTube trailer and YouTube embeds in the
+   description; gallery images at most 2 MB each (12). Decide ModDB media, then re-record what changed (barrier, rituals).
 4. Publish the configurator; new ModDB text and README.
 5. Release 0.10 in place of 0.6.1 (GitHub, ModDB, mruserv).
 
@@ -84,13 +115,17 @@ As of 2026-11-25, everything is on `main` (0.10.0-dev.1). Released: 0.6.1.
 
 ## Not verified
 
-- 0.10 on a client: the hint and its refresh, the hold's sound, motes and bar, the chooser dialog (bots get the server side
-  only: hint state, chooser offer, pick, cancel, re-checks).
-- Anything drawn on a client: timer, wisp, echo, leash (both shaders compile and look right in WebGL, not seen in the game), zombie look, death screen (with a respawn button at 0 lives for Downs),
-  client prediction in zones. Being stopped at the edge (bots do not move on their own).
-- Zombie item limits with real input (bots do not use items; attacks and clicks on creatures are tested as events). Loading of privileges after a restart (saving is verified).
-- Client chat length for long `/rebirth import` codes (the server takes 3000 characters).
-- The in-game recorder (`.cam rec`, AVI) on Linux.
+Seen on a client in the session of 2026-11-25 (and working): the gear's hint and its refresh, the hold's sound and bar, the
+chooser, the cooldown, the hint at and away from a rift; wisp and echo by day, night, dusk, fog, from 30 and 60 blocks,
+through glass, leaves, water and from under it; the barrier from inside and when hit, on a slope; a zone of claims holding the
+player; the timer with chat, dialogs, block names and interface scales; zombie item limits with real input; the death screen
+with Downed (respawn at 0 lives with downs); three ghosts at 30-35 frames a second on the laptop.
+
+Not yet seen on a client:
+- Everything changed after the session (see Done): the new barrier and zone walls, aiming at ghosts, motes, the end sound,
+  turning to the caster, the gear's description, the zombie swing, the timer texts, the new death screen texts, the new echo.
+- A zombie in lava; a zombie in armour or with a torch; relogs (bots cover them on the server); creatures and zombies.
+- Loading of privileges after a restart (saving is verified). Client chat length for long `/rebirth import` codes.
 
 ## Level 3 tests and GIFs
 

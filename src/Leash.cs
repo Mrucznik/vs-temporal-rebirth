@@ -8,7 +8,7 @@ namespace TemporalRebirth;
 /// Server side of keeping players out of lives in their place. Their own client stops them at the edge (see LeashGuard);
 /// here only those who got far outside anyway are brought back.
 /// </summary>
-internal class Leash(ICoreServerAPI api, RebirthConfig config, Zones zones, Messages messages)
+internal class Leash(ICoreServerAPI api, Zones zones, Messages messages)
 {
     private readonly Dictionary<string, long> lastMessageMs = new();
 
@@ -64,7 +64,6 @@ internal class Leash(ICoreServerAPI api, RebirthConfig config, Zones zones, Mess
     private void Tell(EntityPlayer entity, LeashShape? shape, RebirthConfig rules)
     {
         ClientState.Set(entity, ClientState.Leash, shape is LeashZone ? LeashZone.Name : shape?.ToString());
-        ClientState.Set(entity, ClientState.TooFarText, shape == null ? null : config.Message("TooFar"));
         int? group = rules.PlaceAt == Place.Zone ? zones.GroupId(rules.PlaceGroup) : null;
         ClientState.Set(entity, ClientState.ZoneGroup, group);
         ClientState.Set(entity, ClientState.ZoneAccess, group != null && rules.Walks ? rules.PlaceAccess.ToString() : null);

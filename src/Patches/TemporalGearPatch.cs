@@ -37,8 +37,10 @@ internal static class TemporalGearPatch
             return true;
         }
 
+        // A hold aimed at a ghost in the air has no block; vanilla would do nothing with it.
+        bool inAir = blockSel == null && server.Rituals.IsAirHold(player);
         server.Rituals.EndHold(player);
-        if (blockSel == null || secondsUsed < VanillaUseSeconds || LifeRules.UnlimitedLives(playerEntity.World))
+        if ((blockSel == null && !inAir) || secondsUsed < VanillaUseSeconds || LifeRules.UnlimitedLives(playerEntity.World))
         {
             return true;
         }
@@ -52,7 +54,7 @@ internal static class TemporalGearPatch
         __state = true;
         if (!lost && Rituals.CanPerform(player, server.Afterlife))
         {
-            server.Rituals.Complete(player, slot, blockSel.Position);
+            server.Rituals.Complete(player, slot, blockSel?.Position);
         }
 
         // The client may have predicted the gear being used up; resend the slot either way.

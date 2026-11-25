@@ -20,26 +20,31 @@ internal class RitualClient
     private readonly ICoreClientAPI api;
     private readonly IClientNetworkChannel channel;
     private readonly RitualProgressHud progress;
+    private readonly Ghosts ghosts;
     private RitualHintPacket? hint;
     private long hintAtMs;
-    private (RitualState, bool, int)? shownKey;
+    private (RitualState, bool, int, bool)? shownKey;
     private RitualChooser? chooser;
 
-    // The hold in progress, when it is a ritual.
+    // The hold in progress, when it is a ritual; in the air when aimed at a ghost with no block under the crosshair.
     private Vec3d? holdAt;
+    private bool holdInAir;
     private ILoadedSound? sound;
     private long lastMoteMs;
 
-    public RitualClient(ICoreClientAPI api)
+    public RitualClient(ICoreClientAPI api, Ghosts ghosts)
     {
         this.api = api;
+        this.ghosts = ghosts;
         progress = new RitualProgressHud(api);
         channel = api.Network.RegisterChannel(RitualNet.Channel)
             .RegisterMessageType<RitualHintPacket>()
             .RegisterMessageType<ChooserOpenPacket>()
             .RegisterMessageType<ChooserClosePacket>()
             .RegisterMessageType<ChooserPickPacket>()
+            .RegisterMessageType<FacePacket>()
             .SetMessageHandler<RitualHintPacket>(OnHint)
+            .SetMessageHandler<FacePacket>(OnFace)
             .SetMessageHandler<ChooserOpenPacket>(OnOpen)
             .SetMessageHandler<ChooserClosePacket>(_ => chooser?.Dismiss());
         api.Event.RegisterGameTickListener(_ => Refresh(), (int)RefreshMs);
@@ -51,6 +56,36 @@ internal class RitualClient
     }
 
     public bool Holding => holdAt != null;
+
+    /// <summary>The hold is aimed at a ghost in the air; vanilla would end it at once for want of a block.</summary>
+    public bool HoldingInAir => holdAt != null && holdInAir;
+
+    /// <summary>Brought back by a ritual: turn to whoever did it, body and camera.</summary>
+    private void OnFace(FacePacket? packet)
+    {
+        if (packet == null || api.World.Player?.Entity is not { } self)
+        {
+            return;
+        }
+
+        float yaw = RitualAim.YawTowards(self.Pos.XYZ, new Vec3d(packet.X, packet.Y, packet.Z));
+        api.Input.MouseYaw = yaw;
+        self.Pos.Yaw = yaw;
+        self.BodyYaw = yaw;
+    }
+
+    /// <summary>The ghost the own player looks at, as the server will work it out; ranges are the server's to check.</summary>
+    private Vec3d? AimedGhost()
+    {
+        if (api.World.Player?.Entity is not { } self)
+        {
+            return null;
+        }
+
+        List<Vec3d> points = ghosts.Visible.Where(g => g.Player.Entity != null && g.Player.Entity != self).Select(g => RitualAim.PointOf(g.Player.Entity)).ToList();
+        int i = RitualAim.Pick(RitualAim.Eyes(self), RitualAim.Look(self), points, 64);
+        return i < 0 ? null : points[i];
+    }
 
     private static bool IsGear(ItemSlot? slot) => slot?.Itemstack?.Collectible is ItemTemporalGear;
 
@@ -67,7 +102,7 @@ internal class RitualClient
     /// </summary>
     private void Refresh()
     {
-        var key = hint is { } h ? (h.State, h.AtSite, h.Count) : ((RitualState, bool, int)?)null;
+        var key = hint is { } h ? (h.State, h.AtSite, h.Count, h.LookAtGhost) : ((RitualState, bool, int, bool)?)null;
         if (key == shownKey)
         {
             return;
@@ -105,7 +140,7 @@ internal class RitualClient
         }
 
         string vanillaText = Lang.Get("heldhelp-useonground");
-        string text = h.State == RitualState.Ready ? Lang.Get("temporalrebirth:heldhelp-ritual", h.Count)
+        string text = h.State == RitualState.Ready ? Lang.Get(h.LookAtGhost ? "temporalrebirth:heldhelp-ritual-aim" : "temporalrebirth:heldhelp-ritual", h.Count)
             : h.AtSite ? Lang.Get("temporalrebirth:heldhelp-noritual", Reason(h))
             : Lang.Get("temporalrebirth:heldhelp-useonground-why", vanillaText, Reason(h));
 
@@ -138,7 +173,20 @@ internal class RitualClient
     /// <returns>false to skip vanilla's start: the hold is a ritual, or nothing.</returns>
     public bool OnHoldStart(BlockSelection? blockSel, bool firstEvent, ref EnumHandHandling handling)
     {
-        if (blockSel == null || hint is not { } h || h.State == RitualState.None
+        if (blockSel == null)
+        {
+            // Into the air: only a ritual aimed at a ghost begins there.
+            if (hint is { State: RitualState.Ready, LookAtGhost: true } && AimedGhost() is { } ghost)
+            {
+                handling = EnumHandHandling.PreventDefault;
+                BeginHold(ghost, true);
+                return false;
+            }
+
+            return true;
+        }
+
+        if (hint is not { } h || h.State == RitualState.None
             || api.World.BlockAccessor.GetBlock(blockSel.Position) is BlockStaticTranslocator)
         {
             return true;
@@ -147,7 +195,7 @@ internal class RitualClient
         if (h.State == RitualState.Ready)
         {
             handling = EnumHandHandling.PreventDefault;
-            BeginHold(blockSel);
+            BeginHold((h.LookAtGhost ? AimedGhost() : null) ?? blockSel.Position.ToVec3d().Add(blockSel.HitPosition), false);
             return false;
         }
 
@@ -165,10 +213,11 @@ internal class RitualClient
         return false;
     }
 
-    private void BeginHold(BlockSelection blockSel)
+    private void BeginHold(Vec3d at, bool inAir)
     {
         EndHold();
-        holdAt = blockSel.Position.ToVec3d().Add(blockSel.HitPosition);
+        holdAt = at;
+        holdInAir = inAir;
         sound = api.World.LoadSound(new SoundParams
         {
             Location = new AssetLocation("sounds/effect/translocate-active.ogg"),

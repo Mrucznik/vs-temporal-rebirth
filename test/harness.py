@@ -310,13 +310,14 @@ def stop_server(server):
 
 def template(lives, flat=True):
     """A generated, peaceful world that every run starts from. Flat land takes no time to generate."""
-    path = WORK / f"template-{lives}{'-flat' if flat else ''}"
+    # -2: temporal stability off (players near rifts and underground drew drifters into scenes; rifts do not need it).
+    path = WORK / f"template-{lives}{'-flat' if flat else ''}-2"
     if (path / "ready").exists():
         return path
     shutil.rmtree(path, ignore_errors=True)
     path.mkdir(parents=True)
     server = start_server(path, free_port(), FLAT_CONFIG if flat else SERVER_CONFIG)
-    for setting in (f"playerlives {lives}", "creatureHostility off", "temporalStorms off"):
+    for setting in (f"playerlives {lives}", "creatureHostility off", "temporalStorms off", "temporalStability false"):
         since = server.mark()
         server.send("/worldconfig " + setting)
         server.wait(r"Handling Console Command /worldconfig " + setting, since)

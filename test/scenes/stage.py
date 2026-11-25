@@ -1,5 +1,5 @@
 """What all scenes share: one server on a fixed port, the player in front of the camera, steps printed one by one."""
-import functools, os, subprocess, sys, time, types
+import functools, os, shutil, subprocess, sys, time, types
 from pathlib import Path
 
 os.environ.setdefault("TRT_WORK", str(Path.home() / ".cache/temporalrebirth-gifs"))
@@ -112,6 +112,8 @@ class Stage:
     def reset(self):
         """Between scenes: everybody alive with three lives on the ground at the spawn point, noon, clear sky."""
         self.w.console("/rebirth preset Ghost")
+        # Presets keep the lives section: a scene that counted downs must not leave it for the next one.
+        self.w.console("/rebirth config Lives.Count Deaths")
         for who in [self.camera, *self.bots.values()]:
             lost = self.w.trt("registry").values()
             if any(entry["name"] == who.name for entry in lost):
@@ -160,7 +162,8 @@ class Stage:
         time.sleep(1.5)
         a, b = who.state(), self.camera.state()
         off = [abs(a["x"] - b["x"] - dx), abs(a["z"] - b["z"] - dz), 0 if dy is None else abs(a["y"] - b["y"] - dy)]
-        if max(off) > 2:
+        # Zombies and walking players rise on the nearest safe ground, which can be a few blocks off.
+        if max(off) > (6 if who.state()["form"] == "Zombie" else 2):
             raise Failed(f"{who.name} is {a['x'] - b['x']:.0f} {a['y'] - b['y']:.0f} {a['z'] - b['z']:.0f} from the camera, wanted {dx} {dy} {dz}")
 
     def shot(self, text):
@@ -180,4 +183,12 @@ class Stage:
         time.sleep(seconds)
 
     def stop(self):
+        # Keep this run's logs: the next run starts in the same folder.
+        logs = self.w.dir / "Logs"
+        if logs.is_dir():
+            kept = Path(os.environ["TRT_WORK"]) / "logs" / time.strftime("%Y%m%d-%H%M%S")
+            shutil.copytree(logs, kept, dirs_exist_ok=True)
+            if (self.w.dir / "server.log").exists():
+                shutil.copy2(self.w.dir / "server.log", kept / "server.log")
+            print(f"\nServer logs kept in {kept}", flush=True)
         self.w.stop()

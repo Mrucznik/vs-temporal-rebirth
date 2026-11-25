@@ -39,18 +39,20 @@ vec2 turn(vec2 p, vec2 joint, float angle) {
 	return joint + vec2(c * q.x + s * q.y, -s * q.x + c * q.y);
 }
 
-// The game's humanoid from the front, in blocks (1/16 = one pixel of its model): head 8x8, body 8x12, arms and legs
-// 4x12, each a rigid box swinging on its joint. A gap keeps arms and legs apart from the body at a distance.
+// The game's player (seraph) from the front, in blocks, after its shape file (1/16 = one pixel): a small head (5 x 5) on a
+// neck, a torso 6 wide, thin arms (2) reaching below the hips and legs 3 wide; each limb a rigid box swinging on its
+// joint. A gap keeps limbs apart from the body at a distance.
 float figure(vec2 p, float t) {
-	float gap = 0.04;
+	float gap = 0.025;
 	float arm = 0.09 * sin(t * 1.1 + seed), leg = 0.06 * sin(t * 1.1 + seed + 1.6);
-	float dHead = box(p, vec2(0.0, 1.75), vec2(0.25, 0.25) - gap * 0.5);
-	float dBody = box(p, vec2(0.0, 1.125), vec2(0.25 - gap * 0.5, 0.375));
-	float dArmL = box(turn(p, vec2(-0.375, 1.47), arm), vec2(-0.375 - gap, 1.125), vec2(0.125 - gap * 0.5, 0.375));
-	float dArmR = box(turn(p, vec2(0.375, 1.47), -arm), vec2(0.375 + gap, 1.125), vec2(0.125 - gap * 0.5, 0.375));
-	float dLegL = box(turn(p, vec2(-0.125, 0.75), leg), vec2(-0.125 - gap * 0.5, 0.375), vec2(0.125 - gap * 0.5, 0.375));
-	float dLegR = box(turn(p, vec2(0.125, 0.75), -leg), vec2(0.125 + gap * 0.5, 0.375), vec2(0.125 - gap * 0.5, 0.375));
-	return min(min(dHead, dBody), min(min(dArmL, dArmR), min(dLegL, dLegR)));
+	float dHead = box(p, vec2(0.0, 1.74), vec2(0.156, 0.156));
+	float dNeck = box(p, vec2(0.0, 1.56), vec2(0.094, 0.06));
+	float dBody = box(p, vec2(0.0, 1.23), vec2(0.1875, 0.29));
+	float dArmL = box(turn(p, vec2(-0.22, 1.49), arm), vec2(-0.25 - gap, 1.07), vec2(0.0625, 0.447));
+	float dArmR = box(turn(p, vec2(0.22, 1.49), -arm), vec2(0.25 + gap, 1.07), vec2(0.0625, 0.447));
+	float dLegL = box(turn(p, vec2(-0.1, 1.06), leg), vec2(-0.1 - gap * 0.5, 0.5625), vec2(0.1 - gap * 0.5, 0.5625));
+	float dLegR = box(turn(p, vec2(0.1, 1.06), -leg), vec2(0.1 + gap * 0.5, 0.5625), vec2(0.1 - gap * 0.5, 0.5625));
+	return min(min(min(dHead, dNeck), dBody), min(min(dArmL, dArmR), min(dLegL, dLegR)));
 }
 
 // Dark rust of the picture behind: brightness kept, hue pulled to an old brown, red pushed by `push`, then darkened.

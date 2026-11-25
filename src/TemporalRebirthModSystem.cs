@@ -38,14 +38,15 @@ public sealed class TemporalRebirthModSystem : ModSystem
         // Without it only the server holds players, with jerks.
         TryPatch(api, typeof(LeashStepPatch));
         new ZombieLook(api).Start();
+        new ZombieHands(api).Start();
         var ghosts = new Ghosts(api);
         ghosts.Start();
         new WispLook(api, ghosts).Start();
         new ZonePrediction(api).Start();
         timer = new TimerHud(api);
-        ClientRitual = new RitualClient(api);
+        ClientRitual = new RitualClient(api, ghosts);
         // Without these a ritual looks like vanilla's "set spawn point" and the hint says "use on ground".
-        foreach (Type patch in new[] { typeof(GearClientStartPatch), typeof(GearClientStepPatch), typeof(GearClientStopPatch), typeof(GearClientCancelPatch), typeof(GearClientHelpPatch) })
+        foreach (Type patch in new[] { typeof(GearClientStartPatch), typeof(GearClientStepPatch), typeof(GearClientStopPatch), typeof(GearClientCancelPatch), typeof(GearClientHelpPatch), typeof(GearClientInfoPatch) })
         {
             TryPatch(api, patch);
         }
@@ -73,7 +74,7 @@ public sealed class TemporalRebirthModSystem : ModSystem
         var control = new PlayerControl(api);
         zones = new Zones(api, afterlife);
         var places = new Places(api, afterlife, zones);
-        var leash = new Leash(api, config, zones, messages);
+        var leash = new Leash(api, zones, messages);
         var bans = new Bans(api, config, afterlife, messages);
         var returns = new Returns(api, afterlife, control, places, leash, messages);
         var rebirth = new Rebirth(api, config, afterlife, control, places, leash, bans, returns, messages);
@@ -99,7 +100,8 @@ public sealed class TemporalRebirthModSystem : ModSystem
             .RegisterMessageType<RitualHintPacket>()
             .RegisterMessageType<ChooserOpenPacket>()
             .RegisterMessageType<ChooserClosePacket>()
-            .RegisterMessageType<ChooserPickPacket>());
+            .RegisterMessageType<ChooserPickPacket>()
+            .RegisterMessageType<FacePacket>());
 
         harmony = new Harmony(HarmonyId + ".server");
         // Without the respawn patch, extra lives would be shown but vanilla would still refuse the respawn.

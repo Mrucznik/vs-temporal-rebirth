@@ -112,7 +112,7 @@ window.TR_SCHEMA = {
       "options": [
         { "value": "Disabled", "label": "Wyłączony", "help": "Gracze nie mogą przywracać się nawzajem." },
         { "value": "Rift", "label": "Przy wyrwach", "help": "Wyrwy muszą być włączone w świecie (domyślnie są)." },
-        { "value": "NearPlayer", "label": "Przy graczu", "help": "Trzeba stanąć obok tego, kogo się wskrzesza, a on musi być online. Wskrzeszony zostanie najbliższy." },
+        { "value": "NearPlayer", "label": "Przy graczu", "help": "Trzeba stanąć obok tego, kogo się wskrzesza, a on musi być online. Wskrzeszony zostanie ten, na którego się patrzy; gdy w pobliżu jest kilku, a nie patrzy się na żadnego, otwiera się wybór." },
         { "value": "FixedPlace", "label": "W wyznaczonym miejscu", "help": "Zaznaczonym w grze." },
         { "value": "Anywhere", "label": "Wszędzie", "help": "Zębatka otwiera listę czekających, a w niej można też jak zwykle związać się z miejscem. /rebirth target <gracz> wybiera z góry." }
       ] },

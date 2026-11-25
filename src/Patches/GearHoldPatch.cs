@@ -19,8 +19,20 @@ internal static class GearHoldStartPatch
             return true;
         }
 
+        if (blockSel == null)
+        {
+            // Aimed at a ghost in the air: a ritual or nothing at all.
+            if (LifeRules.UnlimitedLives(byEntity.World) || !server.Rituals.BeginHold(caster, null))
+            {
+                return true;
+            }
+
+            handHandling = EnumHandHandling.PreventDefault;
+            return false;
+        }
+
         // Vanilla ignores gears used on a static translocator (it repairs them instead).
-        if (blockSel == null || byEntity.World.BlockAccessor.GetBlock(blockSel.Position) is BlockStaticTranslocator || LifeRules.UnlimitedLives(byEntity.World))
+        if (byEntity.World.BlockAccessor.GetBlock(blockSel.Position) is BlockStaticTranslocator || LifeRules.UnlimitedLives(byEntity.World))
         {
             return true;
         }
@@ -46,6 +58,19 @@ internal static class GearHoldStartPatch
 [HarmonyPatch(typeof(ItemTemporalGear), nameof(ItemTemporalGear.OnHeldInteractStep))]
 internal static class GearHoldStepPatch
 {
+    /// <summary>Vanilla stops a hold without a block at once; one aimed at a ghost in the air goes on.</summary>
+    private static bool Prefix(float secondsUsed, EntityAgent byEntity, BlockSelection blockSel, ref bool __result)
+    {
+        if (blockSel != null || GearHoldStartPatch.Caster(byEntity) is not { } caster || TemporalRebirthModSystem.Server?.Rituals is not { } rituals
+            || !rituals.IsAirHold(caster))
+        {
+            return true;
+        }
+
+        __result = secondsUsed < RitualLook.HoldSeconds;
+        return false;
+    }
+
     private static void Postfix(float secondsUsed, EntityAgent byEntity)
     {
         if (GearHoldStartPatch.Caster(byEntity) is { } caster)

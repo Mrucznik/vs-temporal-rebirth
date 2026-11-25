@@ -21,9 +21,12 @@ GL = dict(FRAGMENT=0x8B30, VERTEX=0x8B31, COMPILE_STATUS=0x8B81, LINK_STATUS=0x8
           ONE_MINUS_SRC_ALPHA=0x0303)
 
 RADIUS = 24.0
-# Name, distance of the eyes from the wall, seconds since the ghost last pushed (negative: not pushing).
-CASES = [("from afar (15 blocks)", 15.0, -1.0), ("close (3 blocks)", 3.0, -1.0), ("touching", 0.05, -1.0),
-         ("pushing into it", 0.05, 0.1)]
+# Name, shape, where the camera looks, distance of the eyes from the wall, seconds since the ghost last pushed (negative:
+# not pushing). A sphere is looked at sideways and at its top (where a wrapped grid would pinch); boxes are an L of claims.
+CASES = [("from afar (15 blocks)", "sphere", "x", 15.0, -1.0), ("close (3 blocks)", "sphere", "x", 3.0, -1.0),
+         ("touching", "sphere", "x", 0.05, -1.0), ("pushing into it", "sphere", "x", 0.05, 0.1),
+         ("the top, close", "sphere", "y", 3.0, -1.0), ("claims, close", "boxes", "x", 3.0, -1.0),
+         ("claims, pushing", "boxes", "x", 0.05, 0.1)]
 
 
 def gl_context():
@@ -70,6 +73,7 @@ def gl_context():
         ("glEnable", None, u), ("glBlendFunc", None, u, u), ("glReadPixels", None, i, i, i, i, u, u, p),
     ]:
         setattr(g, name[2:], ctypes.CFUNCTYPE(res, *args)(egl.eglGetProcAddress(name.encode())))
+    g.eglProc = lambda name: egl.eglGetProcAddress(name.encode())
     return g
 
 
@@ -104,8 +108,8 @@ def texture(g, width, height, internal, fmt, kind, data):
     return t
 
 
-def inverse_view_projection(width, height, fov=70.0, near=0.1, far=1000.0):
-    """Looking along +x, y up; column-major, as OpenGL takes it. Camera at the origin."""
+def inverse_view_projection(width, height, look="x", fov=70.0, near=0.1, far=1000.0):
+    """Looking along +x with y up, or along +y with z up; column-major, as OpenGL takes it. Camera at the origin."""
     f = 1 / math.tan(math.radians(fov) / 2)
     a = width / height
     # View: world x -> -z of the eye, world y -> y, world z -> x.  Projection: standard perspective.
@@ -113,8 +117,8 @@ def inverse_view_projection(width, height, fov=70.0, near=0.1, far=1000.0):
     A, B = (far + near) / (near - far), 2 * far * near / (near - far)
     # Inverse projection (column-major rows below are rows of the matrix).
     ip = [[a / f, 0, 0, 0], [0, 1 / f, 0, 0], [0, 0, 0, -1], [0, 0, 1 / B, A / B]]
-    # Inverse view: eye (x, y, z) -> world (-z, y, x).
-    iv = [[0, 0, -1, 0], [0, 1, 0, 0], [1, 0, 0, 0], [0, 0, 0, 1]]
+    # Inverse view: eye (x, y, z) -> world (-z, y, x), or looking up: world (x, -z, y).
+    iv = [[0, 0, -1, 0], [0, 1, 0, 0], [1, 0, 0, 0], [0, 0, 0, 1]] if look == "x" else [[1, 0, 0, 0], [0, 0, -1, 0], [0, 1, 0, 0], [0, 0, 0, 1]]
     m = [[sum(iv[r][k] * ip[k][c] for k in range(4)) for c in range(4)] for r in range(4)]
     return (ctypes.c_float * 16)(*[m[r][c] for c in range(4) for r in range(4)])
 
@@ -170,15 +174,28 @@ def main():
     g.EnableVertexAttribArray(1)
 
     loc = lambda name: g.GetUniformLocation(prog, name.encode())
-    g.UniformMatrix4fv(loc("inverseViewProjection"), 1, 0, inverse_view_projection(width, height))
     g.Uniform3f(loc("camera"), 0, 0, 0)
     frames = int(os.environ.get("FRAMES", "60"))
-    for name, gap, pushed in CASES:
+    uniform4v = ctypes.CFUNCTYPE(None, ctypes.c_int, ctypes.c_int, ctypes.POINTER(ctypes.c_float))(g.eglProc("glUniform4fv"))
+    for index, (name, shape, look, gap, pushed) in enumerate(CASES):
+        g.UniformMatrix4fv(loc("inverseViewProjection"), 1, 0, inverse_view_projection(width, height, look))
         # Eyes `gap` blocks inside the wall, looking straight out at it; the ghost's feet 1.6 below the eyes.
-        g.Uniform3f(loc("fromCenter"), RADIUS - gap, 0, 0)
+        out = (1, 0, 0) if look == "x" else (0, 1, 0)
+        g.Uniform1i(loc("shape"), 0 if shape == "sphere" else 1)
+        g.Uniform3f(loc("fromCenter"), *(c * (RADIUS - gap) for c in out))
         g.Uniform1f(loc("outside"), (RADIUS - gap) ** 2 - RADIUS ** 2)
+        # An L of claims: the camera in the first, gap blocks from its east wall; a second claim goes on to the south.
+        lows = [(-12, -6, -8), (-12, -6, 8)]
+        highs = [(gap + 0.3, 10, 8), (0, 10, 30)]
+        uniform4v(loc("boxMin"), 2, (ctypes.c_float * 8)(*[v for lo in lows for v in (*lo, 0)]))
+        uniform4v(loc("boxMax"), 2, (ctypes.c_float * 8)(*[v for hi in highs for v in (*hi, 0)]))
+        g.Uniform1i(loc("boxCount"), 2)
+        g.Uniform3f(loc("anchor"), -12, -6, -8)
         g.Uniform3f(loc("player"), 0, -1.6, 0)
-        g.Uniform4f(loc("hit0"), gap + 0.3, 0, 0, pushed)
+        g.Uniform3f(loc("wallPoint"), *(c * gap for c in out))
+        g.Uniform3f(loc("wallNormal"), *out)
+        g.Uniform1f(loc("wallDist"), gap)
+        g.Uniform4f(loc("hit0"), *(c * (gap + 0.3) for c in out), pushed)
         g.Uniform4f(loc("hit1"), 0, 0, 0, -1)
         g.Uniform4f(loc("hit2"), 0, 0, 0, -1)
         for k in range(5):
@@ -193,7 +210,7 @@ def main():
         ms = (time.perf_counter() - start) * 1000 / frames
         print(f"  {name:24s} {ms:6.2f} ms/frame")
         if os.environ.get("OUT"):
-            save(g, width, height, Path(os.environ["OUT"]) / f"{CASES.index((name, gap, pushed))}.png")
+            save(g, width, height, Path(os.environ["OUT"]) / f"{index}.png")
 
 
 if __name__ == "__main__":

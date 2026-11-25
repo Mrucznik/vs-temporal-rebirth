@@ -24,6 +24,9 @@ internal abstract class LeashShape
     /// With <paramref name="level"/> a walking player slides along the edge at their height.
     /// </summary>
     public abstract Vec3d Stop(Vec3d from, Vec3d to, bool level);
+
+    /// <summary>The point of the edge nearest to <paramref name="from"/> (inside), with the edge's outward normal there.</summary>
+    public abstract (Vec3d Point, Vec3d Normal) NearestEdge(Vec3d from);
 }
 
 internal sealed class LeashSphere(Vec3d center, double radius) : LeashShape
@@ -54,6 +57,14 @@ internal sealed class LeashSphere(Vec3d center, double radius) : LeashShape
         return center.AddCopy(dx / dist * limit, dy / dist * limit, dz / dist * limit);
     }
 
+    public override (Vec3d Point, Vec3d Normal) NearestEdge(Vec3d from)
+    {
+        Vec3d off = from - center;
+        double length = off.Length();
+        Vec3d normal = length < 1e-6 ? new Vec3d(1, 0, 0) : off.Clone().Mul(1 / length);
+        return (center + (normal * radius), normal);
+    }
+
     /// <summary>For <see cref="ClientState.Leash"/>.</summary>
     public override string ToString() =>
         string.Join(' ', new[] { center.X, center.Y, center.Z, radius }.Select(n => n.ToString("R", CultureInfo.InvariantCulture)));
@@ -81,6 +92,81 @@ internal sealed class LeashZone(List<LandClaim> claims) : LeashShape
 
     public override double DistanceOutside(Vec3d pos) =>
         Math.Sqrt(NearestSq(pos));
+
+    /// <summary>The boxes of the claims, in block coordinates.</summary>
+    public IEnumerable<Cuboidi> Areas => claims.SelectMany(c => c.Areas);
+
+    /// <summary>
+    /// Looks along the six axes and the twenty diagonals for where the zone ends, as the drawn wall does, and takes the
+    /// nearest. Good enough for how the wall looks near the player.
+    /// </summary>
+    public override (Vec3d Point, Vec3d Normal) NearestEdge(Vec3d from)
+    {
+        List<Cuboidi> areas = Areas.ToList();
+        (Vec3d Point, Vec3d Normal) best = (from, new Vec3d(0, 1, 0));
+        double bestT = double.MaxValue;
+        for (int x = -1; x <= 1; x++)
+        for (int y = -1; y <= 1; y++)
+        for (int z = -1; z <= 1; z++)
+        {
+            if (x == 0 && y == 0 && z == 0)
+            {
+                continue;
+            }
+
+            var dir = new Vec3d(x, y, z);
+            dir.Mul(1 / dir.Length());
+            if (Exit(areas, from, dir) is ({ } t, { } normal) && t < bestT)
+            {
+                bestT = t;
+                best = (from + (dir * t), normal);
+            }
+        }
+
+        return best;
+    }
+
+    /// <summary>Where a ray from inside leaves the union of the boxes, and through which face.</summary>
+    private static (double T, Vec3d Normal)? Exit(List<Cuboidi> areas, Vec3d from, Vec3d dir)
+    {
+        double t = 0;
+        Vec3d? normal = null;
+        for (int hop = 0; hop < 8; hop++)
+        {
+            Vec3d at = from + (dir * t);
+            double best = t;
+            Vec3d? bestNormal = null;
+            foreach (Cuboidi a in areas)
+            {
+                if (at.X < a.MinX - 0.02 || at.X > a.MaxX + 0.02 || at.Y < a.MinY - 0.02 || at.Y > a.MaxY + 0.02 || at.Z < a.MinZ - 0.02 || at.Z > a.MaxZ + 0.02)
+                {
+                    continue;
+                }
+
+                double tx = Far(a.MinX, a.MaxX, from.X, dir.X), ty = Far(a.MinY, a.MaxY, from.Y, dir.Y), tz = Far(a.MinZ, a.MaxZ, from.Z, dir.Z);
+                double exit = Math.Min(tx, Math.Min(ty, tz));
+                if (exit > best)
+                {
+                    best = exit;
+                    bestNormal = exit == tx ? new Vec3d(Math.Sign(dir.X), 0, 0) : exit == ty ? new Vec3d(0, Math.Sign(dir.Y), 0) : new Vec3d(0, 0, Math.Sign(dir.Z));
+                }
+            }
+
+            if (best <= t + 1e-6)
+            {
+                break;
+            }
+
+            t = best;
+            normal = bestNormal;
+        }
+
+        return normal == null ? null : (t, normal);
+    }
+
+    /// <summary>Along one axis, how far the ray goes before leaving [min, max].</summary>
+    private static double Far(double min, double max, double from, double dir) =>
+        dir > 0 ? (max - from) / dir : dir < 0 ? (min - from) / dir : double.MaxValue;
 
     private double NearestSq(Vec3d pos)
     {

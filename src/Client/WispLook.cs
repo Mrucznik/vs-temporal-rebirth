@@ -6,7 +6,7 @@ using Vintagestory.API.MathTools;
 namespace TemporalRebirth;
 
 /// <summary>
-/// Client side: a ghost is a floating teal light with sparks. The game hides the bodies of spectators itself, so nothing
+/// Client side: a ghost is a floating light in the rift's dark rust, with sparks. The game hides the bodies of spectators itself, so nothing
 /// shows who the ghost is.
 /// </summary>
 internal class WispLook(ICoreClientAPI api, Ghosts ghosts)

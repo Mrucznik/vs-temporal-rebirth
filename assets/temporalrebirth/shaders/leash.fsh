@@ -146,10 +146,12 @@ void main() {
 	float closeness = 1.0 - smoothstep(0.4, 1.3, wall); // practically only within a block of the wall
 	float show = appear * near * (0.2 + 0.8 * approach);
 	#define FBM(P) (valuenoise(P) * 0.5 + valuenoise((P) * 2.03 + 3.1) * 0.25 + valuenoise((P) * 4.01 + 7.7) * 0.125 + valuenoise((P) * 8.05 + 1.3) * 0.0625)
+	// The warp only bends the map, so its two coarse octaves are enough (the fine ones add 0.19 at most, scaled to 0.15).
+	#define FBM2(P) (valuenoise(P) * 0.5 + valuenoise((P) * 2.03 + 3.1) * 0.25 + 0.09375)
 
 	// The map: slow noise, with small buried gears (0.35 blocks apart) pulling the height down, so rings bend round them.
 	vec3 pt = vec3(g * 0.22, clock * 0.04);
-	float h = FBM(pt + (vec3(FBM(pt + 5.2), FBM(pt + 1.3), 0.0) - 0.47) * 0.8);
+	float h = FBM(pt + (vec3(FBM2(pt + 5.2), FBM2(pt + 1.3), 0.0) - 0.47) * 0.8);
 	float speed = mix(0.08, 1.6, approach * approach);
 	// The gears are drawn through a crawling distortion, so their outlines bend, smear and twitch like seen through a rift.
 	vec2 gw = g + (vec2(valuenoise(vec3(g * 1.7, time * 0.35)), valuenoise(vec3(g * 1.7 + 9.0, time * 0.35))) - 0.5) * 0.22
@@ -157,20 +159,32 @@ void main() {
 	vec2 gc = floor(gw / 0.35), gf = fract(gw / 0.35) - 0.5;
 	float gearField = 9.0, gearOn = 0.0, gearIn = 0.0, gearSpin = 0.0;
 	vec2 gearCentre = vec2(1e5);
+	// Away from the ghost the gears are not drawn (only show makes them seen), but they still bend the lines and the smoke.
+	bool drawn = show > 0.0;
 	for (int j = -1; j <= 1; j++) for (int i = -1; i <= 1; i++) {
 		vec2 c = gc + vec2(i, j);
 		if (hash(c + 23.0) > 0.35 + 0.5 * stir) continue; // more gears wake up where the ghost pushes
 		vec2 o = vec2(i, j) + (vec2(hash(c), hash(c + 11.0)) - 0.5) * 0.4 - gf;
 		float spin = (hash(c + 5.0) < 0.5 ? 1.0 : -1.0) * time * speed;
-		spin += (valuenoise(vec3(c, time * 0.8)) - 0.5) * 0.9; // jerks back and forth
+		// Jerks back and forth: noise over time only, from two hashes (a 3D noise at a whole cell is the same thing, dearer).
+		float jt = time * 0.8, jf = fract(jt);
+		spin += (mix(hash(c + floor(jt) * 1.618), hash(c + floor(jt + 1.0) * 1.618), jf * jf * (3.0 - 2.0 * jf)) - 0.5) * 0.9;
 		// Where the ghost pushes they whirl (a whole turn is seamless, so the turn can be taken from fract) and rattle.
 		spin += stir * (hash(c + 5.0) < 0.5 ? 1.0 : -1.0) * fract(time * 1.3) * 6.2831853 + push * sin(time * 37.0 + hash(c) * 6.0) * 0.5;
 		// Each gear its own size, from a tenth to a half of the full size.
 		float size = mix(0.1, 0.5, hash(c + 31.0)) * (1.0 + 0.7 * stir);
-		float d = gearSdf(-o * 2.0 / size, spin, 10.0, 4.0) * 0.12 * size;
-		if (d < gearField) { gearField = d; gearSpin = spin; gearCentre = g - o * 0.35; }
-		vec2 px = gearPixels(-o * 2.0 / size, spin);
-		gearOn = max(gearOn, px.x); gearIn = max(gearIn, px.y);
+		vec2 at = -o * 2.0 / size;
+		float r = length(at);
+		// The disc reaches 0.94 at most: a gear that cannot come nearer than the nearest so far needs no distance.
+		if ((r - 0.94) * 0.12 * size < gearField) {
+			float d = gearSdf(at, spin, 10.0, 4.0) * 0.12 * size;
+			if (d < gearField) { gearField = d; gearSpin = spin; gearCentre = g - o * 0.35; }
+		}
+		// Its pixels reach 0.88 plus half a pixel's diagonal.
+		if (drawn && r <= 1.03) {
+			vec2 px = gearPixels(at, spin);
+			gearOn = max(gearOn, px.x); gearIn = max(gearIn, px.y);
+		}
 	}
 	float field = h - 0.05 * smoothstep(0.2, 0.0, gearField);
 	float density = 9.0 + 14.0 * approach + 22.0 * stir;
@@ -194,11 +208,11 @@ void main() {
 	vec3 p3 = vec3(gs * scale, clock * 0.07);
 	vec2 warp = vec2(valuenoise(p3 + 3.1), valuenoise(p3 + 7.7)) - 0.5;
 	vec3 w3 = vec3(gs * scale + warp * 1.6, clock * 0.1);
-	float smoke = valuenoise(w3) * 0.55 + valuenoise(w3 * 2.3 + 5.0) * 0.3 + valuenoise(w3 * 5.1 + 9.0) * 0.15;
+	float n0 = valuenoise(w3);
+	float smoke = n0 * 0.55 + valuenoise(w3 * 2.3 + 5.0) * 0.3 + valuenoise(w3 * 5.1 + 9.0) * 0.15;
 	// Which way the smoke thins out: the strands run along it, out of the smoke, like the hairs around a rift.
 	vec2 e = vec2(0.15, 0.0);
-	vec2 grad = vec2(valuenoise(w3 + vec3(e.xy * scale, 0.0)) - valuenoise(w3 - vec3(e.xy * scale, 0.0)),
-		valuenoise(w3 + vec3(e.yx * scale, 0.0)) - valuenoise(w3 - vec3(e.yx * scale, 0.0)));
+	vec2 grad = vec2(valuenoise(w3 + vec3(e.xy * scale, 0.0)) - n0, valuenoise(w3 + vec3(e.yx * scale, 0.0)) - n0);
 	vec2 along = normalize(grad + 1e-5), across = vec2(-along.y, along.x);
 	// How much of the wall the rift takes: nothing from afar, most of it right at the wall.
 	float take = appear * near * (0.1 + 0.9 * closeness);
@@ -210,12 +224,15 @@ void main() {
 	float hair = smoothstep(0.045, 0.0, abs(hairNoise - 0.5)) * rim * 1.3;
 	// The world behind bends and rusts near the smoke (the rift's sepia, darkened).
 	vec2 bend = warp * 0.05 * (rim + fill) + vec2(valuenoise(vec3(g * 3.0, clock)) - 0.5) * 0.01 * rim;
-	bend += vec2(valuenoise(vec3(g * 4.0, time * 6.0)) - 0.5) * 0.03 * push;
-	vec2 split = vec2(0.006, 0.002) * push;
-	bend += (vec2(valuenoise(vec3(g * 9.0, time * 12.0)), valuenoise(vec3(g * 9.0 + 3.0, time * 12.0))) - 0.5) * 0.02 * push;
-	vec3 seen = vec3(texture(sceneColor, clamp(uv + bend + split, 0.001, 0.999)).r,
-		texture(sceneColor, clamp(uv + bend, 0.001, 0.999)).g,
-		texture(sceneColor, clamp(uv + bend - split, 0.001, 0.999)).b);
+	vec3 seen;
+	if (push > 0.004) {
+		bend += vec2(valuenoise(vec3(g * 4.0, time * 6.0)) - 0.5) * 0.03 * push;
+		vec2 split = vec2(0.006, 0.002) * push;
+		bend += (vec2(valuenoise(vec3(g * 9.0, time * 12.0)), valuenoise(vec3(g * 9.0 + 3.0, time * 12.0))) - 0.5) * 0.02 * push;
+		seen = vec3(texture(sceneColor, clamp(uv + bend + split, 0.001, 0.999)).r,
+			texture(sceneColor, clamp(uv + bend, 0.001, 0.999)).g,
+			texture(sceneColor, clamp(uv + bend - split, 0.001, 0.999)).b);
+	} else seen = texture(sceneColor, clamp(uv + bend, 0.001, 0.999)).rgb;
 	float lum = dot(seen, vec3(0.30, 0.59, 0.11));
 	vec3 rust = vec3(lum * 1.05, lum * 0.62, lum * 0.42) * 0.55;
 	// Inside, the smoke still churns: dark maroon swirls over near-black, never a flat fill.
@@ -248,8 +265,11 @@ void main() {
 		vec2 b = a + vec2(cos(ang), sin(ang)) * (2.0 + 4.0 * hash(vec2(slot, float(k) + 2.0)));
 		vec2 ab = b - a; float len = length(ab); vec2 dir = ab / len, nrm = vec2(-dir.y, dir.x);
 		float s = dot(g - a, dir) / len;
-		float span = smoothstep(-0.02, 0.06, s) * (1.0 - smoothstep(0.8, 1.0, s));
+		if (s <= -0.02 || s >= 1.0) continue;
 		float off = dot(g - a, nrm);
+		// The path strays 0.6 at most; past 1.5 its glow is under 0.002.
+		if (abs(off) > 1.5) continue;
+		float span = smoothstep(-0.02, 0.06, s) * (1.0 - smoothstep(0.8, 1.0, s));
 		float jag = ((valuenoise(vec3(s * len * 2.2, slot, float(k))) - 0.5) * 0.9 + (valuenoise(vec3(s * len * 8.0, slot, float(k) + 2.0)) - 0.5) * 0.25) * sin(s * 3.14159);
 		float dx = abs(off - jag);
 		float twin = abs(off - jag * 0.8 - 0.18);

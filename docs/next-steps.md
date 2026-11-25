@@ -1,6 +1,6 @@
 # State and next steps
 
-As of 2026-11-23, branch `gifs` (not pushed). Released: 0.6.1.
+As of 2026-11-25, everything is on `main` (0.10.0-dev.1). Released: 0.6.1.
 
 ## Done
 
@@ -57,9 +57,12 @@ As of 2026-11-23, branch `gifs` (not pushed). Released: 0.6.1.
 
 ## Next
 
-1. The user looks at what 0.8.0 and 0.9.0 draw (they are logged in): GIFs of the timer, wisp, echo and leash. Frame rate with the
-   leash in view.
-2. Publish the configurator; new ModDB text and README.
+1. Barrier cost: M4 dropped from 30 to about 16 frames/s and W6 to about 23 since the wall stirs where the ghost pushes into it.
+   Measure it, make the shader lighter, record M4 and W6 again.
+2. Record scenes R1–R3 (ritual hint, hold, chooser).
+3. The user looks at what the mod draws (they are logged in): timer, wisp, echo, leash, barrier. Frame rate with the leash in view.
+4. Publish the configurator; new ModDB text and README.
+5. Release 0.10 in place of 0.6.1 (GitHub, ModDB, mruserv).
 
 ## Ideas (not decided)
 

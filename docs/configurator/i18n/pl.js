@@ -61,7 +61,7 @@
       lower: (s) => s.toLowerCase(), noBraces: "tekst bez { }", oneWord: (n) => "jedno słowo, do " + n + " znaków", text: (n) => "tekst do " + n + " znaków",
     },
     story: {
-      rows: { loses: "Życie traci", state: "Stan", where: "Gdzie", time: "Na ile", dies: "Gdy zginie", back: "Powrót", ritual: "Rytuał" },
+      rows: { loses: "Życie traci", state: "Stan", where: "Gdzie", time: "Na ile", dies: "Gdy zginie", back: "Powrót", ritual: "Rytuał", alone: "Sam" },
       count: { Downs: "Przy powaleniu. Niepodniesiony odradza się.", DownsFinalDeath: "Przy powaleniu. Śmierć zabiera wszystkie życia." },
       banned: "Nie wejdzie na serwer",
       ghost: { Nobody: ", niewidoczny", Wisp: ", widoczny jako ognik", WispAndEcho: ", widoczny jako ognik, a z zębatką jako sylwetka" },
@@ -83,6 +83,8 @@
       ritualAt: { Rift: (n) => "Do " + blocks(n) + " od wyrwy", NearPlayer: (n) => "Do " + blocks(n) + " od wskrzeszanego", FixedPlace: (n) => "Do " + blocks(n) + " od wyznaczonego miejsca", Anywhere: () => "Wszędzie" },
       appears: (at, ban) => "Gracz pojawia się " + { Caster: "obok wskrzeszającego", InPlace: ban ? "tam, gdzie był ostatnio" : "tam, gdzie jest", Body: "w miejscu śmierci", Spawn: "w punkcie odrodzenia" }[at] + (ban ? " przy następnym wejściu" : "") + ".",
       cooldown: (n) => " Ponownie po " + n + " godz.",
+      healthCost: (n, min) => " Przy wyrwie także bez zębatki: wskrzeszony traci na stałe " + n + " zdrowia (nie poniżej " + min + "), zębatka ofiarowana wyrwie je oddaje.",
+      selfAtRift: (n) => "Duch wraca sam, gdy zawiśnie w wyrwie" + (n > 0 ? ", tracąc " + n + " zdrowia." : "."),
       nowMessages: (n) => n ? "Własne: " + n : "Wszystkie z moda",
       nowLives: (start, gear, max) => start + " na start, zębatka: " + (gear === -1 ? "według świata" : "+" + gear) + ", " + (max === -1 ? "bez limitu" : "limit " + max),
       nowAdmin: (off) => off.length ? "Wyłączone: " + off.join(", ") : "Wszystko dozwolone",

@@ -59,7 +59,7 @@
       lower: (s) => s, noBraces: "Text ohne { }", oneWord: (n) => "ein Wort, bis " + n + " Zeichen", text: (n) => "Text bis " + n + " Zeichen",
     },
     story: {
-      rows: { loses: "Verliert Leben", state: "Zustand", where: "Wo", time: "Wie lange", dies: "Beim Tod", back: "Rückkehr", ritual: "Ritual" },
+      rows: { loses: "Verliert Leben", state: "Zustand", where: "Wo", time: "Wie lange", dies: "Beim Tod", back: "Rückkehr", ritual: "Ritual", alone: "Allein" },
       count: { Downs: "Wenn er zu Boden geht. Ohne Hilfe respawnt er.", DownsFinalDeath: "Wenn er zu Boden geht. Der Tod nimmt alle Leben." },
       banned: "Kommt nicht auf den Server",
       ghost: { Nobody: ", unsichtbar", Wisp: ", als Irrlicht sichtbar", WispAndEcho: ", als Irrlicht sichtbar, mit Zahnrad in der Hand als Silhouette" },
@@ -79,6 +79,8 @@
       ritualAt: { Rift: (n) => "Höchstens " + blocks(n) + " von einem Riss entfernt", NearPlayer: (n) => "Höchstens " + blocks(n) + " vom Spieler entfernt", FixedPlace: (n) => "Höchstens " + blocks(n) + " vom markierten Ort entfernt", Anywhere: () => "Überall" },
       appears: (at, ban) => "Der Spieler erscheint " + (ban ? "beim nächsten Beitritt " : "") + { Caster: "neben dem Wiederbelebenden", InPlace: ban ? "dort, wo er zuletzt war" : "dort, wo er ist", Body: "am Todesort", Spawn: "am Wiederbelebungspunkt" }[at] + ".",
       cooldown: (n) => " Erneut nach " + n + " Std.",
+      healthCost: (n, min) => " Am Riss auch ohne Zahnrad: Der Wiederbelebte verliert für immer " + n + " Gesundheit (nicht unter " + min + "); ein dem Riss geopfertes Zahnrad gibt sie zurück.",
+      selfAtRift: (n) => "Ein Geist kehrt allein zurück, wenn er in einem Riss schwebt" + (n > 0 ? ", und verliert " + n + " Gesundheit." : "."),
       nowMessages: (n) => n ? "Eigene: " + n : "Alle aus der Mod",
       nowLives: (start, gear, max) => start + " zu Beginn, Zahnrad: " + (gear === -1 ? "laut Welt" : "+" + gear) + ", " + (max === -1 ? "ohne Limit" : "Limit " + max),
       nowAdmin: (off) => off.length ? "Aus: " + off.join(", ") : "Alles erlaubt",

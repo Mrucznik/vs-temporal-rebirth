@@ -59,7 +59,7 @@
       lower: (s) => s.toLowerCase(), noBraces: "text without { }", oneWord: (n) => "one word, up to " + n + " characters", text: (n) => "text up to " + n + " characters",
     },
     story: {
-      rows: { loses: "Loses a life", state: "State", where: "Where", time: "How long", dies: "On death", back: "Return", ritual: "Ritual" },
+      rows: { loses: "Loses a life", state: "State", where: "Where", time: "How long", dies: "On death", back: "Return", ritual: "Ritual", alone: "Alone" },
       count: { Downs: "When downed. Respawns if nobody helps.", DownsFinalDeath: "When downed. Death takes all lives." },
       banned: "Cannot join the server",
       ghost: { Nobody: ", invisible", Wisp: ", seen as a wisp", WispAndEcho: ", seen as a wisp, and as a silhouette with a gear in hand" },
@@ -79,6 +79,8 @@
       ritualAt: { Rift: (n) => "Within " + blocks(n) + " of a rift", NearPlayer: (n) => "Within " + blocks(n) + " of the player", FixedPlace: (n) => "Within " + blocks(n) + " of the marked place", Anywhere: () => "Anywhere" },
       appears: (at, ban) => "The player appears " + { Caster: "next to the reviver", InPlace: ban ? "where they last were" : "where they are", Body: "at the place of death", Spawn: "at the spawn point" }[at] + (ban ? " the next time they join" : "") + ".",
       cooldown: (n) => " Again after " + n + " h.",
+      healthCost: (n, min) => " At a rift also without a gear: the revived player loses " + n + " health for good (not below " + min + "); a gear offered to a rift gives it back.",
+      selfAtRift: (n) => "A ghost comes back alone by hanging in a rift" + (n > 0 ? ", losing " + n + " health." : "."),
       nowMessages: (n) => n ? "Custom: " + n : "All from the mod",
       nowLives: (start, gear, max) => start + " to start with, gear: " + (gear === -1 ? "world setting" : "+" + gear) + ", " + (max === -1 ? "no limit" : "limit " + max),
       nowAdmin: (off) => off.length ? "Off: " + off.join(", ") : "Everything allowed",

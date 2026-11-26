@@ -102,12 +102,12 @@
           ? "Zaczynasz " + p.at + ". Możesz odejść dowolnie daleko."
           : "W promieniu " + blocks(s["Place.Radius"]) + " od " + p.from + ".";
       },
-      time: (d) => d.kind === "forever" ? "Bez limitu. Czekasz, aż ktoś cię wskrzesi."
+      time: (d, s) => d.kind === "forever" ? (s && s["Ritual.SelfAtRift"] ? "Bez limitu. Czekasz na pomoc albo sam szukasz wyrwy." : "Bez limitu. Czekasz, aż ktoś cię wskrzesi.")
         : d.kind === "next" ? "Do " + d.time + " następnego dnia, według czasu serwera."
         : (d.kind === "h" ? count(d.n, "godzina", "godziny", "godzin", "godziny") : count(d.n, "dzień", "dni", "dni", "dnia")) + " czasu rzeczywistego.",
       back: (s, forever) => {
         const lives = s["Return.Lives"] === -1 ? "z pełną pulą żyć" : s["Return.Lives"] === 1 ? "z jednym życiem" : "z " + s["Return.Lives"] + " życiami";
-        if (forever) return "Tylko przez rytuał albo admina. Wracasz " + lives + ".";
+        if (forever) return (s["Ritual.SelfAtRift"] ? "Przez rytuał, admina albo sam przy wyrwie." : "Tylko przez rytuał albo admina.") + " Wracasz " + lives + ".";
         const at = places[s["Return.At"]].at;
         return s["Return.DieAtEnd"]
           ? "Gdy minie czas, giniesz, ale ta śmierć nie zabiera życia. Potem pojawiasz się " + at + " " + lives + "."

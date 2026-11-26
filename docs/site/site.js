@@ -151,7 +151,7 @@
       const p = list[i], s = window.TR.applyPreset(p.id), d = window.TR.parseDuration(s["Time.Duration"]);
       select(buttons, i);
       head.replaceChildren(el("h3", { textContent: p.id }), el("p", { class: "sub", textContent: p.text }));
-      const rows = [["form", P.form(s)], ["where", P.where(s)], ["time", P.time(d)], ["back", P.back(s, d.kind === "forever")], ["ritual", P.ritual(s)]];
+      const rows = [["form", P.form(s)], ["where", P.where(s)], ["time", P.time(d, s)], ["back", P.back(s, d.kind === "forever")], ["ritual", P.ritual(s)]];
       dl.replaceChildren(...rows.flatMap(([k, v]) => [el("dt", { textContent: P.rows[k] }), el("dd", { html: v })]));
       link.href = "configurator/index.html#c=" + window.TR.encode(p.id, s);
       fig.set(P.videos[p.id], P.captions[p.id]);

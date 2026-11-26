@@ -347,7 +347,12 @@ function storyRows() {
     rows.push([S.rows.ritual, state["Ritual.Where"] === "Disabled" ? S.ritualOff : S.noLift]);
   } else {
     const c = state["Ritual.CooldownHours"];
-    rows.push([S.rows.ritual, S.ritualAt[state["Ritual.Where"]](state["Ritual.Range"]) + ". " + S.appears(state["Ritual.ReviveAt"], ban) + (c > 0 ? S.cooldown(c) : "")]);
+    const cost = state["Ritual.HealthCost"];
+    rows.push([S.rows.ritual, S.ritualAt[state["Ritual.Where"]](state["Ritual.Range"]) + ". " + S.appears(state["Ritual.ReviveAt"], ban) + (c > 0 ? S.cooldown(c) : "")
+      + (cost > 0 ? S.healthCost(cost, state["Ritual.HealthMin"]) : "")]);
+  }
+  if (state["Ritual.SelfAtRift"] && state.OutOfLives !== "Ban") {
+    rows.push([S.rows.alone, S.selfAtRift(state["Ritual.HealthCost"])]);
   }
   return rows;
 }

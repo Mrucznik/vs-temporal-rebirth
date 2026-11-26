@@ -358,7 +358,9 @@
     if (!state["Admin.AllowPoints"] && neededPoints(state).length) out.push({ level: "warn", code: "pointsOff" });
     if (!state["Admin.AllowRevive"] && state["Admin.AllowSetLives"]) out.push({ level: "note", code: "setLivesRevives" });
     if (state["Lives.Max"] !== -1 && state["Return.Lives"] > state["Lives.Max"]) out.push({ level: "note", code: "livesOverMax" });
-    if (forever) out.push(ritualHelps ? { level: "note", code: adminHelps ? "onlyRitual" : "onlyRitualNoAdmin" } : { level: "bad", code: adminHelps ? "never" : "neverNoAdmin" });
+    // A ghost that can come back alone at a rift is not waiting for anyone.
+    const alone = state["Ritual.SelfAtRift"] && !ban;
+    if (forever && !alone) out.push(ritualHelps ? { level: "note", code: adminHelps ? "onlyRitual" : "onlyRitualNoAdmin" } : { level: "bad", code: adminHelps ? "never" : "neverNoAdmin" });
     if (form === "Player" && free && at !== "Fixed") out.push({ level: "warn", code: "noPenalty" });
     if (!ban && at === "Zone") out.push({ level: "note", code: "zoneClaims" });
     if (free && at === "Fixed") out.push({ level: "note", code: "walkAway" });

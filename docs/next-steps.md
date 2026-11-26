@@ -107,7 +107,7 @@ As of 2026-11-25, everything is on `main` (0.10.0-dev.1). Released: 0.6.1.
 1. A second test session for what changed on 2026-11-25 (T12 rituals with aiming, motes and the end sound; the barrier at
    the top, in a cave, near the edge and under the player; zone walls; T13 zombie swing; T14 Downed; T15 Don't Starve), on a
    client; then one with two real players.
-2. Zombie look rework (the user wants it; how is not decided yet).
+2. Zombie look rework (the user wants it; how is not decided yet). The drifter look is an idea for 1.1, see Ideas.
 3. Media: the mod's page uses videos, the GitHub wiki needs no GIFs. ModDB takes a YouTube trailer and YouTube embeds in the
    description; gallery images at most 2 MB each (12). Decide ModDB media, then re-record what changed (barrier, rituals).
 4. Publish the configurator; new ModDB text and README.
@@ -121,6 +121,28 @@ As of 2026-11-25, everything is on `main` (0.10.0-dev.1). Released: 0.6.1.
   how long it lasts, where rituals work, ...) without the wiki or knowing the config.
 - In the game and in its mood, the way Vintage Story's lore is found (notes, books, tablets, inscriptions), not as a
   chat message.
+
+### Zombie as a drifter (user's idea, 2026-11-26; for 1.1, not before the 0.10 release)
+
+- The zombie looks like a drifter instead of a tinted player. The limits stay as they are (no items, hotbar, building,
+  breaking; bare hands may fight), now switchable per form.
+- Holding the throw button throws a stone, like a drifter does, without having one in the inventory. Needs a cooldown or
+  a limit so it is not a machine gun. The game's drifter shapes have the animations (`standgetrock`, `standthrowright`).
+- Crouching makes it crawl (the drifter's `crawl*` animations).
+- Existing mod: [Role-Playables: Drifters](https://mods.vintagestory.at/rpdrifters) (`rpdrifters`, by Greybones, 0.0.2,
+  game 1.22.0-1.22.3, no license and no source shown). It swaps the player model through
+  [Player Model Library](https://mods.vintagestory.at/playermodellib) (needs Overhaul Library and JSON Patches Library):
+  five drifter types, their textures and voices, crawling when crouched, immunity to temporal stability loss and being
+  unseen by enemy creatures. The author calls it janky (some animations borrowed from the seraph, armour scaled oddly)
+  and is on a hiatus. A model is unlocked by an admin (`/player <name> enablePlayerModel rpdrifters:rpdriftersurface`)
+  and chosen by the player (`.charsel`).
+- Way in: a soft integration. With PML and rpdrifters on the server a zombie gets the drifter model, without them the tint
+  stays. The open question: can the server set a player's model through PML (an API), or only the player with `.charsel`?
+  Check PML's code first and try rpdrifters on 1.22.7.
+- Without PML: our own shape swap in `EntityBehavior.OnTesselation` with the drifter shape from
+  `shapes/entity/lore/drifter/` and its animations mapped to the player's codes (`standwalk` -> `walk`, `standrun` ->
+  `sprint`, `standidle` -> `idle1`, ...). Unknowns: textures through the player's skin system, attachment points for held
+  items and armour.
 
 ## Not verified
 

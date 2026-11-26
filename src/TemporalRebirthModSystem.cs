@@ -38,7 +38,7 @@ public sealed class TemporalRebirthModSystem : ModSystem
         // Without it only the server holds players, with jerks.
         TryPatch(api, typeof(LeashStepPatch));
         new ZombieLook(api).Start();
-        new ZombieHands(api).Start();
+        new BoundHands(api).Start();
         var ghosts = new Ghosts(api);
         ghosts.Start();
         new WispLook(api, ghosts).Start();
@@ -80,8 +80,8 @@ public sealed class TemporalRebirthModSystem : ModSystem
         var rebirth = new Rebirth(api, config, afterlife, control, places, leash, bans, returns, messages);
         var bargain = new RiftBargain(api, config, afterlife, returns, messages);
         var rituals = new Rituals(api, config, afterlife, returns, messages, bargain);
-        var zombies = new ZombieRules(api, afterlife);
-        Server = new ServerParts(config, afterlife, rebirth, bans, rituals, messages, zombies);
+        var limits = new FormLimits(api, afterlife);
+        Server = new ServerParts(config, afterlife, rebirth, bans, rituals, messages, limits);
 
         api.Event.SaveGameLoaded += afterlife.Load;
         api.Event.SaveGameLoaded += () => afterlife.PinOldEntries(config.Snapshot());
@@ -95,7 +95,7 @@ public sealed class TemporalRebirthModSystem : ModSystem
 
         Rights.Register(api);
         zones.Register();
-        zombies.Register();
+        limits.Register();
         new Commands(api, config, file, afterlife, returns, rituals, zones).Register();
         rituals.Register(api.Network.RegisterChannel(RitualNet.Channel)
             .RegisterMessageType<RitualHintPacket>()
@@ -119,7 +119,7 @@ public sealed class TemporalRebirthModSystem : ModSystem
         TryPatch(api, typeof(GearHoldStartPatch));
         TryPatch(api, typeof(GearHoldStepPatch));
         TryPatch(api, typeof(GearHoldCancelPatch));
-        TryPatch(api, typeof(ZombiePickupPatch));
+        TryPatch(api, typeof(PickUpLimitPatch));
         TryPatch(api, typeof(ProtectionPatch));
         if (!TryPatch(api, typeof(JoinPatch)))
         {
@@ -191,4 +191,4 @@ public sealed class TemporalRebirthModSystem : ModSystem
 }
 
 /// <summary>The parts of the server side that Harmony patches need.</summary>
-internal sealed record ServerParts(RebirthConfig Config, Afterlife Afterlife, Rebirth Rebirth, Bans Bans, Rituals Rituals, Messages Messages, ZombieRules Zombies);
+internal sealed record ServerParts(RebirthConfig Config, Afterlife Afterlife, Rebirth Rebirth, Bans Bans, Rituals Rituals, Messages Messages, FormLimits Limits);

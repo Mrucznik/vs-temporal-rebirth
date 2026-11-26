@@ -264,7 +264,7 @@ def zone_access_keeps_zombie_limits(w):
     check(got["use"] != "Granted" and got["build"] != "Granted", f"a zombie without items: {got}")
     w.console("/rebirth revive Zaz")
     consistent(w, ala, 15)
-    settings(w, OutOfLives="Zombie", **{"Place.At": "Zone", "Place.Access": "All", "Zombie.CanUseItems": "true"})
+    settings(w, OutOfLives="Zombie", **{"Place.At": "Zone", "Place.Access": "All", "Zombie.CanBuild": "true", "Zombie.CanUseBlocks": "true"})
     serve(w, ala)
     got = w.trt("access Zaz 0")
     check(got == {"use": "Granted", "build": "Granted"}, f"a zombie with items: {got}")

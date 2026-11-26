@@ -65,7 +65,7 @@
       count: { Downs: "Przy powaleniu. Niepodniesiony odradza się.", DownsFinalDeath: "Przy powaleniu. Śmierć zabiera wszystkie życia." },
       banned: "Nie wejdzie na serwer",
       ghost: { Nobody: ", niewidoczny", Wisp: ", widoczny jako ognik", WispAndEcho: ", widoczny jako ognik, a z zębatką jako sylwetka" },
-      items: (can) => can ? ", może używać przedmiotów" : ", nie używa przedmiotów",
+      limits: (n) => n === 0 ? "" : n === 6 ? ", ze wszystkimi blokadami" : `, blokady: ${n} z 6`,
       zone: (group) => "Strefa grupy „" + group + "”",
       access: { Traverse: ", niczego nie użyje", Use: ", używa bloków, ale nie buduje", All: ", może budować i niszczyć" },
       radius: (n) => n === 0 ? ", bez limitu odległości" : ", do " + blocks(n),

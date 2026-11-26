@@ -32,8 +32,11 @@ internal static class ClientState
     /// <summary>What the player really is, a <see cref="Form"/> (<see cref="Form"/> above is how they look), for the timer.</summary>
     internal const string Kind = "temporalrebirthKind";
 
-    /// <summary>Set ("1") for a zombie that may not use items: its own client keeps it from swinging them.</summary>
+    /// <summary>Set ("1") for a player out of lives who may not use items: their own client keeps them from swinging them.</summary>
     internal const string NoItems = "temporalrebirthNoItems";
+
+    /// <summary>Set ("1") for a player out of lives who may not hit: their own client keeps them from swinging at creatures.</summary>
+    internal const string NoHit = "temporalrebirthNoHit";
 
     /// <summary>How far (0-100) a ghost hanging in a rift is from coming back alone.</summary>
     internal const string SelfRift = "temporalrebirthSelfRift";
@@ -41,7 +44,7 @@ internal static class ClientState
     /// <summary>Maximum health given to rifts; stays after coming back, so it is not among the ones cleared.</summary>
     internal const string HealthLost = "temporalrebirthHealthLost";
 
-    private static readonly string[] All = [Form, Kind, NoItems, SelfRift, GhostLook, TimerSeconds, TimerText, Leash, ZoneGroup, ZoneAccess];
+    private static readonly string[] All = [Form, Kind, NoItems, NoHit, SelfRift, GhostLook, TimerSeconds, TimerText, Leash, ZoneGroup, ZoneAccess];
 
     /// <summary>Null removes it. Unchanged values are not sent again.</summary>
     internal static void Set(EntityPlayer entity, string key, string? value)

@@ -33,7 +33,14 @@ internal class RebirthConfig(IReadOnlyDictionary<string, JToken> values)
     public bool Walks => Form is Form.Zombie or Form.Player;
 
     public GhostVisible GhostVisible => Choice<GhostVisible>("Ghost.Visible");
-    public bool ZombieCanUseItems => Flag("Zombie.CanUseItems");
+    /// <summary>What a player of this form may still do; ghosts, spectators and the banned are not limited here.</summary>
+    public Limits Limits => Form switch
+    {
+        Form.Zombie => ReadLimits("Zombie."),
+        Form.Player => ReadLimits("Exile."),
+        _ => Limits.None,
+    };
+
     public bool ZombieGlow => Flag("Zombie.Glow");
 
     public Place PlaceAt => Choice<Place>("Place.At");
@@ -92,6 +99,10 @@ internal class RebirthConfig(IReadOnlyDictionary<string, JToken> values)
         return new RebirthConfig(merged);
     }
 
+    private Limits ReadLimits(string prefix) => new(
+        !Flag(prefix + "CanUseItems"), !Flag(prefix + "CanBuild"), !Flag(prefix + "CanUseBlocks"),
+        !Flag(prefix + "CanTouchCreatures"), !Flag(prefix + "CanPickUp"), !Flag(prefix + "CanHit"));
+
     private string Text(string key) => (string)Values[key]!;
 
     private int Int(string key) => (int)Values[key];
@@ -100,4 +111,10 @@ internal class RebirthConfig(IReadOnlyDictionary<string, JToken> values)
 
     private T Choice<T>(string key)
         where T : struct, Enum => Enum.Parse<T>(Text(key));
+}
+
+/// <summary>What a walking player out of lives is kept from; true = forbidden.</summary>
+internal readonly record struct Limits(bool Items, bool Build, bool Blocks, bool Creatures, bool PickUp, bool Hit)
+{
+    public static readonly Limits None = default;
 }

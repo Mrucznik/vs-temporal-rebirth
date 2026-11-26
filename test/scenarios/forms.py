@@ -148,6 +148,8 @@ def zombie_without_items_fights_bare_handed(w):
     got = {f"{item} {button}": w.trt(f"interact Zwf ZwfB {item} {button}")["allowed"] for item in ("none", "game:blade-falx-copper") for button in (0, 2)}
     check(got == {"none 0": True, "none 2": False, "game:blade-falx-copper 0": False, "game:blade-falx-copper 2": False}, str(got))
     check(w.trt("interact ZwfB Zwf game:blade-falx-copper 2")["allowed"], "others are not limited")
+    nothing = {"build": False, "blocks": False, "items": False, "pickup": False}
+    check(w.trt("limits Zwf") == nothing, f"no blocks, items or pickup: {w.trt('limits Zwf')}")
     w.console("/rebirth revive Zwf")
     consistent(w, ala)
     settings(w, "Undead", **{"Zombie.CanUseItems": "true"})
@@ -155,6 +157,29 @@ def zombie_without_items_fights_bare_handed(w):
     ala.kill()
     walks(w, ala)
     check(w.trt("interact Zwf ZwfB game:blade-falx-copper 0")["allowed"], "a zombie with items")
+    ala.quit(), ola.quit()
+
+
+def exile_limits_are_chosen(w):
+    settings(w, "Exile", **{"Place.At": "Body"})
+    ala, ola = w.join("Exl", "ExlB")
+    serve(w, ala)
+    ola.go_near(ala)
+    everything = {"build": True, "blocks": True, "items": True, "pickup": True}
+    check(w.trt("limits Exl") == everything, f"an exile is not limited by default: {w.trt('limits Exl')}")
+    check(w.trt("interact Exl ExlB game:blade-falx-copper 0")["allowed"], "and fights with weapons")
+    w.console("/rebirth revive Exl")
+    consistent(w, ala, 15)
+    settings(w, "Exile", **{"Place.At": "Body", "Exile.CanBuild": "false", "Exile.CanPickUp": "false", "Exile.CanHit": "false"})
+    serve(w, ala)
+    ola.go_near(ala)
+    got = w.trt("limits Exl")
+    check(got == {"build": False, "blocks": True, "items": True, "pickup": False}, f"only the chosen limits: {got}")
+    got = {f"{item} {button}": w.trt(f"interact Exl ExlB {item} {button}")["allowed"] for item in ("none", "game:blade-falx-copper") for button in (0, 2)}
+    check(got == {"none 0": False, "none 2": True, "game:blade-falx-copper 0": False, "game:blade-falx-copper 2": True}, f"no hitting, creatures allowed: {got}")
+    w.console("/rebirth revive Exl")
+    check(w.trt("limits Exl") == everything, "nothing left after the return")
+    consistent(w, ala, 15)
     ala.quit(), ola.quit()
 
 
@@ -256,6 +281,7 @@ GROUPS = [
         zombie_does_not_rise_in_lava,
         second_quick_death_moves_to_the_spawn_point,
         zombie_without_items_fights_bare_handed,
+        exile_limits_are_chosen,
         players_out_of_lives_cannot_perform_rituals,
         ghosts_are_seen_as_configured,
         ghosts_of_0_6_keep_what_they_had,

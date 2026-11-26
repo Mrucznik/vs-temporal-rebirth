@@ -85,8 +85,11 @@ As of 2026-11-25, everything is on `main` (0.10.0-dev.1). Released: 0.6.1.
 - Zones: land claims shared with the group `Place.Group`. The mod grants `Place.Access` itself; claims only give the shape.
   Others may enter. No claims = nobody is held, and the log says so.
 - Languages at the end: en, pl, ru, de. German and Russian are a nice-to-have, nobody will proofread them. Custom messages replace the text for everyone.
-- Zombies without items: no weapons, no interacting with creatures; attacking bare-handed is allowed. They do not even swing
-  a held item (2026-11-25). Dropping items stays allowed. What is lost at death follows the world's own setting.
+- Limits of walking forms (2026-11-26): six switches each for the zombie (`Zombie.Can...`) and the exile (`Exile.Can...`):
+  items in hand, building, using blocks, creatures, picking up, hitting. A zombie has all but hitting off (fights
+  bare-handed), an exile has none. Who may not use items does not even swing them, who may not hit does not swing at
+  creatures, both with a message. Dropping items stays allowed. What is lost at death follows the world's own setting.
+  The wiki still describes only `Zombie.CanUseItems`: Settings-Guide needs `#zombie` and `#exile` sections for the switches.
 - Rituals next to ghosts (2026-11-25): aim at the ghost; several and none aimed at: the chooser. The revived rises where the
   ghost was, turned to the caster. A cooldown counts only rituals after it was switched on; with nobody waiting the gear's
   hint stays vanilla, also during a cooldown.

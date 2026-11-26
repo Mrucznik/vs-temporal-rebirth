@@ -8,32 +8,35 @@ using Vintagestory.GameContent;
 namespace TemporalRebirth;
 
 /// <summary>
-/// A zombie that may not use items: no held items, no picking up, no blocks such as containers or doors,
-/// no mounts or other creatures. Bare hands may fight.
+/// Keeps a walking player out of lives (zombie or exile) from what their form forbids: held items, building, blocks such as
+/// containers or doors, creatures, picking up, hitting. Dropping items is always allowed.
 /// </summary>
-internal class ZombieRules(ICoreServerAPI api, Afterlife afterlife)
+internal class FormLimits(ICoreServerAPI api, Afterlife afterlife)
 {
     public void Register()
     {
-        api.Event.CanUseBlock += (player, _) => !IsBound(player.PlayerUID);
+        api.Event.CanUseBlock += (player, _) => !Of(player.PlayerUID).Blocks;
         api.Event.CanPlaceOrBreakBlock += CanPlaceOrBreak;
         api.Event.HandInteract += OnHandInteract;
         api.Event.OnPlayerInteractEntity += OnInteractEntity;
     }
 
-    public bool IsBound(string uid) =>
-        afterlife.Get(uid) is { Phase: Phase.Serving } lost && afterlife.Rules(lost) is { Form: Form.Zombie, ZombieCanUseItems: false };
+    /// <summary>What this player is kept from now; nothing for the living.</summary>
+    public Limits Of(string uid) =>
+        afterlife.Get(uid) is { Phase: Phase.Serving } lost ? afterlife.Rules(lost).Limits : Limits.None;
 
     private bool CanPlaceOrBreak(IServerPlayer player, BlockSelection selection, out string? claimant)
     {
         claimant = null;
-        return !IsBound(player.PlayerUID);
+        return !Of(player.PlayerUID).Build;
     }
 
     private void OnInteractEntity(Entity entity, IPlayer player, ItemSlot? slot, Vec3d hit, int mode, ref EnumHandling handling)
     {
-        bool bareHandedAttack = mode == (int)EnumInteractMode.Attack && slot?.Empty != false;
-        if (!bareHandedAttack && IsBound(player.PlayerUID))
+        Limits limits = Of(player.PlayerUID);
+        bool holds = slot?.Empty == false;
+        bool forbidden = (mode == (int)EnumInteractMode.Attack ? limits.Hit : limits.Creatures) || (holds && limits.Items);
+        if (forbidden)
         {
             handling = EnumHandling.PreventSubsequent;
         }
@@ -41,7 +44,10 @@ internal class ZombieRules(ICoreServerAPI api, Afterlife afterlife)
 
     private void OnHandInteract(IServerPlayer player, EnumHandInteractNw interaction, float seconds, ref EnumHandling handling)
     {
-        if (IsBound(player.PlayerUID))
+        Limits limits = Of(player.PlayerUID);
+        bool heldItem = interaction is EnumHandInteractNw.StartHeldItemUse or EnumHandInteractNw.StepHeldItemUse
+            or EnumHandInteractNw.StopHeldItemUse or EnumHandInteractNw.CancelHeldItemUse;
+        if (heldItem ? limits.Items : limits.Blocks)
         {
             handling = EnumHandling.PreventSubsequent;
         }
@@ -49,11 +55,11 @@ internal class ZombieRules(ICoreServerAPI api, Afterlife afterlife)
 }
 
 [HarmonyPatch(typeof(EntityBehaviorCollectEntities), nameof(EntityBehaviorCollectEntities.OnFoundCollectible))]
-internal static class ZombiePickupPatch
+internal static class PickUpLimitPatch
 {
     private static bool Prefix(EntityBehaviorCollectEntities __instance, ref bool __result)
     {
-        if (__instance.entity is not EntityPlayer player || TemporalRebirthModSystem.Server?.Zombies.IsBound(player.PlayerUID) != true)
+        if (__instance.entity is not EntityPlayer player || TemporalRebirthModSystem.Server?.Limits.Of(player.PlayerUID).PickUp != true)
         {
             return true;
         }

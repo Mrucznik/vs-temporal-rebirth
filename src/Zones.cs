@@ -79,7 +79,7 @@ internal class Zones(ICoreServerAPI api, Afterlife afterlife)
         EnumWorldAccessResponse decided = Decide(api.World.Claims, selection.Position, group, rules.PlaceAccess, wanted, claim, response, ref claimant);
         if (decided == EnumWorldAccessResponse.Granted && response != EnumWorldAccessResponse.Granted && player is IServerPlayer serverPlayer)
         {
-            // The claim stopped the game before it asked mods, including the limits of zombies.
+            // The claim stopped the game before it asked mods, including the limits of forms.
             var events = ((ServerMain)api.World).EventManager;
             bool agreed = wanted == EnumBlockAccessFlags.Use
                 ? events.TriggerCanUse(serverPlayer, selection)

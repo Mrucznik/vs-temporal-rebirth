@@ -207,7 +207,8 @@ internal class Rebirth(ICoreServerAPI api, RebirthConfig config, Afterlife after
     {
         ClientState.Set(player.Entity, ClientState.Form, rules.Form == Form.Zombie && !rules.ZombieGlow ? "Player" : rules.Form.ToString());
         ClientState.Set(player.Entity, ClientState.Kind, rules.Form.ToString());
-        ClientState.Set(player.Entity, ClientState.NoItems, rules.Form == Form.Zombie && !rules.ZombieCanUseItems ? "1" : null);
+        ClientState.Set(player.Entity, ClientState.NoItems, rules.Limits.Items ? "1" : null);
+        ClientState.Set(player.Entity, ClientState.NoHit, rules.Limits.Hit ? "1" : null);
         ClientState.Set(player.Entity, ClientState.GhostLook, rules.Form == Form.Ghost && rules.GhostVisible != GhostVisible.Nobody ? rules.GhostVisible.ToString() : null);
         SyncTimer(player, lost);
     }

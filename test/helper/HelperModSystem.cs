@@ -69,6 +69,7 @@ public sealed class HelperModSystem : ModSystem
         Add("tracks", a => Tracks(Player(a), Find((string)a[1])), parsers.Word("player"), parsers.Word("other"));
         Add("surround", a => Surround(Player(a), (string)a[1], (int)a[2]), parsers.Word("player"), parsers.Word("block"), parsers.Int("radius"));
         Add("pointfar", a => PointFar(Player(a), (string)a[1], (int)a[2]), parsers.Word("player"), parsers.Word("place"), parsers.Int("distance"));
+        Add("limits", a => LimitsOf(Player(a)), parsers.Word("player"));
         Add("interact", a => Interact(Player(a), Find((string)a[1]), (string)a[2], (int)a[3]), parsers.Word("player"), parsers.Word("other"), parsers.Word("item or none"), parsers.Int("mouse button"));
         Add("oldentry", a => OldEntry((string)a[0]), parsers.Word("player"));
         Add("players", _ => api.World.AllOnlinePlayers.Cast<IServerPlayer>().Where(p => p.ConnectionState is EnumClientState.Connected or EnumClientState.Playing && p.Entity != null).Select(p => p.PlayerName).ToArray());
@@ -540,6 +541,36 @@ public sealed class HelperModSystem : ModSystem
         ((Vintagestory.Server.ServerMain)api.World).EventManager.TriggerPlayerInteractEntity(other.Entity, p, slot, new Vec3d(), button, ref handling);
         slot.Itemstack = null;
         return new { allowed = handling == EnumHandling.PassThrough };
+    }
+
+    /// <summary>What the server lets a player do with blocks, held items and items on the ground, through the same events as the game.</summary>
+    private object LimitsOf(IServerPlayer p)
+    {
+        var events = ((Vintagestory.Server.ServerMain)api.World).EventManager;
+        var selection = new BlockSelection { Position = p.Entity.Pos.AsBlockPos.Down() };
+        bool Hand(EnumHandInteractNw what)
+        {
+            EnumHandling handling = EnumHandling.PassThrough;
+            events.TriggerHandInteraction(p, what, 0, ref handling);
+            return handling == EnumHandling.PassThrough;
+        }
+
+        // A real item in the world, so the game's own pickup can run when it is allowed.
+        Entity stick = api.World.SpawnItemEntity(new ItemStack(api.World.GetItem(new AssetLocation("game:stick"))), p.Entity.Pos.XYZ);
+        EntityBehavior collect = p.Entity.GetBehavior("collectitems")!;
+        bool pickup = (bool)collect.GetType().GetMethod("OnFoundCollectible")!.Invoke(collect, [stick])!;
+        if (stick.Alive)
+        {
+            stick.Die(EnumDespawnReason.Removed);
+        }
+
+        return new
+        {
+            build = events.TriggerCanPlaceOrBreak(p, selection, out _),
+            blocks = events.TriggerCanUse(p, selection) && Hand(EnumHandInteractNw.StartBlockUse),
+            items = Hand(EnumHandInteractNw.StartHeldItemUse),
+            pickup,
+        };
     }
 
     /// <summary>Makes an entry look as if 0.6.x had written it.</summary>

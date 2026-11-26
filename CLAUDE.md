@@ -26,14 +26,14 @@ Read `docs/next-steps.md` first: what is done, decided, not verified, and next.
 | banned players | `ServerMain.HandlePlayerIdentification` (private) | `Patches/JoinPatch.cs` |
 | lives on death screen | `GuiDialogDead.ComposeDialog`, field `livesLeft` | `Patches/DeathDialogPatch.cs` |
 | gear use (set spawn) | `ItemTemporalGear.OnHeldInteractStop`, 3.45 s threshold | `Patches/TemporalGearPatch.cs` |
-| zombie pickup | `EntityBehaviorCollectEntities.OnFoundCollectible` | `ZombieRules.cs` |
+| pickup limit | `EntityBehaviorCollectEntities.OnFoundCollectible` | `FormLimits.cs` |
 | rifts | `ModSystemRifts.riftsById` (both sides), `Rift.GetNowSize` | `Rifts.cs` |
 | use / build in claims | `IEventAPI.OnTestBlockAccessClaim`, both sides | `Zones.cs`, `ZonePrediction.cs` |
 | player movement (client) | `EntityBehaviorPlayerPhysics.SimPhysics`, before the position is sent | `Client/LeashGuard.cs` |
 | damage | `EntityPlayer.ShouldReceiveDamage` | `Patches/ProtectionPatch.cs` |
 | shaders | stage `AfterBlit` over the primary frame buffer, like the game's `RiftRenderer` | `Client/SceneShader.cs` |
 | downs take lives | Downed's watched attribute `downed` | `Downs.cs` |
-| clicks on creatures | `IServerEventAPI.OnPlayerInteractEntity` (not part of `HandInteract`) | `ZombieRules.cs` |
+| clicks on creatures | `IServerEventAPI.OnPlayerInteractEntity` (not part of `HandInteract`) | `FormLimits.cs` |
 | game mode switch | `/player <name> gamemode <mode>` run as console | `PlayerControl.cs` |
 
 Vanilla increments `WorldData.Deaths` a tick after `Die()` (until then `EntityPlayer.DeadNotify` is set), then raises

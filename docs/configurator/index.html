@@ -319,6 +319,9 @@ const capital = (s) => s[0].toUpperCase() + s.slice(1);
 const durationText = (value = state["Time.Duration"]) => S.duration(TR.parseDuration(value));
 const placeText = () => state["Place.At"] === "Zone" ? S.zone(state["Place.Group"]) : optionLabel("Place.At", state["Place.At"]) + S.radius(state["Place.Radius"]);
 
+/** How many of a walking form's "Can..." switches are off. */
+const limitCount = (prefix) => ["CanUseItems", "CanBuild", "CanUseBlocks", "CanTouchCreatures", "CanPickUp", "CanHit"].filter((k) => !state[prefix + k]).length;
+
 /** [label, text] rows of the story panel. */
 function storyRows() {
   const form = state.OutOfLives, ban = form === "Ban", walks = form === "Zombie" || form === "Player";
@@ -328,7 +331,7 @@ function storyRows() {
   if (state["Lives.Count"] !== "Deaths") rows.push([S.rows.loses, S.count[state["Lives.Count"]]]);
   let who = ban ? S.banned : optionLabel("OutOfLives", form);
   if (form === "Ghost") who += S.ghost[state["Ghost.Visible"]];
-  if (form === "Zombie") who += S.items(state["Zombie.CanUseItems"]);
+  if (walks) who += S.limits(limitCount(form === "Zombie" ? "Zombie." : "Exile."));
   rows.push([S.rows.state, who]);
   if (!ban) rows.push([S.rows.where, placeText() + (walks && state["Place.At"] === "Zone" ? S.access[state["Place.Access"]] : "")]);
   rows.push([S.rows.time, capital(durationText()) + (!ban && !forever && state["Time.ShowTimer"] ? S.timer : "")]);

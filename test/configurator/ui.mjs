@@ -1,6 +1,11 @@
 import { spawn } from "child_process";
 import fs from "fs";
 const [, , url, out] = process.argv;
+// Without both, Chrome got "undefined/prof" as its profile: a folder in the working directory that ended up in git.
+if (!url || !out) {
+  console.error("usage: node test/configurator/ui.mjs <page url> <out dir>");
+  process.exit(2);
+}
 const port = 9333;
 const c = spawn(
   "google-chrome",

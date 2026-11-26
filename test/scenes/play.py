@@ -504,6 +504,32 @@ def t14(s):
     s.do("Are you a ghost (wisp, timer, leash)? Look around, then say you are done; the server stops after this.")
 
 
+@scene("T15", "Don't Starve: back alone at a rift, revival without a gear for health, a gear offered to the rift")
+def t15(s):
+    cam = s.camera
+    funia = s.bot("Funia")
+    s.weather("clearsky")
+    use(s.w, "DontStarve")
+    s.w.trt("clearrifts")
+    s.lose(cam)
+    s.w.trt(f"riftnear {cam.name} 6 1 0 3")
+    s.do("You are a ghost. A rift opened 6 blocks east. Fly into it and hang there: a bar fills, then you come back with "
+         "2 health less (the health bar is shorter).", "fly east, stay in the rift")
+    cam.until(mode="Survival", alive=True, timeout=120)
+    s.note(f"max health now {cam.state()['maxHealth']} (13 expected)")
+    s.w.trt(f"wear {cam.name} game:gear-temporal")
+    s.do("You stand at the rift with a gear. Its hint offers it to the rift (+2 health). Hold it: the bar is full again.", "key 1, hold right mouse")
+    s.note(f"max health now {cam.state()['maxHealth']} (15 expected)")
+    s.put(funia, 4, 0)
+    s.lose(funia)
+    s.w.trt(f"riftnear {cam.name} 4 1 0 3")
+    s.do("Funia is a ghost at the rift (4 blocks east). Take an empty slot: a line under the crosshair says you can call her "
+         "back. Hold the right button without a gear until she rises.", "key 2, hold right mouse")
+    funia.until(mode="Survival", alive=True, timeout=60)
+    s.note(f"Funia max health {funia.state()['maxHealth']} (13 expected); your gears unchanged")
+    s.w.trt("clearrifts")
+
+
 # ---------- the mod page ----------
 
 @scene("M1", "last death, wisp, a friend with a gear, the echo, ritual, back")

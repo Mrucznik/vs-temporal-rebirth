@@ -1,7 +1,7 @@
 {
  "en": {
   "preset": [
-   "Ready-made preset: Ghost, Rift, Undead, Exile, Timeout, Hardcore.",
+   "Ready-made preset: Ghost, Rift, Undead, Exile, Timeout, DontStarve, Hardcore.",
    "Enter a name and restart the server. The mod fills in the rest and clears this field."
   ],
   "fields": {
@@ -28,6 +28,9 @@
    "Ritual.ReviveAt": "Where the revived player appears. Caster = next to the reviver, InPlace = where they are, Body = place of death, Spawn = spawn point.",
    "Ritual.CooldownHours": "Break before the same player can be revived again (hours). 0 = no break.",
    "Ritual.CanLiftBan": "The ritual lifts a ban.",
+   "Ritual.HealthCost": "Revival at a rift for health (bars). 0 = off. At an active rift that a ghost is at too, a living player holds the right button without a gear. The revived player loses this much maximum health for good. A gear offered to a rift gives the same back. The ritual with a gear still works, at no cost in health.",
+   "Ritual.HealthMin": "Least health that must remain (bars). Whom a revival would push below this comes back only by a ritual with a gear.",
+   "Ritual.SelfAtRift": "A ghost can come back alone at a rift. A ghost that hangs in an active rift for a few seconds comes back to life next to it. It pays in health like a revival for health (when that is off, for free).",
    "Admin.AllowEdit": "Changing settings. /rebirth preset, config, import. Viewing always works. Privilege: temporalrebirth.edit.",
    "Admin.AllowPoints": "Marking places. /rebirth point set, point clear. Privilege: temporalrebirth.points.",
    "Admin.AllowRevive": "Bringing players back early. /rebirth revive. Also offline players and those banned by the mod. Privilege: temporalrebirth.revive.",
@@ -57,7 +60,7 @@
  },
  "pl": {
   "preset": [
-   "Gotowy preset: Ghost, Rift, Undead, Exile, Timeout, Hardcore.",
+   "Gotowy preset: Ghost, Rift, Undead, Exile, Timeout, DontStarve, Hardcore.",
    "Wpisz nazwę i zrestartuj serwer. Mod wypełni resztę i wyczyści to pole."
   ],
   "fields": {
@@ -84,6 +87,9 @@
    "Ritual.ReviveAt": "Gdzie pojawia się wskrzeszony. Caster = obok wskrzeszającego, InPlace = tam, gdzie jest, Body = miejsce śmierci, Spawn = punkt odrodzenia.",
    "Ritual.CooldownHours": "Przerwa, zanim znów można wskrzesić tę osobę (godziny). 0 = bez przerwy.",
    "Ritual.CanLiftBan": "Rytuał zdejmuje bana.",
+   "Ritual.HealthCost": "Wskrzeszenie przy wyrwie za zdrowie (kreski). 0 = wyłączone. Przy aktywnej wyrwie, przy której jest też duch, żywy gracz przytrzymuje prawy przycisk bez zębatki. Wskrzeszony traci na stałe tyle maksymalnego zdrowia. Zębatka ofiarowana wyrwie oddaje tyle samo. Rytuał z zębatką działa dalej, bez kosztu zdrowia.",
+   "Ritual.HealthMin": "Najmniej zdrowia, jakie musi zostać (kreski). Kogo wskrzeszenie zepchnęłoby poniżej tego, ten wraca już tylko rytuałem z zębatką.",
+   "Ritual.SelfAtRift": "Duch może sam wrócić przy wyrwie. Duch, który zawiśnie w aktywnej wyrwie na kilka sekund, wraca do życia przy niej. Płaci zdrowiem jak przy wskrzeszeniu za zdrowie (gdy jest wyłączone, za darmo).",
    "Admin.AllowEdit": "Zmiana ustawień. /rebirth preset, config, import. Podgląd działa zawsze. Uprawnienie: temporalrebirth.edit.",
    "Admin.AllowPoints": "Zaznaczanie miejsc. /rebirth point set, point clear. Uprawnienie: temporalrebirth.points.",
    "Admin.AllowRevive": "Przywracanie graczy przed czasem. /rebirth revive. Także offline i zbanowanych przez mod. Uprawnienie: temporalrebirth.revive.",
@@ -113,7 +119,7 @@
  },
  "de": {
   "preset": [
-   "Fertige Voreinstellung: Ghost, Rift, Undead, Exile, Timeout, Hardcore.",
+   "Fertige Voreinstellung: Ghost, Rift, Undead, Exile, Timeout, DontStarve, Hardcore.",
    "Namen eintragen und Server neu starten. Die Mod füllt den Rest aus und leert dieses Feld."
   ],
   "fields": {
@@ -140,6 +146,9 @@
    "Ritual.ReviveAt": "Wo der Wiederbelebte erscheint. Caster = Neben dem Wiederbelebenden, InPlace = Wo er ist, Body = Todesort, Spawn = Wiederbelebungspunkt.",
    "Ritual.CooldownHours": "Pause, bis derselbe Spieler erneut wiederbelebt werden kann (Stunden). 0 = Keine Pause.",
    "Ritual.CanLiftBan": "Das Ritual hebt einen Bann auf.",
+   "Ritual.HealthCost": "Wiederbelebung am Riss für Gesundheit (Striche). 0 = Aus. An einem aktiven Riss, an dem auch ein Geist ist, hält ein lebender Spieler die rechte Taste ohne Zahnrad. Der Wiederbelebte verliert für immer so viel maximale Gesundheit. Ein dem Riss geopfertes Zahnrad gibt genauso viel zurück. Das Ritual mit Zahnrad wirkt weiter, ohne Gesundheit zu kosten.",
+   "Ritual.HealthMin": "Wie viel Gesundheit mindestens bleiben muss (Striche). Wen eine Wiederbelebung darunter drücken würde, der kommt nur noch durch ein Ritual mit Zahnrad zurück.",
+   "Ritual.SelfAtRift": "Ein Geist kann am Riss allein zurückkehren. Ein Geist, der einige Sekunden in einem aktiven Riss schwebt, kehrt neben ihm ins Leben zurück. Er zahlt mit Gesundheit wie bei einer Wiederbelebung für Gesundheit (ist sie aus, kostenlos).",
    "Admin.AllowEdit": "Einstellungen ändern. /rebirth preset, config, import. Ansehen geht immer. Berechtigung: temporalrebirth.edit.",
    "Admin.AllowPoints": "Orte markieren. /rebirth point set, point clear. Berechtigung: temporalrebirth.points.",
    "Admin.AllowRevive": "Spieler vorzeitig zurückholen. /rebirth revive. Auch Offline-Spieler und von der Mod gebannte. Berechtigung: temporalrebirth.revive.",
@@ -169,7 +178,7 @@
  },
  "ru": {
   "preset": [
-   "Готовый пресет: Ghost, Rift, Undead, Exile, Timeout, Hardcore.",
+   "Готовый пресет: Ghost, Rift, Undead, Exile, Timeout, DontStarve, Hardcore.",
    "Впишите название и перезапустите сервер. Мод заполнит остальное и очистит это поле."
   ],
   "fields": {
@@ -196,6 +205,9 @@
    "Ritual.ReviveAt": "Где появляется воскрешённый. Caster = рядом с воскрешающим, InPlace = там, где находится, Body = место смерти, Spawn = точка возрождения.",
    "Ritual.CooldownHours": "Перерыв до следующего воскрешения того же игрока (часы). 0 = без перерыва.",
    "Ritual.CanLiftBan": "Ритуал снимает бан.",
+   "Ritual.HealthCost": "Воскрешение у разлома за здоровье (деления). 0 = выключено. У активного разлома, где есть и призрак, живой игрок держит правую кнопку без шестерёнки. Воскрешённый навсегда теряет столько максимального здоровья. Шестерёнка, отданная разлому, возвращает столько же. Ритуал с шестерёнкой работает по-прежнему, без потери здоровья.",
+   "Ritual.HealthMin": "Сколько здоровья должно остаться минимум (деления). Кого воскрешение опустило бы ниже, тот возвращается только ритуалом с шестерёнкой.",
+   "Ritual.SelfAtRift": "Призрак может вернуться сам у разлома. Призрак, который несколько секунд висит в активном разломе, возвращается к жизни рядом с ним. Платит здоровьем, как при воскрешении за здоровье (если оно выключено, бесплатно).",
    "Admin.AllowEdit": "Изменение настроек. /rebirth preset, config, import. Просмотр доступен всегда. Право: temporalrebirth.edit.",
    "Admin.AllowPoints": "Отметка мест. /rebirth point set, point clear. Право: temporalrebirth.points.",
    "Admin.AllowRevive": "Возвращение игроков раньше срока. /rebirth revive. В том числе игроков не в сети и забаненных модом. Право: temporalrebirth.revive.",

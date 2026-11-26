@@ -49,6 +49,14 @@ As of 2026-11-25, everything is on `main` (0.10.0-dev.1). Released: 0.6.1.
   `test/recorder` is a client mod for recording only: it hides the hotbar and the bars, and Scroll Lock holds the right
   button (a right click sent with xdotool on the GPU display frees the pointer instead). `shoot.py` installs it, switches the
   minimap off, and removes both afterwards. M1 re-recorded with a real gear hold.
+- **Don't Starve preset and rift bargains (2026-11-26)**: `Ritual.HealthCost` (bars, 0 off): at an active rift that a ghost is
+  at too, a living player holds the right button without a gear and the revived player loses that much maximum health for
+  good (`maxhealthExtraPoints`, code `temporalrebirth`, kept by the game; `temporalrebirthHealthLost` on the entity says how
+  much). `Ritual.HealthMin` (5): who would drop below comes back only with a gear. A gear offered to a rift (hint state
+  `Offer`) gives back as much as a revival takes. `Ritual.SelfAtRift`: a ghost hanging in a rift for 5 s comes back alone,
+  paying the health cost (free when it is 0); works with any preset. Preset DontStarve: ghost, free, no time limit, rituals at
+  rifts, `InPlace`, cost 2, alone at rifts. The bare-hand hold is watched by the client (no item to hold) and reported with
+  `HandHoldPacket`; the server checks again. Scenarios in `test/scenarios/riftbargain.py`, scene T15 for a client.
 - **Review of 0.7.0**: 11 faults, each with a test and fixed.
 - **Structure and performance**: `Rebirth.cs` split up, Harmony patches reach the server side through
   `TemporalRebirthModSystem.Server`, how a player comes back is one saved object, less work per frame and tick (not measured).
@@ -59,7 +67,7 @@ As of 2026-11-25, everything is on `main` (0.10.0-dev.1). Released: 0.6.1.
 
 ## Decided by the user
 
-- Lives out: form, place and time are independent. Presets: Ghost (the default), Rift, Undead, Exile, Timeout, Hardcore.
+- Lives out: form, place and time are independent. Presets: Ghost (the default), Rift, Undead, Exile, Timeout, DontStarve, Hardcore.
 - Ghost (was Classic): rituals next to the ghost, who rises where the ghost is. Rift (was Rescue): no time limit, rituals at
   rifts, revived next to the caster. A migrated 0.6.x file gets rituals at rifts next to the caster written out, as 0.6 did.
   Test worlds without a config get the same (`harness.World`, `steps.settings`), since most scenarios assume it.
@@ -94,7 +102,8 @@ As of 2026-11-25, everything is on `main` (0.10.0-dev.1). Released: 0.6.1.
 ## Next
 
 1. A second test session for what changed on 2026-11-25 (T12 rituals with aiming, motes and the end sound; the barrier at
-   the top, in a cave, near the edge and under the player; zone walls; T13 zombie swing; T14 Downed), on a client.
+   the top, in a cave, near the edge and under the player; zone walls; T13 zombie swing; T14 Downed; T15 Don't Starve), on a
+   client; then one with two real players.
 2. Zombie look rework (the user wants it; how is not decided yet).
 3. Media: the mod's page uses videos, the GitHub wiki needs no GIFs. ModDB takes a YouTube trailer and YouTube embeds in the
    description; gallery images at most 2 MB each (12). Decide ModDB media, then re-record what changed (barrier, rituals).
@@ -102,15 +111,6 @@ As of 2026-11-25, everything is on `main` (0.10.0-dev.1). Released: 0.6.1.
 5. Release 0.10 in place of 0.6.1 (GitHub, ModDB, mruserv).
 
 ## Ideas (not decided)
-
-### Preset in the style of Don't Starve (user's idea, 2026-11-24)
-
-- After the last death the player can be revived at a rift, but only when their ghost is at that rift too.
-- The revival needs no temporal gear: a living player just holds right click on the rift.
-- The cost is part of the revived player's maximum health, taken away for good, as in Don't Starve. Default: 2 bars.
-- When the revived player has no health left to lose, only a ritual with a temporal gear brings them back.
-- The lost health comes back with a temporal stew: cooking any meal with a temporal gear as one of its ingredients
-  turns it into a temporal stew.
 
 ### Learning the server's rules in the game (user's idea, 2026-11-24)
 

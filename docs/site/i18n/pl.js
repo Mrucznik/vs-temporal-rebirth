@@ -76,11 +76,11 @@
       lead: "Właściciel serwera wybiera jeden z gotowych presetów albo ustawia wszystko sam w konfiguratorze. Kliknij preset, żeby zobaczyć, co czeka gracza po ostatniej śmierci.",
       rows: { form: "Forma", where: "Miejsce", time: "Czas", back: "Powrót", ritual: "Rytuał" },
       configure: "Otwórz ten preset w konfiguratorze",
-      videos: { Ghost: "W4", Rift: "W15", Undead: "M2-zombie", Exile: "M2-exile", Timeout: "W11", Hardcore: "M2-ban" },
+      videos: { Ghost: "W4", Rift: "W15", Undead: "M2-zombie", Exile: "M2-exile", Timeout: "W11", DontStarve: "W15", Hardcore: "M2-ban" },
       captions: {
         Ghost: "Gracz ginie, a w miejscu śmierci zostaje ognik.", Rift: "Przyjaciel odprawia rytuał przy wyrwie temporalnej.",
         Undead: "Zombie ma zabarwione ciało i poświatę.", Exile: "Na wygnaniu grasz normalnie, ale daleko od bazy i przez określony czas.",
-        Timeout: "Rytuał przy wyrwie zdejmuje bana.", Hardcore: "Po ostatniej śmierci serwer rozłącza gracza.",
+        Timeout: "Rytuał przy wyrwie zdejmuje bana.", DontStarve: "Przy wyrwie duch wraca sam albo z pomocą żywego, płacąc zdrowiem.", Hardcore: "Po ostatniej śmierci serwer rozłącza gracza.",
       },
       // Sentences from the preset's values (schema.js). s = all settings after the preset.
       form: (s) => ({
@@ -130,7 +130,10 @@
           Body: "Pojawiasz się w miejscu śmierci.",
           Spawn: "Pojawiasz się w punkcie odrodzenia.",
         }[s["Ritual.ReviveAt"]];
-        return where + " " + at;
+        const cost = s["Ritual.HealthCost"];
+        const hand = cost > 0 ? " Przy wyrwie żywy może cię przywołać bez zębatki, ale tracisz wtedy na stałe " + cost + " kreski zdrowia; zębatka ofiarowana wyrwie je oddaje." : "";
+        const alone = s["Ritual.SelfAtRift"] ? (cost > 0 ? " Możesz też sam wlecieć w wyrwę i wrócić, płacąc tak samo." : " Możesz też sam wlecieć w wyrwę i wrócić.") : "";
+        return where + " " + at + hand + alone;
       },
     },
 

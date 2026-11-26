@@ -41,6 +41,7 @@
   "preset-undead": "zombie do jutra rana; rytuał przy nim skraca czekanie",
   "preset-exile": "24 godziny w wyznaczonym miejscu, potem śmierć i pełna pula żyć",
   "preset-timeout": "ban na 24 godziny; rytuał przy wyrwie go zdejmuje",
+  "preset-dontstarve": "duch do skutku; przy wyrwie wraca sam albo z pomocą, za każdym razem tracąc kawałek zdrowia",
   "preset-hardcore": "ban na 7 dni, bez rytuału",
   "cmd-preset-unknown": "Nie ma presetu {0}. Dostępne: {1}",
   "cmd-preset-set": "Włączono preset {0}. Dotyczy śmierci od teraz.",
@@ -108,5 +109,11 @@
   "timer-ghost": "Duch: powrót do życia za {0}",
   "timer-spectator": "Obserwator: powrót do życia za {0}",
   "timer-zombie": "Nieumarły: powrót do życia za {0}",
-  "timer-player": "Wygnanie: koniec za {0}"
+  "timer-player": "Wygnanie: koniec za {0}",
+  "heldhelp-offer": "Ofiaruj zębatkę wyrwie (+{0} zdrowia)",
+  "hand-hint": "Przytrzymaj prawy przycisk przy wyrwie, by przywołać ducha (straci {0} zdrowia)",
+  "rift-offered": "Wyrwa przyjmuje zębatkę i oddaje {0} zdrowia.",
+  "rift-tooweak": "Jesteś za słaby, by samemu przejść przez wyrwę. Teraz wróci cię tylko zębatka temporalna.",
+  "rift-selfback": "Wyrywasz się z wyrwy. Zatrzymała kawałek ciebie.",
+  "rift-paid": "Wyrwa cię wypuściła, ale zatrzymała {0} twojego zdrowia."
 }

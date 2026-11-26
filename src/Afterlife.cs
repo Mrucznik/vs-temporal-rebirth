@@ -28,7 +28,7 @@ internal sealed class Return
 {
     public ReturnReason Reason { get; set; }
 
-    /// <summary>Who helped, for the message.</summary>
+    /// <summary>Who helped, for the message; null when a ghost came back alone at a rift.</summary>
     public string? Helper { get; set; }
 
     /// <summary>Where a ritual brings them; null means wherever they are.</summary>

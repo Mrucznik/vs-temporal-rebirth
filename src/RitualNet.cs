@@ -19,6 +19,9 @@ public enum RitualState
 
     /// <summary>The caster is out of lives, downed, or in a game mode that cannot use a gear.</summary>
     CannotCast,
+
+    /// <summary>Nobody to bring back, but a rift is near and the caster gave it health: the gear buys it back.</summary>
+    Offer,
 }
 
 internal static class RitualNet
@@ -48,8 +51,14 @@ public sealed class RitualHintPacket
     /// <summary>Ready next to ghosts: the one looked at is brought back.</summary>
     [ProtoMember(5)] public bool LookAtGhost { get; set; }
 
+    /// <summary>Offer: how much health a gear gives back. Otherwise how much a revival without a gear costs, when one is possible.</summary>
+    [ProtoMember(6)] public int Health { get; set; }
+
+    /// <summary>A revival without a gear is possible here: holding the right button at the rift, the gear not in hand.</summary>
+    [ProtoMember(7)] public bool ByHand { get; set; }
+
     /// <summary>The seconds are compared by the sender, which knows how long ago the other one went out.</summary>
-    public bool SameAs(RitualHintPacket? other) => other != null && other.State == State && other.AtSite == AtSite && other.Count == Count && other.LookAtGhost == LookAtGhost;
+    public bool SameAs(RitualHintPacket? other) => other != null && other.State == State && other.AtSite == AtSite && other.Count == Count && other.LookAtGhost == LookAtGhost && other.Health == Health && other.ByHand == ByHand;
 }
 
 [ProtoContract]
@@ -103,3 +112,12 @@ public sealed class FacePacket
     [ProtoMember(2)] public double Y { get; set; }
     [ProtoMember(3)] public double Z { get; set; }
 }
+
+/// <summary>A hold without a gear at a rift (Ritual.HealthCost): begun, let go, or held long enough.</summary>
+[ProtoContract]
+public sealed class HandHoldPacket
+{
+    /// <summary>0 begun, 1 let go, 2 held long enough.</summary>
+    [ProtoMember(1)] public int Step { get; set; }
+}
+

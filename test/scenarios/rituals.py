@@ -280,7 +280,7 @@ def hint_says_what_the_gear_would_do(w):
     hint = lambda: w.trt("hint HswB")
     check(hint()["state"] == "None" and hint()["atSite"], f"nobody waiting, at a rift: {hint()}")
     ghost(w, ala)
-    check(hint() == {"state": "Ready", "atSite": True, "count": 1, "secondsLeft": 0}, f"one waiting: {hint()}")
+    check(hint() == {"state": "Ready", "atSite": True, "count": 1, "secondsLeft": 0, "health": 0, "byHand": False}, f"one waiting: {hint()}")
     ola.go(30, 0, 0)
     check(hint()["state"] == "TooFarRift" and not hint()["atSite"], f"away from the rift: {hint()}")
     ola.go(-30, 0, 0)

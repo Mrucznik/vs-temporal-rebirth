@@ -55,6 +55,9 @@ internal class RebirthConfig(IReadOnlyDictionary<string, JToken> values)
     public ReviveAt RitualReviveAt => Choice<ReviveAt>("Ritual.ReviveAt");
     public double RitualCooldownHours => (double)Values["Ritual.CooldownHours"];
     public bool RitualLiftsBan => Flag("Ritual.CanLiftBan");
+    public int RitualHealthCost => Int("Ritual.HealthCost");
+    public int RitualHealthMin => Int("Ritual.HealthMin");
+    public bool RitualSelfAtRift => Flag("Ritual.SelfAtRift");
 
     /// <summary>The admin's own text for a message, or null to use the mod's.</summary>
     public string? Message(string key) => Text("Messages." + key) is { Length: > 0 } text ? text : null;

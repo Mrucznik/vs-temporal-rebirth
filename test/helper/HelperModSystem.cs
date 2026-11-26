@@ -52,6 +52,7 @@ public sealed class HelperModSystem : ModSystem
         Add("gearkeep", a => UseGear(Player(a), keep: true), parsers.Word("player"));
         Add("hint", a => Hint(Player(a)), parsers.Word("player"));
         Add("choose", a => Choose(Player(a), (string)a[1]), parsers.Word("player"), parsers.Word("target, bind or cancel"));
+        Add("handhold", a => HandHold(Player(a), (int)a[1]), parsers.Word("player"), parsers.Int("step: 0 begin, 1 let go, 2 done"));
         Add("rift", a => AddRift(Player(a), (int)a[1]), parsers.Word("player"), parsers.Int("distance"));
         Add("riftnear", a => RiftNear(Find((string)a[0]), (int)a[1], (int)a[2], (int)a[3], (int)a[4]), parsers.Word("player"), parsers.Int("dx"), parsers.Int("dy"), parsers.Int("dz"), parsers.Int("size"));
         Add("clearrifts", _ => ClearRifts());
@@ -166,7 +167,18 @@ public sealed class HelperModSystem : ModSystem
         object rituals = Part("Rituals");
         object hint = rituals.GetType().GetMethod("Hint")!.Invoke(rituals, [p])!;
         object Get(string name) => hint.GetType().GetProperty(name)!.GetValue(hint)!;
-        return new { state = Get("State").ToString(), atSite = Get("AtSite"), count = Get("Count"), secondsLeft = Get("SecondsLeft") };
+        return new { state = Get("State").ToString(), atSite = Get("AtSite"), count = Get("Count"), secondsLeft = Get("SecondsLeft"), health = Get("Health"), byHand = Get("ByHand") };
+    }
+
+    /// <summary>A hold without a gear at a rift, as the client reports it. Bots have no mouse.</summary>
+    private object HandHold(IServerPlayer p, int step)
+    {
+        object rituals = Part("Rituals");
+        Type packetType = rituals.GetType().Assembly.GetType("TemporalRebirth.HandHoldPacket")!;
+        object packet = Activator.CreateInstance(packetType)!;
+        packetType.GetProperty("Step")!.SetValue(packet, step);
+        rituals.GetType().GetMethod("OnHandHold", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(rituals, [p, packet]);
+        return new { offered = Offered(p) };
     }
 
     /// <summary>What a click in the chooser sends: a bot name, "bind" or "cancel". Bots cannot click.</summary>

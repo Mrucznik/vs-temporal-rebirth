@@ -14,7 +14,7 @@ and turns the loss of the last one into a penalty with an end, not a dead end. V
 
 1. **Earn lives.** Using a temporal gear (the vanilla "set respawn point" action) gives extra lives, one per gear by
    default, with an optional cap. See [Lives](https://github.com/Mrucznik/vs-temporal-rebirth/wiki/Lives).
-2. **Pick a preset.** `Ghost` (the default), `Rift`, `Undead`, `Exile`, `Timeout` or `Hardcore` set everything below at once;
+2. **Pick a preset.** `Ghost` (the default), `Rift`, `Undead`, `Exile`, `Timeout`, `DontStarve` or `Hardcore` set everything below at once;
    `/rebirth preset <name>` or the configurator. See [Presets](https://github.com/Mrucznik/vs-temporal-rebirth/wiki/Presets).
 3. **Lose the last life.** The player becomes something else, for a set time and in a set place:
    - **form:** a ghost, a spectator, a zombie, a normal player, or a banned player

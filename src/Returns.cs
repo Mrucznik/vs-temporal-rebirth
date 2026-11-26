@@ -40,6 +40,9 @@ internal class Returns(ICoreServerAPI api, Afterlife afterlife, PlayerControl co
             ToSpawn = at == ReviveAt.Spawn || (at == ReviveAt.Body && lost.DeathPos == null),
         });
 
+    /// <summary>A ghost that hung in a rift comes back where it is.</summary>
+    public void AtRift(string uid, LostPlayer lost) => Begin(uid, lost, new Return { Reason = ReturnReason.Ritual });
+
     private void Begin(string uid, LostPlayer lost, Return how)
     {
         if (lost.Phase == Phase.Returning)
@@ -119,6 +122,9 @@ internal class Returns(ICoreServerAPI api, Afterlife afterlife, PlayerControl co
     {
         switch (how?.Reason)
         {
+            case ReturnReason.Ritual when how.Helper == null:
+                messages.TellText(player, "rift-selfback");
+                break;
             case ReturnReason.Ritual:
                 messages.Tell(player, "RevivedRitual", ("caster", how.Helper ?? ""), ("player", player.PlayerName));
                 return;

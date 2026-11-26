@@ -131,6 +131,16 @@ window.TR_SCHEMA = {
       "special": { "value": 0, "label": "Bez przerwy", "custom": "Przerwa", "min": 0.1, "start": 24 } },
     { "key": "Ritual.CanLiftBan", "section": "ritual", "type": "bool", "default": true, "when": { "OutOfLives": ["Ban"], "Ritual.Where": ["Rift", "FixedPlace", "Anywhere"] },
       "label": "Rytuał zdejmuje bana" },
+    { "key": "Ritual.HealthCost", "section": "ritual", "type": "int", "min": 0, "max": 50, "default": 0,
+      "label": "Wskrzeszenie przy wyrwie za zdrowie (kreski)",
+      "help": "Przy aktywnej wyrwie, przy której jest też duch, żywy gracz przytrzymuje prawy przycisk bez zębatki. Wskrzeszony traci na stałe tyle maksymalnego zdrowia. Zębatka ofiarowana wyrwie oddaje tyle samo. Rytuał z zębatką działa dalej, bez kosztu zdrowia.",
+      "special": { "value": 0, "label": "Wyłączone", "custom": "Kreski", "min": 1, "start": 2 } },
+    { "key": "Ritual.HealthMin", "section": "ritual", "type": "int", "min": 1, "max": 50, "default": 5,
+      "label": "Najmniej zdrowia, jakie musi zostać (kreski)",
+      "help": "Kogo wskrzeszenie zepchnęłoby poniżej tego, ten wraca już tylko rytuałem z zębatką." },
+    { "key": "Ritual.SelfAtRift", "section": "ritual", "type": "bool", "default": false,
+      "label": "Duch może sam wrócić przy wyrwie",
+      "help": "Duch, który zawiśnie w aktywnej wyrwie na kilka sekund, wraca do życia przy niej. Płaci zdrowiem jak przy wskrzeszeniu za zdrowie (gdy jest wyłączone, za darmo)." },
 
     { "key": "Admin.AllowEdit", "section": "admin", "privilege": "temporalrebirth.edit", "type": "bool", "default": true,
       "label": "Zmiana ustawień",
@@ -199,6 +209,8 @@ window.TR_SCHEMA = {
       "text": "24 godziny w odległym miejscu. Na koniec ginie i wraca z pełną pulą żyć." },
     { "id": "Timeout", "icon": "Ban", "tag": "Przerwa", "set": { "OutOfLives": "Ban", "Time.Duration": "24h", "Ritual.Where": "Rift", "Ritual.ReviveAt": "Caster" },
       "text": "Ban na 24 godziny. Rytuał przy wyrwie go zdejmuje." },
+    { "id": "DontStarve", "icon": "Ghost", "tag": "Jak w Don't Starve", "set": { "Time.Duration": "forever", "Place.Radius": 0, "Ritual.Where": "Rift", "Ritual.ReviveAt": "InPlace", "Ritual.HealthCost": 2, "Ritual.SelfAtRift": true },
+      "text": "Duch do skutku. Przy wyrwie wraca sam albo z pomocą żywego, za każdym razem tracąc kawałek zdrowia. Zębatka ofiarowana wyrwie je oddaje." },
     { "id": "Hardcore", "icon": "Ban", "tag": "Bez litości", "set": { "OutOfLives": "Ban", "Time.Duration": "7d", "Ritual.Where": "Disabled" },
       "text": "Ban na 7 dni, bez rytuału." }
   ]

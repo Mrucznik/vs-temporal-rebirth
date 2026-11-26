@@ -8,8 +8,11 @@ using Vintagestory.GameContent;
 namespace TemporalRebirth;
 
 /// <summary>A normal, living player offers a temporal gear to bring back someone who is out of lives.</summary>
-internal class Rituals(ICoreServerAPI api, RebirthConfig config, Afterlife afterlife, Returns returns, Messages messages)
+internal class Rituals(ICoreServerAPI api, RebirthConfig config, Afterlife afterlife, Returns returns, Messages messages, RiftBargain bargain)
 {
+    /// <summary>Caster uid -> when a hold without a gear at a rift began (Ritual.HealthCost).</summary>
+    private readonly Dictionary<string, long> handHolds = new();
+
     /// <summary>
     /// Caster uid -> who was chosen with /rebirth target: the uid and that time out of lives, so a choice does not outlive
     /// it. Not persisted; a restart clears choices.
@@ -39,7 +42,8 @@ internal class Rituals(ICoreServerAPI api, RebirthConfig config, Afterlife after
     private sealed record Candidate(string Uid, LostPlayer Lost, IServerPlayer? Player);
 
     /// <summary>What was offered: the same time out of lives, not just the same player, must still be waiting.</summary>
-    private sealed record Pending(BlockPos Pos, Vec3d From, long UntilMs, List<(string Uid, LostPlayer Lost)> Offered, bool AllowBind);
+    /// <summary>ByHealth: opened by a hold without a gear, so the choice costs the revived player health, not a gear.</summary>
+    private sealed record Pending(BlockPos Pos, Vec3d From, long UntilMs, List<(string Uid, LostPlayer Lost)> Offered, bool AllowBind, bool ByHealth = false);
 
     /// <summary>Hints only matter to whoever holds a gear; a second is quick enough for walking up to a rift.</summary>
     private const int HintIntervalMs = 1000;
@@ -49,6 +53,8 @@ internal class Rituals(ICoreServerAPI api, RebirthConfig config, Afterlife after
     {
         channel = net;
         net.SetMessageHandler<ChooserPickPacket>(OnPick);
+        net.SetMessageHandler<HandHoldPacket>(OnHandHold);
+        api.Event.RegisterGameTickListener(_ => StepHandHolds(), ParticleIntervalMs);
         api.Event.RegisterGameTickListener(_ => SendHints(), HintIntervalMs);
         api.Event.RegisterGameTickListener(_ => CheckPending(), 500);
         // Switching to a gear shows its hint at once, not up to a second later with whatever it said last time.
@@ -58,6 +64,7 @@ internal class Rituals(ICoreServerAPI api, RebirthConfig config, Afterlife after
             pending.Remove(player.PlayerUID);
             hints.Remove(player.PlayerUID);
             holds.Remove(player.PlayerUID);
+            handHolds.Remove(player.PlayerUID);
         };
     }
 
@@ -70,7 +77,7 @@ internal class Rituals(ICoreServerAPI api, RebirthConfig config, Afterlife after
         && !DownedCompat.IsDowned(player.Entity);
 
     /// <summary>Whether a gear held here is a ritual rather than the vanilla "set spawn point".</summary>
-    public bool IsRitualSite(IServerPlayer caster) => IsSite(caster, Candidates(caster));
+    public bool IsRitualSite(IServerPlayer caster) => IsSite(caster, Candidates(caster)) || Hint(caster).State == RitualState.Offer;
 
     private bool IsSite(IServerPlayer caster, List<Candidate> candidates)
     {
@@ -88,8 +95,30 @@ internal class Rituals(ICoreServerAPI api, RebirthConfig config, Afterlife after
 
     // ---------- the hint ----------
 
-    /// <summary>What holding a gear would do for this caster now, for the client.</summary>
+    /// <summary>What holding a gear (or, at a rift, the bare hand) would do for this caster now, for the client.</summary>
     public RitualHintPacket Hint(IServerPlayer caster)
+    {
+        RitualHintPacket hint = GearHint(caster);
+        if (LifeRules.UnlimitedLives(api.World) || !CanPerform(caster, afterlife))
+        {
+            return hint;
+        }
+
+        if (hint.State != RitualState.Ready && bargain.OfferNow(caster) is > 0 and int back)
+        {
+            return new RitualHintPacket { State = RitualState.Offer, AtSite = true, Health = back };
+        }
+
+        if (config.RitualWhere != RitualPlace.Disabled && HandCandidates(caster).Count > 0)
+        {
+            hint.ByHand = true;
+            hint.Health = config.RitualHealthCost;
+        }
+
+        return hint;
+    }
+
+    private RitualHintPacket GearHint(IServerPlayer caster)
     {
         if (LifeRules.UnlimitedLives(api.World))
         {
@@ -188,7 +217,14 @@ internal class Rituals(ICoreServerAPI api, RebirthConfig config, Afterlife after
     public bool BeginHold(IServerPlayer caster, BlockSelection? blockSel)
     {
         holds.Remove(caster.PlayerUID);
-        if (Hint(caster).State != RitualState.Ready)
+        RitualState state = Hint(caster).State;
+        if (state == RitualState.Offer && blockSel != null)
+        {
+            holds[caster.PlayerUID] = (blockSel.Position.ToVec3d().Add(blockSel.HitPosition), 0, false);
+            return true;
+        }
+
+        if (state != RitualState.Ready)
         {
             return false;
         }
@@ -245,6 +281,12 @@ internal class Rituals(ICoreServerAPI api, RebirthConfig config, Afterlife after
     {
         EndHold(caster);
         pending.Remove(caster.PlayerUID);
+        if (Hint(caster).State == RitualState.Offer)
+        {
+            bargain.Offer(caster, slot);
+            return;
+        }
+
         List<Candidate> pool = Pool(caster, Candidates(caster));
         if (pool.Count == 0)
         {
@@ -286,12 +328,12 @@ internal class Rituals(ICoreServerAPI api, RebirthConfig config, Afterlife after
 
     // ---------- the chooser ----------
 
-    private void OpenChooser(IServerPlayer caster, List<Candidate> ready, BlockPos ritualPos)
+    private void OpenChooser(IServerPlayer caster, List<Candidate> ready, BlockPos ritualPos, bool byHealth = false)
     {
         Vec3d from = caster.Entity.Pos.XYZ;
-        bool allowBind = CanBind();
+        bool allowBind = !byHealth && CanBind();
         pending[caster.PlayerUID] = new Pending(ritualPos.Copy(), from, api.World.ElapsedMilliseconds + (RitualNet.ChooserSeconds * 1000L),
-            ready.Select(c => (c.Uid, c.Lost)).ToList(), allowBind);
+            ready.Select(c => (c.Uid, c.Lost)).ToList(), allowBind, byHealth);
 
         var packet = new ChooserOpenPacket { AllowBind = allowBind, X = from.X, Y = from.Y, Z = from.Z };
         foreach (Candidate c in ready)
@@ -350,6 +392,11 @@ internal class Rituals(ICoreServerAPI api, RebirthConfig config, Afterlife after
             return false;
         }
 
+        if (session.ByHealth)
+        {
+            return uid != null && PickByHealth(caster, session, uid);
+        }
+
         if (FindGear(caster) is not { } slot)
         {
             messages.TellText(caster, "ritual-nogear");
@@ -388,6 +435,112 @@ internal class Rituals(ICoreServerAPI api, RebirthConfig config, Afterlife after
 
         slot.TakeOut(1);
         slot.MarkDirty();
+        return true;
+    }
+
+    private bool PickByHealth(IServerPlayer caster, Pending session, string uid)
+    {
+        var offered = session.Offered.FirstOrDefault(o => o.Uid == uid);
+        Candidate? target = HandCandidates(caster).FirstOrDefault(c => c.Uid == uid && c.Lost == offered.Lost);
+        if (offered.Uid == null || target == null)
+        {
+            messages.TellText(caster, "ritual-gone", offered.Lost?.Name ?? uid);
+            return false;
+        }
+
+        return PerformByHealth(caster, target, session.Pos);
+    }
+
+    // ---------- without a gear, at a rift ----------
+
+    /// <summary>
+    /// Ghosts a living player at a rift can bring back without a gear: online, at that rift too, not in a cooldown, and with
+    /// enough health to give.
+    /// </summary>
+    private List<Candidate> HandCandidates(IServerPlayer caster)
+    {
+        if (config.RitualHealthCost <= 0 || Rifts.NearestActive(api.World, caster.Entity.Pos.XYZ, config.RitualRange) is not { } rift)
+        {
+            return [];
+        }
+
+        return Candidates(caster)
+            .Where(c => c.Player?.Entity is { } e && e.Pos.XYZ.DistanceTo(rift) <= config.RitualRange && CooldownEnd(c) == null && bargain.CanPay(e))
+            .ToList();
+    }
+
+    private void OnHandHold(IServerPlayer caster, HandHoldPacket? packet)
+    {
+        string uid = caster.PlayerUID;
+        switch (packet?.Step ?? 0)
+        {
+            case 0:
+                List<Candidate> here = HandCandidates(caster);
+                if (here.Count == 0 || !CanPerform(caster, afterlife))
+                {
+                    return;
+                }
+
+                handHolds[uid] = api.World.ElapsedMilliseconds;
+                holds[uid] = (RitualAim.PointOf(here[0].Player!.Entity), 0, false);
+                return;
+            case 1:
+                handHolds.Remove(uid);
+                holds.Remove(uid);
+                return;
+            default:
+                bool held = handHolds.Remove(uid, out long since) && api.World.ElapsedMilliseconds - since >= (RitualLook.HoldSeconds * 1000) - 400;
+                holds.Remove(uid);
+                if (held)
+                {
+                    CompleteByHand(caster);
+                }
+
+                return;
+        }
+    }
+
+    /// <summary>Others nearby see the motes of a hold without a gear too; there is no item step to send them from.</summary>
+    private void StepHandHolds()
+    {
+        foreach (var (uid, since) in handHolds.ToList())
+        {
+            if (api.World.PlayerByUid(uid) is IServerPlayer caster)
+            {
+                StepHold(caster, (api.World.ElapsedMilliseconds - since) / 1000f);
+            }
+        }
+    }
+
+    private void CompleteByHand(IServerPlayer caster)
+    {
+        List<Candidate> here = HandCandidates(caster);
+        if (here.Count == 0 || !CanPerform(caster, afterlife))
+        {
+            messages.TellText(caster, "ritual-cannot");
+            return;
+        }
+
+        BlockPos at = Rifts.NearestActive(api.World, caster.Entity.Pos.XYZ, config.RitualRange)?.AsBlockPos ?? caster.Entity.Pos.AsBlockPos;
+        Candidate? target = Chosen(caster, here) ?? (here.Count == 1 ? here[0] : null);
+        if (target == null)
+        {
+            OpenChooser(caster, here, at, byHealth: true);
+            return;
+        }
+
+        PerformByHealth(caster, target, at);
+    }
+
+    private bool PerformByHealth(IServerPlayer caster, Candidate target, BlockPos at)
+    {
+        if (target.Player?.Entity is not { } entity || !bargain.CanPay(entity) || !Perform(caster, target, at))
+        {
+            return false;
+        }
+
+        bargain.Charge(entity);
+        messages.TellText(target.Player, "rift-paid", config.RitualHealthCost);
         return true;
     }
 

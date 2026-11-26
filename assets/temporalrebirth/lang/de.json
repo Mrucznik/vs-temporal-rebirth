@@ -41,6 +41,7 @@
   "preset-undead": "Zombie bis zum nächsten Morgen; ein Ritual neben ihm geht schneller",
   "preset-exile": "24 Stunden an einem markierten Ort, dann Tod und alle Leben zurück",
   "preset-timeout": "24 Stunden Bann; ein Ritual an einem Riss hebt ihn auf",
+  "preset-dontstarve": "ein Geist bis zum Schluss; am Riss kehrt er allein oder mit Hilfe zurück und verliert jedes Mal ein Stück Gesundheit",
   "preset-hardcore": "7 Tage Bann, kein Ritual",
   "cmd-preset-unknown": "Die Voreinstellung {0} gibt es nicht. Verfügbar: {1}",
   "cmd-preset-set": "Voreinstellung {0} aktiv. Sie gilt für Tode ab jetzt.",
@@ -108,5 +109,11 @@
   "timer-ghost": "Geist: zurück ins Leben in {0}",
   "timer-spectator": "Zuschauer: zurück ins Leben in {0}",
   "timer-zombie": "Untot: zurück ins Leben in {0}",
-  "timer-player": "Verbannung: endet in {0}"
+  "timer-player": "Verbannung: endet in {0}",
+  "heldhelp-offer": "Das Zahnrad dem Riss opfern (+{0} Gesundheit)",
+  "hand-hint": "Halte am Riss die rechte Taste, um den Geist zurückzurufen (er verliert {0} Gesundheit)",
+  "rift-offered": "Der Riss nimmt das Zahnrad und gibt {0} Gesundheit zurück.",
+  "rift-tooweak": "Du bist zu schwach, um allein durch den Riss zu gehen. Nur ein temporales Zahnrad bringt dich jetzt zurück.",
+  "rift-selfback": "Du reißt dich aus dem Riss. Er hat ein Stück von dir behalten.",
+  "rift-paid": "Der Riss hat dich gehen lassen, aber {0} deiner Gesundheit behalten."
 }

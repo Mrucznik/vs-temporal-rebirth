@@ -78,7 +78,8 @@ public sealed class TemporalRebirthModSystem : ModSystem
         var bans = new Bans(api, config, afterlife, messages);
         var returns = new Returns(api, afterlife, control, places, leash, messages);
         var rebirth = new Rebirth(api, config, afterlife, control, places, leash, bans, returns, messages);
-        var rituals = new Rituals(api, config, afterlife, returns, messages);
+        var bargain = new RiftBargain(api, config, afterlife, returns, messages);
+        var rituals = new Rituals(api, config, afterlife, returns, messages, bargain);
         var zombies = new ZombieRules(api, afterlife);
         Server = new ServerParts(config, afterlife, rebirth, bans, rituals, messages, zombies);
 
@@ -101,7 +102,9 @@ public sealed class TemporalRebirthModSystem : ModSystem
             .RegisterMessageType<ChooserOpenPacket>()
             .RegisterMessageType<ChooserClosePacket>()
             .RegisterMessageType<ChooserPickPacket>()
-            .RegisterMessageType<FacePacket>());
+            .RegisterMessageType<FacePacket>()
+            .RegisterMessageType<HandHoldPacket>());
+        bargain.Start();
 
         harmony = new Harmony(HarmonyId + ".server");
         // Without the respawn patch, extra lives would be shown but vanilla would still refuse the respawn.

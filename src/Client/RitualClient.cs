@@ -20,7 +20,15 @@ internal class RitualClient
     private readonly ICoreClientAPI api;
     private readonly IClientNetworkChannel channel;
     private readonly RitualProgressHud progress;
+    private readonly RitualHandHud handHint;
     private readonly Ghosts ghosts;
+
+    // A hold without a gear at a rift (Ritual.HealthCost): when it began, and whether the button must be let go first.
+    private long handSince = -1;
+    private bool handSpent;
+
+    // A ghost hanging in a rift sees how far it is from coming back.
+    private bool selfShown;
     private RitualHintPacket? hint;
     private long hintAtMs;
     private (RitualState, bool, int, bool)? shownKey;
@@ -37,17 +45,20 @@ internal class RitualClient
         this.api = api;
         this.ghosts = ghosts;
         progress = new RitualProgressHud(api);
+        handHint = new RitualHandHud(api);
         channel = api.Network.RegisterChannel(RitualNet.Channel)
             .RegisterMessageType<RitualHintPacket>()
             .RegisterMessageType<ChooserOpenPacket>()
             .RegisterMessageType<ChooserClosePacket>()
             .RegisterMessageType<ChooserPickPacket>()
             .RegisterMessageType<FacePacket>()
+            .RegisterMessageType<HandHoldPacket>()
             .SetMessageHandler<RitualHintPacket>(OnHint)
             .SetMessageHandler<FacePacket>(OnFace)
             .SetMessageHandler<ChooserOpenPacket>(OnOpen)
             .SetMessageHandler<ChooserClosePacket>(_ => chooser?.Dismiss());
         api.Event.RegisterGameTickListener(_ => Refresh(), (int)RefreshMs);
+        api.Event.RegisterGameTickListener(_ => HandTick(), 30);
         api.Event.LeaveWorld += () =>
         {
             EndHold();
@@ -140,7 +151,8 @@ internal class RitualClient
         }
 
         string vanillaText = Lang.Get("heldhelp-useonground");
-        string text = h.State == RitualState.Ready ? Lang.Get(h.LookAtGhost ? "temporalrebirth:heldhelp-ritual-aim" : "temporalrebirth:heldhelp-ritual", h.Count)
+        string text = h.State == RitualState.Offer ? Lang.Get("temporalrebirth:heldhelp-offer", h.Health)
+            : h.State == RitualState.Ready ? Lang.Get(h.LookAtGhost ? "temporalrebirth:heldhelp-ritual-aim" : "temporalrebirth:heldhelp-ritual", h.Count)
             : h.AtSite ? Lang.Get("temporalrebirth:heldhelp-noritual", Reason(h))
             : Lang.Get("temporalrebirth:heldhelp-useonground-why", vanillaText, Reason(h));
 
@@ -192,6 +204,13 @@ internal class RitualClient
             return true;
         }
 
+        if (h.State == RitualState.Offer)
+        {
+            handling = EnumHandHandling.PreventDefault;
+            BeginHold(blockSel.Position.ToVec3d().Add(blockSel.HitPosition), false);
+            return false;
+        }
+
         if (h.State == RitualState.Ready)
         {
             handling = EnumHandHandling.PreventDefault;
@@ -232,7 +251,7 @@ internal class RitualClient
     }
 
     /// <summary>Every frame of the hold: the gear spins faster, the sound rises, motes are pulled into the spot.</summary>
-    public void StepHold(ItemTemporalGear gear, float secondsUsed)
+    public void StepHold(ItemTemporalGear? gear, float secondsUsed)
     {
         if (holdAt == null)
         {
@@ -241,8 +260,12 @@ internal class RitualClient
 
         float done = Math.Clamp(secondsUsed / RitualLook.HoldSeconds, 0, 1);
         float spin = GameMath.Mod(api.World.ElapsedMilliseconds / (50f - (secondsUsed * 20f)), 360f);
-        gear.FpHandTransform.Rotation.Y = spin;
-        gear.TpHandTransform.Rotation.Y = spin;
+        if (gear != null)
+        {
+            gear.FpHandTransform.Rotation.Y = spin;
+            gear.TpHandTransform.Rotation.Y = spin;
+        }
+
         sound?.SetPitch(0.6f + (done * 0.9f));
         sound?.SetVolume(0.5f + (done * 0.5f));
         api.World.AddCameraShake(ShakePerStep * done);
@@ -266,6 +289,88 @@ internal class RitualClient
         sound?.Dispose();
         sound = null;
         progress.Hide();
+    }
+
+    // ---------- without a gear, at a rift ----------
+
+    /// <summary>
+    /// The bare hand at a rift (Ritual.HealthCost): the game has no item to hold, so the button is watched here. The server
+    /// is told when the hold begins, is let go and is complete, and decides again.
+    /// </summary>
+    private void HandTick()
+    {
+        EntityPlayer? self = api.World.Player?.Entity;
+        bool gearInHand = IsGear(api.World.Player?.InventoryManager?.ActiveHotbarSlot);
+        bool can = self is { Alive: true } && hint is { ByHand: true } && !gearInHand && api.Input.MouseGrabbed;
+        bool down = api.Input.InWorldMouseButton.Right;
+        ShowSelfRift(self);
+
+        if (handSince >= 0)
+        {
+            float seconds = (api.World.ElapsedMilliseconds - handSince) / 1000f;
+            if (!can || !down)
+            {
+                Send(1);
+                handSince = -1;
+                EndHold();
+            }
+            else if (seconds >= RitualLook.HoldSeconds)
+            {
+                Send(2);
+                handSince = -1;
+                handSpent = true;
+                EndHold();
+            }
+            else
+            {
+                StepHold(null, seconds);
+            }
+        }
+        else if (can && down && !handSpent && !Holding && Rifts.NearestActive(api.World, self!.Pos.XYZ, 64) is { } rift)
+        {
+            BeginHold(AimedGhost() ?? rift, false);
+            handSince = api.World.ElapsedMilliseconds;
+            Send(0);
+        }
+
+        if (!down)
+        {
+            handSpent = false;
+        }
+
+        handHint.Show(can && handSince < 0 ? Lang.Get("temporalrebirth:hand-hint", hint!.Health) : null);
+    }
+
+    private void Send(int step)
+    {
+        if (channel.Connected)
+        {
+            channel.SendPacket(new HandHoldPacket { Step = step });
+        }
+    }
+
+    /// <summary>A ghost hanging in a rift sees the bar fill until it comes back.</summary>
+    private void ShowSelfRift(EntityPlayer? self)
+    {
+        int? percent = self?.WatchedAttributes.TryGetInt(ClientState.SelfRift);
+        if (percent is { } p)
+        {
+            if (!selfShown)
+            {
+                progress.Show();
+                selfShown = true;
+            }
+
+            progress.Set(p / 100f);
+        }
+        else if (selfShown)
+        {
+            selfShown = false;
+            if (!Holding)
+            {
+                progress.Hide();
+            }
+        }
     }
 
     // ---------- the chooser ----------
@@ -293,5 +398,6 @@ internal class RitualClient
         EndHold();
         chooser?.Dismiss();
         progress.Dispose();
+        handHint.Dispose();
     }
 }

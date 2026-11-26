@@ -41,6 +41,7 @@
   "preset-undead": "a zombie until the next morning; a ritual next to it is faster",
   "preset-exile": "24 hours in a marked place, then death and all lives back",
   "preset-timeout": "banned for 24 hours; a ritual at a rift lifts it",
+  "preset-dontstarve": "a ghost until it gets back at a rift, alone or helped, losing a piece of health each time",
   "preset-hardcore": "banned for 7 days, no ritual",
   "cmd-preset-unknown": "No such preset: {0}. Available: {1}",
   "cmd-preset-set": "Using preset {0}. It applies to deaths from now on.",
@@ -108,5 +109,11 @@
   "timer-ghost": "Ghost: back to life in {0}",
   "timer-spectator": "Watching: back to life in {0}",
   "timer-zombie": "Undead: back to life in {0}",
-  "timer-player": "Exile: ends in {0}"
+  "timer-player": "Exile: ends in {0}",
+  "heldhelp-offer": "Offer the gear to the rift (+{0} health)",
+  "hand-hint": "Hold the right button at the rift to call the ghost back (it loses {0} health)",
+  "rift-offered": "The rift takes the gear and gives back {0} health.",
+  "rift-tooweak": "You are too weak to cross the rift alone. Only a temporal gear can bring you back now.",
+  "rift-selfback": "You tear yourself out of the rift. It kept a piece of you.",
+  "rift-paid": "The rift let you go, but kept {0} of your health."
 }

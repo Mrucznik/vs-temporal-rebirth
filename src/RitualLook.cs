@@ -14,9 +14,9 @@ internal static class RitualLook
 
     private const float MoteLife = 0.7f;
 
-    // Particle colours are read with red in the low byte, so ToRgba's r and b swap places here.
-    private static readonly int Rust = ColorUtil.ToRgba(230, 30, 80, 190);
-    private static readonly int Ember = ColorUtil.ToRgba(255, 60, 150, 240);
+    // ToRgba(alpha, red, green, blue), as the wisp uses it; swapping red and blue (an old guess) made the motes blue.
+    private static readonly int Rust = ColorUtil.ToRgba(230, 190, 80, 30);
+    private static readonly int Ember = ColorUtil.ToRgba(255, 240, 150, 60);
 
     /// <summary>One mote flying from around the spot into it. Later in the hold they come from closer and glow more.</summary>
     internal static SimpleParticleProperties Mote(Random rand, Vec3d center, float progress)

@@ -103,7 +103,8 @@ class Ctx:
         a, c = probe.state(), self.cam.state()
         vx, vz = a["x"] - c["x"], a["z"] - c["z"]
         n = math.hypot(vx, vz) or 1
-        return (vx / n, vz / n), (-vz / n, vx / n)
+        self.last_vectors = (vx / n, vz / n), (-vz / n, vx / n)
+        return self.last_vectors
 
     def place(self, bot, ahead, side=0.0, up=0):
         """A bot `ahead` blocks in front of the camera and `side` to the right of the view."""
@@ -134,17 +135,18 @@ class Ctx:
         d.key("Return")
         time.sleep(pause)
 
-    def hold_gear(self, until, seconds=8):
-        """Gear in hand, looking at the ground: hold the right button until `until()` or time is out."""
+    def hold_gear(self, until, seconds=8, look=None):
+        """Gear in hand, looking at the ground (or `look`): hold the right button until `until()` or time is out."""
         s, d = self.s, self.d
-        aim(s, d, GROUND, 0.04)
-        d.x("mousedown", "3")
+        aim(s, d, GROUND if look is None else look, 0.04)
+        # Scroll Lock stands in for the right button (test/recorder): a real right click frees the pointer on this display.
+        d.x("keydown", "Scroll_Lock")
         end = time.monotonic() + seconds
         try:
             while time.monotonic() < end and not until():
                 time.sleep(0.25)
         finally:
-            d.x("mouseup", "3")
+            d.x("keyup", "Scroll_Lock")
         return until()
 
     def respawn(self):
@@ -188,7 +190,7 @@ class Ctx:
 
 # ---------- shared flows ----------
 
-def revive_by_gear(c, name, folder, *, people=("Funia",), config=None, clock=DUSK, dist=6, before=None, after=2.5, trim=(0.8, 1.0), hold=8, fly=True):
+def revive_by_gear(c, name, folder, *, people=("Funia",), config=None, clock=DUSK, dist=6, before=None, after=2.5, trim=(0.8, 1.0), hold=8, fly=True, look=None):
     """The pilot: the last death, a ghost, the gear, the ritual, the way back. Used by M1, W15, W16."""
     s, d = c.s, c.d
     funia = c.base(people=people, dist=dist, clock=clock, **(config or {}))
@@ -197,7 +199,7 @@ def revive_by_gear(c, name, folder, *, people=("Funia",), config=None, clock=DUS
         before(c, funia)
     (fx, fz), (sx, sz) = c.vectors()
     # The probe bot of vectors() stands in the picture; Finn leaves it.
-    s.beside(s.bots["Finn"], c.cam, 60, 0, 60)
+    away(c, "Finn")
     d.key("2")
     time.sleep(1)
     aim(s, d, LEVEL)
@@ -213,7 +215,13 @@ def revive_by_gear(c, name, folder, *, people=("Funia",), config=None, clock=DUS
             glide(s, funia, -sx * 2.5, -2.5, -sz * 2.5, 1.6)
             time.sleep(0.3)
         done = lambda: funia.state()["mode"] == "Survival" and funia.state()["alive"]
-        if not c.hold_gear(done, hold):
+        # hold=0: no mouse at all. On the GPU display a held right button frees the pointer instead of using the gear
+        # (Xwayland), which leaves seconds of a cursor and an open chat in the picture; the helper does the ritual.
+        if hold <= 0:
+            aim(s, d, look if look is not None else LEVEL, 0.04)
+            time.sleep(1.2)
+            s.w.trt("gear " + c.cam.name)
+        elif not c.hold_gear(done, hold, look):
             log(f"{name}: the held gear did nothing; the helper does the ritual")
             s.w.trt("gear " + c.cam.name)
         funia.until(mode="Survival", alive=True, timeout=30)
@@ -224,15 +232,35 @@ def revive_by_gear(c, name, folder, *, people=("Funia",), config=None, clock=DUS
 
 
 def away(c, name):
-    """Finn (the probe of vectors) is moved out of the picture."""
-    c.s.beside(c.s.bots[name], c.cam, 60, 0, 60)
+    """Finn (the probe of vectors) is moved out of the picture: behind the camera. Sent far away, the client sometimes
+    never heard of the move and kept drawing him where he stood."""
+    (fx, fz), _ = getattr(c, "last_vectors", None) or c.vectors()
+    c.s.beside(c.s.bots[name], c.cam, round(-fx * 12), 0, round(-fz * 12))
+
+
+@scene("PT", "test")
+def pt(c):
+    """Which particle settings show at all (test/recorder: .trtparticles)."""
+    s, d = c.s, c.d
+    c.base(people=(), clock="12:00")
+    aim(s, d, LEVEL)
+    d.key("Pause")
+    time.sleep(1.2)
+    for i in range(3):
+        d.shot(f"particles-{i}")
+        time.sleep(0.6)
 
 
 # ---------- M: the mod page ----------
 
+# The Ghost preset as players get it: rituals next to the ghost (the harness pins rituals at rifts for old scenarios), and
+# the gear held looking at the wisp, so the motes gather on it.
+GHOST_RITUALS = {"Ritual.Where": "NearPlayer", "Ritual.ReviveAt": "InPlace"}
+
+
 @scene("M1", "modpage")
 def m1(c):
-    revive_by_gear(c, "M1", "modpage")
+    revive_by_gear(c, "M1", "modpage", config=GHOST_RITUALS, look=LEVEL)
 
 
 @scene("M2", "modpage", trim=(0.0, 0.0))
@@ -767,6 +795,16 @@ def w18(c):
 
 # ---------- the run ----------
 
+def uninstall_recorder():
+    """The same client profile is used for test sessions with a person, who needs the hotbar and the minimap."""
+    mods = Path.home() / ".var/app/at.vintagestory.VintageStory/trt-client/Mods"
+    (mods / "trtrecorder.zip").unlink(missing_ok=True)
+    settings = mods.parent / "clientsettings.json"
+    if settings.exists():
+        text = settings.read_text(encoding="utf8")
+        settings.write_text(text.replace('"showMinimapHud": false', '"showMinimapHud": true'), encoding="utf8")
+
+
 def install_mod():
     """Builds the mod's zip from the repo and puts it into the recording client's Mods, then checks that the shaders
     inside it are the repo's: a plain `dotnet build` does not remake the zip, and an old zip once got recorded."""
@@ -787,6 +825,17 @@ def install_mod():
             if hashlib.sha256(inside).digest() != hashlib.sha256(shader.read_bytes()).digest():
                 sys.exit(f"the zip in Mods has an old {shader.name}")
     log(f"mod {version} built and installed; its shaders match the repo")
+    # The recording helper: the hotbar and the bars above it are not drawn; the minimap is off in the client's settings.
+    recorder = repo / "test/recorder"
+    subprocess.run([dotnet, "build", "-c", "Release", "-v", "q"], cwd=recorder, check=True, env={**os.environ, "VINTAGE_STORY": game})
+    with zipfile.ZipFile(mods / "trtrecorder.zip", "w") as z:
+        for name in ("modinfo.json", "trtrecorder.dll"):
+            z.write(recorder / "bin/mod" / name, name)
+    settings = mods.parent / "clientsettings.json"
+    if settings.exists():
+        text = settings.read_text(encoding="utf8")
+        settings.write_text(text.replace('"showMinimapHud": true', '"showMinimapHud": false'), encoding="utf8")
+    log("recording helper installed, minimap off")
 
 
 def main():
@@ -819,6 +868,21 @@ def main():
         join(stage, display)
         time.sleep(3)
         stage.w.console(f"/op {stage.camera.name}")
+        # A fresh world asks a new player to make a character, and that dialog swallows every click of the scenes. Make one
+        # on the server and confirm the dialog if it is already open: "Confirm Skin", then "Confirm Class" on its second page,
+        # both at the bottom right of it.
+        stage.w.trt(f"dress {stage.camera.name} 1")
+        time.sleep(2)
+        for _ in range(2):
+            display.x("mousemove", 972, 636, "click", "1")
+            time.sleep(1.5)
+        display.x("mousemove", auto.WIDTH // 2, auto.HEIGHT // 2)
+        # Whatever the dialog left behind (it kept the mouse free, so clicks went to the interface): Escape closes it, a
+        # second Escape closes the menu the first may have opened instead.
+        for _ in range(2):
+            display.key("Escape")
+            time.sleep(1)
+        display.shot("after-character")
         c = Ctx(stage, display)
         c.cleaned = tidy(display)
         display.chat(".clearchat")
@@ -860,6 +924,7 @@ def main():
                 restore_screen(display, c.cleaned)
         if client:
             client.stop()
+        uninstall_recorder()
         if stage:
             stage.stop()
         for process in harness.RUNNING:

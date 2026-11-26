@@ -1,0 +1,9 @@
+{
+  "type": "code",
+  "modid": "trtrecorder",
+  "name": "Temporal Rebirth recording client",
+  "description": "Recording clients only: hides the hotbar and the bars above it from the picture, keeps them working.",
+  "version": "1.0.0",
+  "side": "Client",
+  "requiredOnServer": false
+}

@@ -130,8 +130,9 @@ class Stage:
     # ---------- world ----------
 
     def time(self, clock):
+        # Not stopped: the game spawns and moves particles at the speed of time (Calendar.SpeedOfTime / 60), so a stopped
+        # clock hides every particle (ritual motes, the flash, a wisp's sparks). A scene lasts a few game minutes.
         self.w.console("/time set " + clock)
-        self.w.console("/time stop")
 
     def age_revive(self):
         """The game makes players glow for 2 hours of game time after a revive; a stopped clock would keep that forever."""

@@ -43,6 +43,12 @@ As of 2026-11-25, everything is on `main` (0.10.0-dev.1). Released: 0.6.1.
     resets `Lives.Count` between scenes, and the test worlds have temporal stability off. T12 rewritten, T13 and T14 new.
   - Not a bug: "no ghost after the last death" in the session was `Lives.Count` Downs left over from an earlier scene (presets
     keep the lives section); with Downs a death without a down costs a life and the next fatal hit is the last.
+- **Recording (2026-11-26)**: particles are spawned and moved at the speed of time (`Calendar.SpeedOfTime / 60`), so the
+  scenes' old `/time stop` hid every particle: motes, the flash, the wisp's trail; scenes no longer stop time. The motes were
+  also blue (red and blue were swapped on a wrong guess). The wisp's trail is dark smoke now, not a bright streak.
+  `test/recorder` is a client mod for recording only: it hides the hotbar and the bars, and Scroll Lock holds the right
+  button (a right click sent with xdotool on the GPU display frees the pointer instead). `shoot.py` installs it, switches the
+  minimap off, and removes both afterwards. M1 re-recorded with a real gear hold.
 - **Review of 0.7.0**: 11 faults, each with a test and fixed.
 - **Structure and performance**: `Rebirth.cs` split up, Harmony patches reach the server side through
   `TemporalRebirthModSystem.Server`, how a player comes back is one saved object, less work per frame and tick (not measured).

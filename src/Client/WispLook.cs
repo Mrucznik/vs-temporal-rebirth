@@ -20,27 +20,32 @@ internal class WispLook(ICoreClientAPI api, Ghosts ghosts)
     private const double DetailDistance = 32;
     private const float Glow = 7f;
 
-    private static readonly int CoreColor = ColorUtil.ToRgba(150, 150, 40, 20);
-    private static readonly int SparkColor = ColorUtil.ToRgba(220, 230, 90, 30);
+    // A dark, dying ember rather than a flame: the bright core is the shader's (WispOrb); what is left behind is smoke.
+    private static readonly int CoreColor = ColorUtil.ToRgba(120, 70, 12, 8);
+    private static readonly int SparkColor = ColorUtil.ToRgba(170, 160, 55, 18);
 
     private readonly Dictionary<long, WispLight> lights = new();
     private readonly HashSet<long> seen = new();
     private int tick;
 
-    /// <summary>Alpha and size fade over the life of a particle.</summary>
-    private readonly SimpleParticleProperties core = new(1, 2, CoreColor, new Vec3d(), new Vec3d(), new Vec3f(), new Vec3f(), 0.35f, 0f, 0.5f, 0.9f, EnumParticleModel.Quad)
+    /// <summary>
+    /// What the wisp leaves behind: dark rust smoke that barely glows, swells, sinks a little and fades slowly, so a moving
+    /// ghost trails a faint stain instead of a bright streak.
+    /// </summary>
+    private readonly SimpleParticleProperties core = new(0, 1.2f, CoreColor, new Vec3d(), new Vec3d(), new Vec3f(-0.05f, -0.18f, -0.05f), new Vec3f(0.05f, -0.04f, 0.05f), 0.9f, 0f, 0.3f, 0.5f, EnumParticleModel.Quad)
     {
-        VertexFlags = 255,
+        VertexFlags = 40,
         WithTerrainCollision = false,
-        OpacityEvolve = EvolvingNatFloat.create(EnumTransformFunction.LINEAR, -150),
-        SizeEvolve = EvolvingNatFloat.create(EnumTransformFunction.LINEAR, -0.4f),
+        OpacityEvolve = EvolvingNatFloat.create(EnumTransformFunction.LINEAR, -120),
+        SizeEvolve = EvolvingNatFloat.create(EnumTransformFunction.LINEAR, 0.5f),
     };
 
-    private readonly SimpleParticleProperties sparks = new(0, 1, SparkColor, new Vec3d(), new Vec3d(), new Vec3f(-0.3f, -0.1f, -0.3f), new Vec3f(0.3f, 0.5f, 0.3f), 0.9f, 0.04f, 0.08f, 0.18f, EnumParticleModel.Quad)
+    /// <summary>Now and then a dim ember drops out of it.</summary>
+    private readonly SimpleParticleProperties sparks = new(0, 0.35f, SparkColor, new Vec3d(), new Vec3d(), new Vec3f(-0.15f, -0.25f, -0.15f), new Vec3f(0.15f, 0.05f, 0.15f), 1.1f, 0.02f, 0.05f, 0.1f, EnumParticleModel.Quad)
     {
-        VertexFlags = 255,
+        VertexFlags = 110,
         WithTerrainCollision = false,
-        OpacityEvolve = EvolvingNatFloat.create(EnumTransformFunction.LINEAR, -220),
+        OpacityEvolve = EvolvingNatFloat.create(EnumTransformFunction.LINEAR, -160),
     };
 
     public void Start()

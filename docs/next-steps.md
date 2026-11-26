@@ -88,8 +88,7 @@ As of 2026-11-25, everything is on `main` (0.10.0-dev.1). Released: 0.6.1.
 - Limits of walking forms (2026-11-26): six switches each for the zombie (`Zombie.Can...`) and the exile (`Exile.Can...`):
   items in hand, building, using blocks, creatures, picking up, hitting. A zombie has all but hitting off (fights
   bare-handed), an exile has none. Who may not use items does not even swing them, who may not hit does not swing at
-  creatures, both with a message. Dropping items stays allowed. What is lost at death follows the world's own setting.
-  The wiki still describes only `Zombie.CanUseItems`: Settings-Guide needs `#zombie` and `#exile` sections for the switches.
+  creatures, both with a message. Dropping items stays allowed. What is lost at death follows the world's own setting. Wiki: Settings-Guide `#zombie` and `#normal-player-exile`.
 - Rituals next to ghosts (2026-11-25): aim at the ghost; several and none aimed at: the chooser. The revived rises where the
   ghost was, turned to the caster. A cooldown counts only rituals after it was switched on; with nobody waiting the gear's
   hint stays vanilla, also during a cooldown.

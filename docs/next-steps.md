@@ -17,8 +17,7 @@ As of 2026-11-25, everything is on `main` (0.10.0-dev.1). Released: 0.6.1.
   that will be a ritual looks like one: rising sound, rust motes, a bar under the crosshair (others nearby see motes sent by
   the server). With several players to bring back a chooser lists them (name, form, time left, online); the gear is taken
   only when the server accepts the click. One candidate, `/rebirth target` or NearPlayer (nearest) need no chooser. Anywhere
-  always opens it while someone waits, because it also offers the vanilla "bind me here". Scenes R1–R3 in `test/scenes/shoot.py`
-  (hint, hold, chooser) are written but not recorded. `Messages.RitualChoose` is no longer used.
+  always opens it while someone waits, because it also offers the vanilla "bind me here". `Messages.RitualChoose` is no longer used.
 - **After the test session of 2026-11-25** (notes, screenshots and the crash log in `docs/sessions/2026-11-25/`):
   - Leash on the client (`LeashGuard`): no more freezing where the edge meets blocks (the bottom of a sphere, a crack by a
     cliff): the step tries several ways along the edge and takes the first that is free; the edge from below is ground to
@@ -107,7 +106,11 @@ As of 2026-11-25, everything is on `main` (0.10.0-dev.1). Released: 0.6.1.
    the top, in a cave, near the edge and under the player; zone walls; T13 zombie swing; T14 Downed; T15 Don't Starve), on a
    client; then one with two real players.
 2. Zombie look rework (the user wants it; how is not decided yet). The drifter look is an idea for 1.1, see Ideas.
-3. Media: the mod's page uses videos, the GitHub wiki needs no GIFs. ModDB takes a YouTube trailer and YouTube embeds in the
+3. Media (re-recorded 2026-11-27: M1-M4, W1, W2, W4-W12, W14-W17, M5; site videos in `docs/media` rebuilt). Still to do:
+   M6 (DontStarve: a ghost back alone at a rift) is recorded but the spot is bad (terrain in the shot, the rift hardly seen):
+   pick an open spot and record again, then use it for the DontStarve preset on the site (now W15 stands in). GIFs over
+   2 MB (M3, M4) need short cuts for the ModDB gallery; in the description they can be linked from GitHub.
+   The mod's page uses videos, the GitHub wiki needs no GIFs. ModDB takes a YouTube trailer and YouTube embeds in the
    description; gallery images at most 2 MB each (12). Decide ModDB media, then re-record what changed (barrier, rituals).
 4. Publish the configurator; new ModDB text and README.
 5. Release 0.10 in place of 0.6.1 (GitHub, ModDB, mruserv).

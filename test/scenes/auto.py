@@ -153,7 +153,9 @@ def frames_per_second(d, seconds=6):
 def join(s, d):
     log("waiting for the client to join")
     end = time.monotonic() + 300
-    while not (names := s.w.trt("players")) and time.monotonic() < end:
+    # The bots stay online across a relaunch of the client: the camera is the one player that is not a bot.
+    bots = set(getattr(s, "bots", {}) or {})
+    while not (names := [n for n in s.w.trt("players") if n not in bots]) and time.monotonic() < end:
         time.sleep(2)
     if not names:
         raise Failed("the client did not join, see client.log")
